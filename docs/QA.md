@@ -2,6 +2,16 @@
 
 Date: 17 November 2026. Implementation verification is recorded here; real-device acceptance remains with the owner. This report does not claim that a phone camera, on-screen keyboard or installed mobile PWA has been verified.
 
+## Production verification
+
+GitHub Pages successfully built application commit `c31ec69` from `main`. The live root returned HTTP 200 and the expected application shell. The deployed comparison flow fetched Supabase observations and computed the same six-record illustrative range as local testing, with no browser console warnings/errors captured.
+
+Direct `/scan` and `/contribute/new` navigation and refresh were exercised in the production browser. Unknown `/this-page-does-not-exist?qa=1#detail` retained its full path/query/fragment and displayed the branded 404; its return link navigated home. Raw deep-link requests return GitHub Pages HTTP 404 with the intended client restoration script, then resolve to the SPA. Credential-file URLs returned 404 and no file contents.
+
+Production home and scan render inspections both returned zero failures at 1440, 768 and 390 pixels. Every emitted fold/page screenshot was opened. The documented canvas/title/natural-height warnings remained, with no new findings. Manifest and service worker returned HTTP 200. Production-origin preflight requests succeeded for both functions; invalid POSTs returned HTTP 400 with the correct CORS origin.
+
+The owner asked to finish implementation-side work first and conduct phone tests afterward. Those tests are documented in `MANUAL-QA.md`; no device acceptance is implied by the successful deployment.
+
 ## Automated and backend evidence
 
 - `npm test`: 15 tests passed. Matching compatibility, robust ranges, insufficient data, pending exclusion, submission validation, file consent/signatures, model normalization, API errors, service-worker exclusions and 404 restoration are covered.
