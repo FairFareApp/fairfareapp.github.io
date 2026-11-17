@@ -1,0 +1,20 @@
+{
+  "category_id": "wooden_elephant",
+  "product_name": "wooden elephant figurine",
+  "material": "wood",
+  "finish": "unknown",
+  "decoration": "unknown",
+  "shape": "elephant",
+  "colour_pattern": "brown with white tusks",
+  "decorative_style": "carved",
+  "visible_characteristics": "standing pose, trunk down, small ears, white tusks",
+  "uncertainty": "material and finish are probable, not verified; exact species, origin, age, maker, and craftsmanship quality unknown",
+  "unknown_attributes": [
+    "physical dimensions",
+    "wood species",
+    "authenticity",
+    "origin",
+    "craftsmanship quality"
+  ],
+  "finish_uncertain": true
+}

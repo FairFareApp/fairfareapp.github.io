@@ -12,9 +12,19 @@ Production home and scan render inspections both returned zero failures at 1440,
 
 The owner asked to finish implementation-side work first and conduct phone tests afterward. Those tests are documented in `MANUAL-QA.md`; no device acceptance is implied by the successful deployment.
 
+## Vision response follow-up
+
+The owner reported a formatting failure during a real phone scan. A controlled reproduction with a public wooden-elephant photograph returned `finish_reason: length`, 1,000 completion tokens, 1,000 reasoning tokens, and no usable JSON. The original request budget could be consumed entirely by optional model reasoning; the error copy incorrectly suggested a clearer image could solve a response-format failure.
+
+The deployed `fairfare-identify` version 3 disables optional reasoning, requires the configured provider's structured-output support, enforces a strict product JSON schema, and allows 2,048 output tokens. Parsing distinguishes truncation, provider failure, absent content, invalid JSON and invalid attributes. It accepts one complete JSON object in plain/fenced/prose-wrapped/text-part responses without inventing missing values or parsing reasoning. Failure logs contain only fixed reason codes, finish reason, content type and character count; no image, raw response text, reasoning or credentials.
+
+Two deliberate live requests were used for this fix: one baseline reproduction and one successful check through the deployed Supabase function, using the same resized public test photograph. The fixed request returned HTTP 200 with `wooden_elephant`, probable `wood`, visible attributes, explicit uncertainty and an unknown finish requiring confirmation. No price or dimensions were returned. Source photograph: [Teak elephant figurines by Vis M, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Teak_elephant_figurines.jpg), used only as an ignored local test asset, never as a Jaipur observation or shipped product photo. The normalized, image-free response is retained as `tests/fixtures/vision-elephant.json`.
+
+Current regression result: 21 tests passed, including six new vision-request/parsing cases. Syntax and secret scans passed. No frontend layout or camera implementation changed. The previous UI delivery gate remains applicable; exact reproduction using the owner's original photo is still an owner check. A reinstall or frontend refresh is not required to use the backend fix.
+
 ## Automated and backend evidence
 
-- `npm test`: 15 tests passed. Matching compatibility, robust ranges, insufficient data, pending exclusion, submission validation, file consent/signatures, model normalization, API errors, service-worker exclusions and 404 restoration are covered.
+- `npm test`: 21 tests passed (15 in the initial implementation snapshot). Matching compatibility, robust ranges, insufficient data, pending exclusion, submission validation, file consent/signatures, model normalization, API errors, service-worker exclusions, 404 restoration and vision truncation/format handling are covered.
 - `npm run check`: syntax checks, privileged-credential patterns and credential-file tracking passed. Both themes' normal-text token pairs passed at 5.12:1 or above; control boundaries passed 3:1. Focus rings are 3px and use a checked accent.
 - Taste-skill source lint: zero failures or warnings. Rendered checks at 1440, 768 and 390 pixels passed after fixing hidden-file-input overflow. Additional browser checks at 320 and 375 pixels found no horizontal overflow.
 - Anonymous reference reads succeeded. Anonymous reads of submissions/evidence, writes to trusted references, and execution of privileged RPCs returned HTTP 401.
@@ -22,7 +32,7 @@ The owner asked to finish implementation-side work first and conduct phone tests
 - A purchase report arrived pending with no photos/consent. A contributor report arrived pending with explicit consent and two private evidence entries. A retry returned the same submission ID. Approved references remained at 29.
 - A trusted approval transaction completed inside a rollback. Both labelled QA submissions were then rejected, never published.
 - Supabase security advisor: no warning/error findings; three INFO notices for intentionally policy-free private tables. See `MODERATION.md` before changing those policies.
-- One intentional live OpenRouter inference was made. A non-product image returned a validated unsupported result. Positive wooden-elephant recognition remains an owner check. Development positive-path testing used labelled fixtures, not repeated live inference. Account/model discovery confirmed image input availability and a free model; no daily provider allowance is assumed from deprecated account metadata.
+- Initial implementation used one intentional live OpenRouter inference, which returned a validated unsupported result for a non-product image. The follow-up above used two further deliberate requests, bringing implementation-side live inference tests to three total. Most testing uses fixtures. Account/model discovery confirmed image input availability and a free model; no daily provider allowance is assumed from deprecated account metadata.
 - Sanitized model response retained in `tests/fixtures/vision-unsupported.json`; no image or key is included.
 
 ## Browser click-through
