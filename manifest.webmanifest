@@ -1,0 +1,35 @@
+{
+  "id": "/",
+  "name": "FairFare",
+  "short_name": "FairFare",
+  "description": "A little local knowledge for Jaipur.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf9f6",
+  "theme_color": "#728476",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Scan a product", "url": "/scan" },
+    { "name": "Contribute a price", "url": "/contribute/new" }
+  ]
+}

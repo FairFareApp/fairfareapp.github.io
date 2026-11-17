@@ -1,0 +1,13 @@
+supa.txt
+openrouter.txt
+.env
+.env.*
+!.env.example
+node_modules/
+supabase/.temp/
+supabase/.branches/
+.local/
+test-results/
+playwright-report/
+*.log
+.taste-skill/

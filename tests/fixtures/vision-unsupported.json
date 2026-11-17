@@ -1,0 +1,20 @@
+{
+  "category_id": "unsupported",
+  "product_name": "unknown",
+  "material": "unknown",
+  "finish": "plain",
+  "decoration": "unknown",
+  "shape": "unknown",
+  "colour_pattern": "unknown",
+  "decorative_style": "unknown",
+  "visible_characteristics": "The image displays a solid gray field with no discernible object or product present.",
+  "uncertainty": "No product is visible in the image to evaluate.",
+  "unknown_attributes": [
+    "physical dimensions",
+    "wood species",
+    "authenticity",
+    "origin",
+    "craftsmanship quality"
+  ],
+  "finish_uncertain": true
+}

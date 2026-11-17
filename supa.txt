@@ -1,5 +1,0 @@
-URL - https://ldkbkjtblmsdyqjsluxp.supabase.co
-Publishable Key - sb_publishable_4H2pQv_wIxljzJwZDFkHWg_mV0j-2zN
-
-Tell me how should I put the Edge Functions on Supabase.
-If you can do it with the plugin then do it yourself, and setup the schema yourself.
