@@ -2247,3 +2247,277 @@ summary {
     padding: 0;
   }
 }
+
+/* Jaipur overview and its two ways in. */
+.header-tools #menu-toggle {
+  display: inline-flex;
+}
+.mobile-menu a,
+.mobile-menu button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 9px;
+}
+.mobile-menu .fa-solid {
+  flex: 0 0 18px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--sage-ink);
+}
+.home-start {
+  max-width: 570px;
+  margin-inline: auto;
+  text-align: left;
+}
+.home-start h1 {
+  margin: 0 0 15px;
+  font-size: 27px;
+}
+.card-deck {
+  background: var(--surface-soft);
+  border-radius: 20px;
+  padding: 14px 16px 7px;
+}
+.deck-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  min-height: 95px;
+  touch-action: pan-y;
+}
+.deck-icon,
+.launch-icon,
+.home-actions .scan-launch-icon {
+  flex: 0 0 45px;
+  width: 45px;
+  height: 45px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-green);
+  color: var(--sage-ink);
+  border-radius: 13px 5px 13px 13px;
+  font-size: 19px;
+}
+.deck-card h3 {
+  margin: 2px 0 6px;
+  font-size: 17px;
+}
+.deck-card p {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+.deck-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.deck-controls span {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.deck-controls .icon-button:hover {
+  background: var(--surface);
+}
+.tips-deck .deck-card {
+  min-height: 156px;
+}
+.home-actions {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 20px;
+}
+.home-actions .ready-launch,
+.home-actions .scan-launch {
+  display: grid;
+  grid-template-columns: 45px 1fr 16px;
+  align-items: center;
+  gap: 12px;
+  min-height: 84px;
+  margin: 0;
+  max-width: none;
+  border: 1px solid var(--line);
+  border-radius: 17px 6px 17px 17px;
+  padding: 12px 15px;
+  text-align: left;
+}
+.home-actions .ready-launch {
+  min-height: 96px;
+  background: var(--surface-green);
+  border-color: var(--sage);
+}
+.home-actions .ready-launch:hover,
+.home-actions .scan-launch:hover {
+  border-color: var(--sage-ink);
+}
+.ready-launch .launch-icon {
+  background: var(--sage-ink);
+  color: var(--surface);
+}
+.home-actions .scan-launch {
+  background: var(--surface);
+}
+.home-actions .scan-launch > span:nth-child(2) {
+  font-size: inherit;
+  letter-spacing: normal;
+}
+.home-actions strong,
+.home-actions small {
+  display: block;
+}
+.home-actions strong {
+  font-size: 17px;
+}
+.home-actions small {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.home-actions .fa-chevron-right {
+  font-size: 12px;
+  color: var(--sage-ink);
+}
+
+.price-panel {
+  padding-bottom: 14px;
+}
+.bargaining-card {
+  background: var(--surface-green);
+  color: var(--ink);
+  padding: 16px 18px 6px;
+  border-radius: 16px;
+  margin-bottom: 18px;
+}
+.bargaining-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.bargaining-head > i {
+  color: var(--sage-ink);
+  font-size: 20px;
+}
+.bargaining-head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.bargaining-head small {
+  color: var(--sage-ink);
+  font-size: 12px;
+}
+.bargaining-card > p {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+.bargaining-card > .bargaining-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+.bargaining-card > .bargaining-tip {
+  margin-top: 10px;
+}
+.bargaining-card details {
+  padding-block: 3px;
+}
+
+.contribution-start {
+  padding: 0;
+  margin-bottom: 24px;
+}
+.receipt-history h2 {
+  font-size: 18px;
+}
+.receipt-history ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.receipt-history li,
+.receipt-empty {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 14px;
+}
+.receipt-history li {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.receipt-history li small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.receipt-empty {
+  color: var(--muted);
+  font-size: 14px;
+}
+.fare-reference {
+  background: var(--surface-soft);
+  border-radius: 12px;
+  padding: 5px 16px;
+  margin: 0 0 16px;
+}
+.fare-reference summary small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.fare-reference-body {
+  padding-bottom: 10px;
+}
+.fare-reference-body h2 {
+  font-size: 17px;
+  margin: 14px 0 6px;
+}
+.fare-reference-body > p {
+  margin: 0 0 6px;
+}
+#fare-estimate {
+  font-weight: 750;
+  color: var(--sage-ink);
+}
+#fare-advice {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .home-content {
+    padding-top: 24px;
+  }
+  .home-start h1 {
+    font-size: 24px;
+  }
+  .mobile-menu {
+    top: 58px;
+  }
+  .scan-layout .photo-card:not(.photo-selected) .capture-tile {
+    min-height: clamp(210px, 40svh, 350px);
+  }
+  .scan-layout .photo-card:not(.photo-selected) .viewfinder {
+    font-size: 40px;
+  }
+  .scan-layout .photo-card:not(.photo-selected) strong {
+    font-size: 19px;
+  }
+  .photo-actions > .button:only-child {
+    min-height: 56px;
+  }
+  .task-actions > .button {
+    min-height: 54px;
+  }
+  #app.focused-task:has(.task-actions:not([hidden])) {
+    padding-bottom: calc(var(--phone-bar) + 18px);
+  }
+  #app.focused-task:has(.confirmation-details:not([open])) {
+    padding-bottom: 0;
+  }
+}

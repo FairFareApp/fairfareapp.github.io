@@ -1,5 +1,13 @@
 # Mobile workflow review
 
+## Jaipur guide and contribution receipts
+
+The home carousel explains the Jaipur demo. Get Ready for Jaipur opens seven browsable tip cards and sits above Scan on mobile. The capture tile and gallery button are taller. The ordered menu links to Your Contributions, the installation guide, privacy, About FairFare and the illustrated motivation story. Results identify the selling setting and show a suggested opening offer with an explanation that actual discounts vary.
+
+Browser checks cover the carousel, flashcards, bargaining, device history after a reload and clearing it, international payment advice, the fare calculator, the Maps link and the existing scan and submission workflows. The receipt list stores only short receipts for new reports made here. Earlier anonymous submissions cannot be associated with this browser.
+
+The distance calculator transcribes the [15 July 2013 auto order](https://transport.rajasthan.gov.in/content/dam/transport/transport-dept/pdf/Fares/O_15.07.2013.pdf) and the [5 April 2013 Jaipur prepaid taxi order](https://transport.rajasthan.gov.in/content/dam/transport/transport-dept/pdf/Fares/O_05.04.2013.pdf). Date and scope appear with the estimates. The [Uber airport route](https://www.uber.com/global/en/r/routes/jai-to-jaipur-rajasthan-in/) and [PinkCityTours rates](https://www.pinkcitytours.com/taxi-service-in-jaipur/) provide separately identified commercial examples. A current city-wide tariff could not be confirmed in the Transport Department index.
+
 ## Bangles, ticket prices and Back navigation
 
 The follow-up passed 12 browser workflow groups at 375 × 812, 390 × 844 and 1440 × 900. It checks that inferred elephant finish stays in Edit product details, bangle confirmation asks for inner diameter and quantity, and an unset material shows separate ranges. It also checks bangle submission quantity, hosted images, live prices, the international student tier, and Back following price → edit details → home after multiple price checks.

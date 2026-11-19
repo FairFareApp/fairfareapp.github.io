@@ -26,7 +26,7 @@ For wooden elephants, reference matching uses heights from 2–30 cm and allows 
 
 The pilot also includes 2,835 synthetic fashion-bangle references with nine illustrations. Comparisons use the package price for the exact quantity, inner diameter, design, material and selling setting. If the material is unclear, the app shows each compatible material’s range separately.
 
-Monuments fetch current official entry prices for City Palace Museum, Jaigarh Fort and Jawahar Kala Kendra through `fairfare-tickets`. Visitor tiers are drawn from the official pages. A source failure is labelled with the last verified date. Auto tariff guidance remains source-linked, with the availability shown on the fare screen. Ride-hailing fare guidance links out to providers.
+Monuments fetch current official entry prices for City Palace Museum, Jaigarh Fort and Jawahar Kala Kendra through `fairfare-tickets`. Visitor tiers are drawn from the official pages. A source failure is labelled with the last verified date. Auto fares includes a calculator for Rajasthan’s dated 2013 distance schedules and separate examples from provider pages. Neither is a live quote. Bargaining bands are suggested opening offers by selling setting. Your Contributions saves short receipts for new reports in the originating browser.
 
 ## Run locally
 

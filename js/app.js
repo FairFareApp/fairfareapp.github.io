@@ -2,6 +2,7 @@ import {
   icon,
   escapeHTML as h,
   money,
+  date,
   notice,
   loading,
   attributesForm,
@@ -21,6 +22,9 @@ import {
 import { policies } from "./policies.js";
 import { comparable, bindReferenceImages } from "./references.js";
 import { createContributionFlow } from "./contribution.js";
+import { deckMarkup, bindDeck } from "./decks.js";
+import { bargainingFor } from "./travel-advice.js";
+import { contributionReceipts, clearContributionReceipts } from "./receipts.js";
 import {
   productFor,
   productName,
@@ -78,12 +82,12 @@ const flow = createContributionFlow({
 function shell(content, path) {
   const contributor = path.startsWith("/contribute"),
     active = ["/compare", "/report"].includes(path) ? "/scan" : path;
-  return `<header class="site-header"><div class="header-inner"><a href="/" class="brand" aria-label="FairFare home"><img src="/assets/brand-mark.png" alt="" width="38" height="38"><span>FairFare</span></a><nav class="desktop-nav" aria-label="Main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}>${label}</a>`).join("")}</nav><div class="header-tools"><a class="quiet-link" href="${contributor ? "/" : "/contribute"}">${contributor ? "Tourist app" : "Contribute"}</a><button class="icon-button" id="theme-toggle" aria-label="Switch colour theme" aria-pressed="${document.documentElement.dataset.theme === "dark"}">${icon(document.documentElement.dataset.theme === "dark" ? "sun" : "moon")}</button><button class="icon-button mobile-menu-button" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false">${icon("bars")}</button></div></div><nav id="mobile-menu" class="mobile-menu" aria-label="More navigation" hidden><a href="/contribute">Contributor desk</a><button id="install-mobile">Install app</button><button data-dialog="privacy">Photo privacy</button><button data-dialog="pilot">About the demonstration</button></nav></header>
-  <main id="main" class="main-content ${path === "/" ? "home-content" : ""}" tabindex="-1">${content}</main><footer class="site-footer"><span>${icon("location-dot")} Jaipur pilot</span><div><button data-dialog="pilot">Demonstration</button><button data-dialog="privacy">Privacy</button><button id="install-button">Install app</button></div></footer>
+  return `<header class="site-header"><div class="header-inner"><a href="/" class="brand" aria-label="FairFare home"><img src="/assets/brand-mark.png" alt="" width="38" height="38"><span>FairFare</span></a><nav class="desktop-nav" aria-label="Main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}>${label}</a>`).join("")}</nav><div class="header-tools"><button class="icon-button" id="theme-toggle" aria-label="Switch colour theme" aria-pressed="${document.documentElement.dataset.theme === "dark"}">${icon(document.documentElement.dataset.theme === "dark" ? "sun" : "moon")}</button><button class="icon-button mobile-menu-button" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false">${icon("bars")}</button></div></div><nav id="mobile-menu" class="mobile-menu" aria-label="More navigation" hidden><a href="/contribute">${icon("clipboard-list")}Your Contributions</a><button data-dialog="install">${icon("mobile-screen-button")}App Installation Guide</button><button data-dialog="privacy">${icon("shield-halved")}Privacy Policy</button><button data-dialog="pilot">${icon("circle-info")}About FairFare</button><button data-dialog="story">${icon("book-open")}Story Behind FairFare</button></nav></header>
+  <main id="main" class="main-content ${path === "/" ? "home-content" : ""}" tabindex="-1">${content}</main><footer class="site-footer"><span>${icon("location-dot")} Jaipur pilot</span><div><button data-dialog="pilot">About FairFare</button><button data-dialog="privacy">Privacy Policy</button><button data-dialog="install">App Installation Guide</button></div></footer>
   ${!contributor ? `<nav class="bottom-nav" aria-label="Mobile main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}>${icon(i)}<span>${label}</span></a>`).join("")}</nav>` : ""}<dialog id="info-dialog" class="dialog" aria-labelledby="dialog-title"><div class="dialog-top"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog">${icon("xmark")}</button></div><div id="dialog-body"></div></dialog>`;
 }
 function home() {
-  return `<section class="home-start" aria-labelledby="home-title"><p class="location">${icon("location-dot")} Jaipur, Rajasthan</p><h1 id="home-title">A price check, before you buy.</h1><a href="/scan" class="scan-launch"><span class="scan-launch-icon">${icon("camera")}</span><span>Scan a Product</span><small>Elephants & bangles</small></a></section><nav class="home-shortcuts" aria-label="More in Jaipur">${[
+  return `<section class="home-start" aria-labelledby="home-title"><h1 id="home-title">Explore Jaipur</h1>${deckMarkup("intro")}<div class="home-actions"><button type="button" class="ready-launch" data-dialog="ready"><span class="launch-icon">${icon("map-location-dot")}</span><span><strong>Get Ready for Jaipur</strong><small>Tips for rides, markets and money</small></span>${icon("chevron-right")}</button><a href="/scan" class="scan-launch"><span class="scan-launch-icon">${icon("camera")}</span><span><strong>Scan a Product</strong><small>Elephants & bangles</small></span>${icon("chevron-right")}</a></div></section><nav class="home-shortcuts" aria-label="More in Jaipur">${[
     ["/taxis", "taxi", "Taxi fares"],
     ["/autos", "car-side", "Auto fares"],
     ["/monuments", "landmark", "Monuments"],
@@ -94,7 +98,7 @@ function home() {
     )
     .join(
       "",
-    )}</nav><div class="home-meta"><span class="demo-label">Illustrative prices · demonstration</span><a href="/contribute">Contribute a price ${icon("chevron-right")}</a></div>`;
+    )}</nav><div class="home-meta"><span class="demo-label">Illustrative prices · demonstration</span></div>`;
 }
 function scan() {
   const ready = Boolean(state.analysis);
@@ -128,7 +132,7 @@ function scan() {
       <input id="camera-input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" tabindex="-1">
       <input id="gallery-input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1">
       <div id="photo-feedback" aria-live="polite"></div>
-      ${state.image ? '<button class="text-link" id="clear-scan">Remove photo</button>' : `<p class="privacy-note">Photos are sent for identification. <button class="text-link" data-dialog="privacy">Photo privacy</button></p>`}
+      ${state.image ? '<button class="text-link" id="clear-scan">Remove photo</button>' : `<p class="privacy-note">Photos are sent for identification. <button class="text-link" data-dialog="privacy">Privacy Policy</button></p>`}
     </section>
     <section class="confirm-card" aria-label="Product details">
       <div id="analysis-feedback" aria-live="polite">${
@@ -169,13 +173,43 @@ function comparison() {
       ${r.alternatives.map(({ label, value, result }) => `<div class="range-option"><div><strong>${h(label)}</strong><span>${money(result.low)}–${money(result.high)}</span><small>${result.matches.length} comparisons${result.synthetic ? ` · ${result.synthetic} synthetic` : ""}</small></div><button type="button" class="button secondary" data-range-choice="${h(value)}" aria-label="Use ${h(label)}">Use</button></div>`).join("")}
     </div>`
       : "";
-  return `<div class="result-layout"><div class="page-heading"><a class="back-link" data-up href="/scan">${icon("arrow-left")}Edit details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${h(productName(a.category_id))}</h1><p>${a.size_cm ? `${h(a.size_cm)} cm${bangles ? " inside" : " high"}` : ""}${unit ? ` · ${h(unit)}` : ""}${finish ? ` · ${h(finish)}` : ""} · ${h(a.segment)}</p></div></div></div><section class="price-panel panel">${r.status === "ready" ? `<p class="eyebrow">${r.synthetic ? "Illustrative price range" : "Typical comparison range"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${unit ? `${h(unit)} · ` : ""}${r.matches.length} comparable observations${r.synthetic ? ` · ${r.synthetic} synthetic` : ""}</p><div class="buying-tip">${icon("comment-dollar")}<p>${h(product?.tip)}</p></div>` : alternativePanel || `<div class="empty-result">${icon("scale-balanced")}<h2>Not enough similar observations</h2><p>${h(r.reason)}</p><a href="/scan" data-up class="button secondary">Review details</a></div>`}</section>${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button primary full" id="report-purchase">Bought it? Share the price</button></div>` : ""}<div class="result-disclosures"><details><summary>Compare ${r.matches.length} similar ${r.synthetic ? "demo records" : "observations"}</summary><p class="small muted">Images illustrate material and design across examples. They do not show an actual purchase or exact size.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "No matching approved records."}</div></details><details><summary>Product details & matching</summary><dl class="attribute-list"><div><dt>Material</dt><dd>${h(product?.materials[a.material] || "Unconfirmed")}</dd></div>${bangles ? `<div><dt>Quantity</dt><dd>${h(unit)}</dd></div>` : `<div><dt>Carving</dt><dd>${h(a.carving_detail || "Either")}</dd></div>`}<div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>Same product, material, finish and selling setting. ${bangles ? "Inner diameter within 0.3 cm and the same number of bangles. Metal means fashion metal, not precious metal." : "Height within 2 cm or 20%, whichever is larger. Carving detail matches exactly when selected."} Records are no older than a year. Material cannot be verified from a photo.</p></details><details><summary>Sources, uncertainty & calculation</summary><p>${h(r.method || "Each range requires at least three compatible records. Different possible materials or designs are shown separately.")}</p><p>${r.excluded || 0} extreme prices excluded. Asking, observed and paid prices may differ; each listing names its type.</p><p>Synthetic records are separately modelled examples, not independent real-world transactions. Reference illustrations do not establish species, workmanship, origin or authenticity. This is a demonstration, not an appraisal or a verdict on a seller.</p><button data-dialog="pilot" class="text-link">About the demonstration</button></details>${r.status === "ready" ? `<details><summary>Have a seller’s quote?</summary><form id="quote-form"><label for="quoted-price">Quoted price (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare quote</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
+  return `<div class="result-layout"><div class="page-heading"><a class="back-link" data-up href="/scan">${icon("arrow-left")}Edit details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${h(productName(a.category_id))}</h1><p>${a.size_cm ? `${h(a.size_cm)} cm${bangles ? " inside" : " high"}` : ""}${unit ? ` · ${h(unit)}` : ""}${finish ? ` · ${h(finish)}` : ""} · ${h(a.segment)}</p></div></div></div><section class="price-panel panel">${r.status === "ready" ? `<p class="eyebrow">${r.synthetic ? "Illustrative price range" : "Typical comparison range"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${unit ? `${h(unit)} · ` : ""}${r.matches.length} comparable observations${r.synthetic ? ` · ${r.synthetic} synthetic` : ""}</p>` : alternativePanel || `<div class="empty-result">${icon("scale-balanced")}<h2>Not enough similar observations</h2><p>${h(r.reason)}</p><a href="/scan" data-up class="button secondary">Review details</a></div>`}</section>${["ready", "alternatives"].includes(r.status) ? bargainingMarkup(a.segment, product?.tip) : ""}${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button primary full" id="report-purchase">Bought it? Share the price</button></div>` : ""}<div class="result-disclosures"><details><summary>Compare ${r.matches.length} similar ${r.synthetic ? "demo records" : "observations"}</summary><p class="small muted">Images illustrate material and design across examples. They do not show an actual purchase or exact size.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "No matching approved records."}</div></details><details><summary>Product details & matching</summary><dl class="attribute-list"><div><dt>Material</dt><dd>${h(product?.materials[a.material] || "Unconfirmed")}</dd></div>${bangles ? `<div><dt>Quantity</dt><dd>${h(unit)}</dd></div>` : `<div><dt>Carving</dt><dd>${h(a.carving_detail || "Either")}</dd></div>`}<div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>Same product, material, finish and selling setting. ${bangles ? "Inner diameter within 0.3 cm and the same number of bangles. Metal means fashion metal, not precious metal." : "Height within 2 cm or 20%, whichever is larger. Carving detail matches exactly when selected."} Records are no older than a year. Material cannot be verified from a photo.</p></details><details><summary>Sources, uncertainty & calculation</summary><p>${h(r.method || "Each range requires at least three compatible records. Different possible materials or designs are shown separately.")}</p><p>${r.excluded || 0} extreme prices excluded. Asking, observed and paid prices may differ; each listing names its type.</p><p>Synthetic records are separately modelled examples, not independent real-world transactions. Reference illustrations do not establish species, workmanship, origin or authenticity. This is a demonstration, not an appraisal or a verdict on a seller.</p><button data-dialog="pilot" class="text-link">About FairFare</button></details>${r.status === "ready" ? `<details><summary>Have a seller’s quote?</summary><form id="quote-form"><label for="quoted-price">Quoted price (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare quote</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
 }
+function bargainingMarkup(setting, productTip) {
+  const advice = bargainingFor(setting);
+  if (!advice) return "";
+  const offer =
+    advice.low === 0
+      ? `Up to ${advice.high}%`
+      : `${advice.low}–${advice.high}%`;
+  return `<section class="bargaining-card" aria-labelledby="bargaining-heading">
+    <div class="bargaining-head">${icon("handshake")}<div><h2 id="bargaining-heading">Bargaining in Jaipur</h2><small>${h(advice.setting)} · ${h(advice.scope)}</small></div></div>
+    <p><strong>${offer} below asking</strong> ${advice.low === 0 ? "if the seller is open to offers." : "as an opening offer."}</p>
+    <p class="bargaining-note">Suggested approach. Actual discounts vary.</p>
+    <p class="bargaining-tip">${h(advice.tip)}</p>
+    <details><summary>More bargaining tips</summary>${productTip ? `<p>${h(productTip)}</p>` : ""}<p>Choose a comfortable maximum and walk away politely if you don’t agree.</p></details>
+  </section>`;
+}
+const receiptMoney = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+});
 function contributorHome() {
-  return `<div class="desk-layout"><div class="page-heading"><h1>Contributor desk</h1></div><section class="contribution-start panel"><h2>Record a Jaipur price</h2><p>Wooden elephants and bangles.</p><a class="button primary full" href="/contribute/new">${icon("plus")}Add an observation</a></section><p class="review-note">${icon("clock")}Reviewed before it becomes a reference.</p><details><summary>What to prepare</summary><ul><li>A clear product photo you have permission to share.</li><li>Height, finish and where it was sold.</li><li>Price, date and the Jaipur locality.</li><li>Optional evidence with personal details removed.</li></ul><p>Evidence is private. Nothing is published automatically.</p></details></div>`;
+  const receipts = contributionReceipts();
+  return `<div class="desk-layout">
+    <div class="page-heading"><h1>Your Contributions</h1></div>
+    <section class="contribution-start"><a class="button primary full" href="/contribute/new">${icon("plus")}Add an observation</a></section>
+    <section class="receipt-history" aria-labelledby="receipt-heading">
+      <h2 id="receipt-heading">On this device</h2>
+      ${receipts.length ? `<ul>${receipts.map((receipt) => `<li><div><strong>${h(productName(receipt.category))}</strong><small>${receipt.kind === "purchase" ? "Bought it?" : "Observation"} · ${h(date(receipt.observed))}</small><small>Ref ${h(receipt.reference)} · Submitted for review</small></div><strong>${receiptMoney.format(receipt.price)}</strong></li>`).join("")}</ul><details><summary>Manage history</summary><p>Clearing the list removes the copies saved in this browser. Your submitted reports remain with FairFare.</p><button type="button" class="button secondary" data-dialog="clear-history">Clear device history</button></details>` : '<p class="receipt-empty">Any new purchase or observation you submit from this browser will appear here.</p>'}
+    </section>
+    <details><summary>What to prepare</summary><p>Bring a clear photo, the item details, the price, the date and the Jaipur locality. Remove personal details from any evidence.</p></details>
+  </div>`;
 }
 function confirmation() {
-  return `<section class="confirmation panel">${devMock ? notice("Development mock · nothing was submitted or stored.") : ""}<div class="success-mark">${icon("check")}</div><p class="eyebrow">Pending review</p><h1>Thanks. We’ve got it.</h1><p>Your observation will be checked before it can become a reference.</p><div class="receipt-note"><span>Submission reference</span><strong>${h(state.submission.id.slice(0, 8))}</strong></div><a href="/" class="button primary full">Back to home</a><a href="/contribute/new" class="button secondary full">Add another observation</a></section>`;
+  return `<section class="confirmation panel">${devMock ? notice("Development mock · nothing was submitted or stored.") : ""}<div class="success-mark">${icon("check")}</div><p class="eyebrow">Pending review</p><h1>Thanks. We’ve got it.</h1><p>Your observation will be checked before it can become a reference.</p><div class="receipt-note"><span>Submission reference</span><strong>${h(state.submission.id.slice(0, 8))}</strong></div><a href="/contribute" class="button primary full">Your Contributions</a><a href="/" class="button secondary full">Back to home</a></section>`;
 }
 function empty(title, text, url, label) {
   return `<section class="empty-page"><span class="large-icon">${icon("compass")}</span><h1>${title}</h1><p>${text}</p><a class="button primary" href="${url}">${label}</a></section>`;
@@ -247,7 +281,7 @@ function render() {
       "/taxis": "Taxi fares",
       "/autos": "Auto fares",
       "/monuments": "Monuments",
-      "/contribute": "Contributor desk",
+      "/contribute": "Your Contributions",
       "/contribute/new": "Add an observation",
       "/report": "Share a purchase",
       "/submitted": "Pending review",
@@ -255,11 +289,12 @@ function render() {
   window.scrollTo(0, 0);
   document.querySelector("#main").focus({ preventScroll: true });
   bindShell();
+  app.querySelectorAll("[data-deck]").forEach(bindDeck);
   bindReferenceImages(app);
   if (path === "/scan") bindScan(signal);
   if (path === "/compare") bindComparison();
   if (path === "/taxis") bindTaxi(app);
-  if (path === "/autos") bindAutos(app, signal);
+  if (path === "/autos") bindAutos(app);
   if (path === "/monuments") bindMonuments(app, signal);
   if (path === "/contribute/new" || (path === "/report" && state.result))
     flow.bind(path === "/report", signal);
@@ -291,22 +326,44 @@ function bindShell() {
   app
     .querySelectorAll("[data-dialog]")
     .forEach((b) => (b.onclick = () => showInfo(b.dataset.dialog)));
-  app.querySelectorAll("#install-button,#install-mobile").forEach(
-    (b) =>
-      (b.onclick = async () => {
-        if (installPrompt) {
-          await installPrompt.prompt();
-          await installPrompt.userChoice;
-          installPrompt = null;
-        } else showInfo("install");
-      }),
-  );
 }
+
 function showInfo(type) {
-  const [title, body] = policies[type] || policies.pilot;
+  const [title, content] = policies[type] || policies.pilot;
+  const body = document.querySelector("#dialog-body");
+  const dialog = document.querySelector("#info-dialog");
   document.querySelector("#dialog-title").textContent = title;
-  document.querySelector("#dialog-body").innerHTML = body;
-  document.querySelector("#info-dialog").showModal();
+  body.innerHTML = type === "ready" ? deckMarkup("tips") : content;
+  if (type === "ready") bindDeck(body.querySelector("[data-deck]"));
+  if (type === "install" && installPrompt) {
+    body.insertAdjacentHTML(
+      "beforeend",
+      '<button type="button" class="button primary" id="install-now">Install FairFare</button>',
+    );
+    body.querySelector("#install-now").onclick = async () => {
+      const prompt = installPrompt;
+      installPrompt = null;
+      try {
+        await prompt.prompt();
+        await prompt.userChoice;
+      } catch {
+        // The guide remains available if the browser withdraws its install prompt.
+      } finally {
+        body.querySelector("#install-now")?.remove();
+      }
+    };
+  }
+  if (type === "clear-history") {
+    body.querySelector("#clear-device-history").onclick = () => {
+      if (clearContributionReceipts()) {
+        dialog.close();
+        render();
+      } else
+        body.querySelector("[role=status]").textContent =
+          "This browser blocked access to saved history.";
+    };
+  }
+  dialog.showModal();
 }
 async function identifyPhoto(image, signal) {
   return devMock

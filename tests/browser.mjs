@@ -73,7 +73,10 @@ browser.on(page.sessionId, "Fetch.requestPaused", async (e) => {
               error:
                 "Test photo service unavailable. Enter details manually or retry.",
             }
-      : { id: "browser-test-not-saved", status: "pending" };
+      : {
+          id: String(mockSubmissions).padStart(8, "0") + "-browser-test",
+          status: "pending",
+        };
   await page.send("Fetch.fulfillRequest", {
     requestId: e.requestId,
     responseCode: preflight
@@ -195,18 +198,39 @@ const check = async (name, fn) => {
 try {
   await page.goto(base);
   await check(
-    "home has one prominent scan action and working navigation",
+    "home puts Jaipur tips before Scan and both decks are interactive",
     async () => {
       await wait("document.querySelector('.scan-launch')");
       assert.ok(
-        await page.eval(() => {
-          const r = document
-            .querySelector(".scan-launch")
-            .getBoundingClientRect();
-          return r.height >= 180 && r.bottom < innerHeight - 72;
-        }),
+        await page.eval(
+          () =>
+            document.querySelector(".ready-launch").getBoundingClientRect()
+              .bottom <
+            document.querySelector(".scan-launch").getBoundingClientRect().top,
+        ),
       );
-      await shot("home", ".scan-launch");
+      await click(".intro-deck [data-deck-next]");
+      assert.match(
+        await page.eval(
+          () => document.querySelector(".intro-deck h3").innerText,
+        ),
+        /Get around/,
+      );
+      await click(".intro-deck [data-deck-prev]");
+      await shot("home", ".ready-launch", [".scan-launch"]);
+      await click(".ready-launch");
+      await wait("document.querySelector('#info-dialog').open");
+      assert.match(
+        await page.eval(() => document.querySelector(".tips-deck").innerText),
+        /Google Maps/,
+      );
+      await shot("jaipur-flashcards", ".tips-deck [data-deck-next]");
+      for (let i = 0; i < 4; i++) await click(".tips-deck [data-deck-next]");
+      assert.match(
+        await page.eval(() => document.querySelector(".tips-deck").innerText),
+        /authorised bank/,
+      );
+      await click("#close-dialog");
       await click(".scan-launch");
       await wait("location.pathname==='/scan'");
       assert.equal(
@@ -262,6 +286,12 @@ try {
         requests.every(
           (r) => !r.url.includes("/storage/v1/object/") || r.method === "GET",
         ),
+      );
+      assert.match(
+        await page.eval(
+          () => document.querySelector(".bargaining-card").innerText,
+        ),
+        /Local craft shop · Some room to ask[\s\S]*5–10% below asking/,
       );
       await shot("result", "#report-purchase");
     },
@@ -559,44 +589,123 @@ try {
       photoMode = "success";
     },
   );
-  await check("transport controls and ride note work", async () => {
-    await page.goto(base + "/taxis");
-    await shot("taxis", '[data-payment="app"]', [".source-links a"]);
-    await click('[data-payment="direct"]');
-    assert.equal(
-      await page.eval(() =>
-        document
-          .querySelector('[data-payment="direct"]')
-          .getAttribute("aria-pressed"),
-      ),
-      "true",
-    );
-    await click("details summary");
-    await click(".checklist input");
-    assert.equal(
-      await page.eval(() => document.querySelector(".checklist input").checked),
-      true,
-    );
-    await page.goto(base + "/autos");
-    await shot("autos", "#ride-plan button", [
-      "#ride-destination",
-      "#ride-fare",
-    ]);
-    await click('[data-fare="meter"]');
-    await fill("#ride-destination", "City Palace");
-    await fill("#ride-fare", 250);
-    await click("#ride-plan button");
-    await wait(
-      "document.querySelector('#ride-note').innerText.includes('250')",
-    );
-    assert.match(
-      await page.eval(
-        () => document.querySelector(".fare-unavailable").innerText,
-      ),
-      /unavailable/,
-    );
-    await shot("autos-note");
-  });
+  await check(
+    "contribution receipts survive reload and can be cleared on this device",
+    async () => {
+      await page.goto(base + "/contribute");
+      await wait("document.querySelectorAll('.receipt-history li').length===2");
+      assert.match(
+        await page.eval(
+          () => document.querySelector(".receipt-history").innerText,
+        ),
+        /Bought it\?/,
+      );
+      assert.match(
+        await page.eval(
+          () => document.querySelector(".receipt-history").innerText,
+        ),
+        /Bangles/,
+      );
+      assert.ok(
+        await page.eval(() =>
+          JSON.parse(
+            localStorage.getItem("fairfare-contribution-receipts"),
+          ).every(
+            (receipt) =>
+              Object.keys(receipt).length === 5 &&
+              !("notes" in receipt) &&
+              !("product_image" in receipt),
+          ),
+        ),
+      );
+      await shot("your-contributions", ".contribution-start .primary");
+      await click(".receipt-history summary");
+      await click('[data-dialog="clear-history"]');
+      await click("#clear-device-history");
+      await wait("document.querySelector('.receipt-empty')");
+      await page.goto(base + "/contribute");
+      assert.ok(
+        await page.eval(
+          () => !localStorage.getItem("fairfare-contribution-receipts"),
+        ),
+      );
+    },
+  );
+  await check(
+    "transport controls, fare calculator and ride note work",
+    async () => {
+      await page.goto(base + "/taxis");
+      assert.match(
+        await page.eval(
+          () => document.querySelector("#payment-advice").innerText,
+        ),
+        /international transactions/,
+      );
+      await shot("taxis", '[data-payment="app"]', [".source-links a"]);
+      await click('[data-payment="direct"]');
+      assert.equal(
+        await page.eval(() =>
+          document
+            .querySelector('[data-payment="direct"]')
+            .getAttribute("aria-pressed"),
+        ),
+        "true",
+      );
+      await click("details summary");
+      await click(".checklist input");
+      assert.equal(
+        await page.eval(
+          () => document.querySelector(".checklist input").checked,
+        ),
+        true,
+      );
+      await page.goto(base + "/autos");
+      await shot("autos", "#ride-plan button", [
+        "#ride-destination",
+        "#ride-fare",
+      ]);
+      await click(".fare-reference summary");
+      assert.match(
+        await page.eval(
+          () => document.querySelector("#fare-estimate").innerText,
+        ),
+        /₹51 · 2013/,
+      );
+      await fill("#fare-vehicle", "taxi-small");
+      assert.match(
+        await page.eval(
+          () => document.querySelector("#fare-estimate").innerText,
+        ),
+        /₹160 · 2013/,
+      );
+      await fill("#fare-distance", 22);
+      assert.match(
+        await page.eval(
+          () => document.querySelector("#fare-estimate").innerText,
+        ),
+        /up to 20 km/,
+      );
+      await fill("#fare-distance", 5);
+      await shot("fare-reference");
+      await click(".fare-reference summary");
+      await click('[data-fare="meter"]');
+      assert.match(
+        await page.eval(() => document.querySelector("#fare-advice").innerText),
+        /looks faulty/,
+      );
+      await fill("#ride-destination", "City Palace");
+      await fill("#ride-fare", 250);
+      await click("#ride-plan button");
+      await wait(
+        "document.querySelector('#ride-note').innerText.includes('250')",
+      );
+      assert.match(
+        await page.eval(() => document.querySelector("#ride-note a").href),
+        /google.com\/maps\/dir/,
+      );
+      await shot("autos-note");
+    },
+  );
   await check(
     "monument photos, categories and source disclosures work",
     async () => {
@@ -645,12 +754,91 @@ try {
       await shot("monument-details");
     },
   );
-  await check("keyboard menu, dialogs and theme are usable", async () => {
-    if (phone) {
-      await click("#menu-toggle");
+  await check(
+    "ordered icon menu, policy dialogs and theme are usable",
+    async () => {
+      {
+        await click("#menu-toggle");
+        assert.deepEqual(
+          await page.eval(() =>
+            [...document.querySelector("#mobile-menu").children].map((el) =>
+              el.textContent.trim(),
+            ),
+          ),
+          [
+            "Your Contributions",
+            "App Installation Guide",
+            "Privacy Policy",
+            "About FairFare",
+            "Story Behind FairFare",
+          ],
+        );
+        assert.equal(
+          await page.eval(
+            () => document.querySelectorAll("#mobile-menu i").length,
+          ),
+          5,
+        );
+        await shot("menu");
+        await click('#mobile-menu [data-dialog="story"]');
+        await wait("document.querySelector('#info-dialog').open");
+        assert.match(
+          await page.eval(
+            () => document.querySelector("#dialog-body").innerText,
+          ),
+          /tourist/,
+        );
+        await click("#close-dialog");
+        await click('#mobile-menu [data-dialog="install"]');
+        await wait("document.querySelector('#info-dialog').open");
+        assert.equal(
+          await page.eval(
+            () => document.querySelector("#dialog-title").textContent,
+          ),
+          "App Installation Guide",
+        );
+        await click("#close-dialog");
+        assert.equal(
+          await page.eval(() => document.querySelector("#mobile-menu").hidden),
+          false,
+        );
+        await page.send("Input.dispatchKeyEvent", {
+          type: "keyDown",
+          key: "Escape",
+          code: "Escape",
+        });
+        await page.send("Input.dispatchKeyEvent", {
+          type: "keyUp",
+          key: "Escape",
+          code: "Escape",
+        });
+        assert.equal(
+          await page.eval(() => document.querySelector("#mobile-menu").hidden),
+          true,
+        );
+      }
+      await click("#theme-toggle");
       assert.equal(
-        await page.eval(() => document.querySelector("#mobile-menu").hidden),
-        false,
+        await page.eval(() => document.documentElement.dataset.theme),
+        "dark",
+      );
+      await shot("monuments-dark");
+      if (phone) await click("#menu-toggle");
+      await click(
+        phone
+          ? '#mobile-menu [data-dialog="privacy"]'
+          : '.site-footer [data-dialog="privacy"]',
+      );
+      await wait("document.querySelector('#info-dialog').open");
+      assert.equal(
+        await page.eval(
+          () => document.querySelector("#dialog-title").textContent,
+        ),
+        "Privacy Policy",
+      );
+      assert.match(
+        await page.eval(() => document.querySelector("#dialog-body").innerText),
+        /short contribution receipts/,
       );
       await page.send("Input.dispatchKeyEvent", {
         type: "keyDown",
@@ -663,38 +851,11 @@ try {
         code: "Escape",
       });
       assert.equal(
-        await page.eval(() => document.querySelector("#mobile-menu").hidden),
-        true,
+        await page.eval(() => document.querySelector("#info-dialog").open),
+        false,
       );
-    }
-    await click("#theme-toggle");
-    assert.equal(
-      await page.eval(() => document.documentElement.dataset.theme),
-      "dark",
-    );
-    await shot("monuments-dark");
-    if (phone) await click("#menu-toggle");
-    await click(
-      phone
-        ? '#mobile-menu [data-dialog="privacy"]'
-        : '.site-footer [data-dialog="privacy"]',
-    );
-    await wait("document.querySelector('#info-dialog').open");
-    await page.send("Input.dispatchKeyEvent", {
-      type: "keyDown",
-      key: "Escape",
-      code: "Escape",
-    });
-    await page.send("Input.dispatchKeyEvent", {
-      type: "keyUp",
-      key: "Escape",
-      code: "Escape",
-    });
-    assert.equal(
-      await page.eval(() => document.querySelector("#info-dialog").open),
-      false,
-    );
-  });
+    },
+  );
   await check(
     "all direct routes fit this viewport in both themes",
     async () => {
