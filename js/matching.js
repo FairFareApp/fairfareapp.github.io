@@ -1,4 +1,4 @@
-export const PILOT_CATEGORY = "wooden_elephant";
+import { productFor, sizeTolerance, packCounts } from "./products.js";
 export function quantile(sorted, q) {
   const pos = (sorted.length - 1) * q,
     low = Math.floor(pos);
@@ -13,19 +13,65 @@ export function compareObservations(
   now = new Date(),
 ) {
   const a = attributes;
+  const product = productFor(a.category_id);
+  const isBangles = a.category_id === "bangles";
+  const size = Number(a.size_cm);
   if (
-    a.category_id !== PILOT_CATEGORY ||
-    !Number.isFinite(Number(a.size_cm)) ||
-    Number(a.size_cm) < 2 ||
-    Number(a.size_cm) > 30 ||
-    !["wood", "sandalwood"].includes(a.material)
+    !product ||
+    !Number.isFinite(size) ||
+    size < product.min ||
+    size > product.max ||
+    (isBangles && !packCounts.includes(Number(a.pack_count)))
   )
     return {
       status: "insufficient",
       matches: [],
       reason:
-        "Confirm a wooden elephant, its material and approximate size to find a useful comparison.",
+        "Confirm a supported product, its size and, for bangles, how many are sold together.",
     };
+  const unknownMaterial = !a.material || a.material === "unknown";
+  const unknownFinish = !a.finish || a.finish === "unknown";
+  if (unknownMaterial && unknownFinish)
+    return {
+      status: "insufficient",
+      matches: [],
+      reason: `Choose the ${product.finishLabel.toLowerCase()} or material to narrow the comparison.`,
+    };
+  if (unknownMaterial || unknownFinish) {
+    const field = unknownMaterial ? "material" : "finish";
+    const choices = unknownMaterial ? product.materials : product.finishes;
+    const alternatives = Object.entries(choices)
+      .map(([value, label]) => ({
+        label,
+        value,
+        result: compareObservations(
+          { ...a, [field]: value },
+          observations,
+          now,
+        ),
+      }))
+      .filter(({ result }) => result.status === "ready");
+    if (!alternatives.length)
+      return {
+        status: "insufficient",
+        matches: [],
+        reason: "No possible option has enough comparable observations.",
+      };
+    return {
+      status: "alternatives",
+      field,
+      alternatives,
+      matches: alternatives.flatMap(({ result }) => result.matches),
+      synthetic: alternatives.reduce(
+        (sum, { result }) => sum + result.synthetic,
+        0,
+      ),
+      excluded: alternatives.reduce(
+        (sum, { result }) => sum + result.excluded,
+        0,
+      ),
+    };
+  }
   const seen = new Set(),
     seenIds = new Set();
   const matches = observations
@@ -40,13 +86,15 @@ export function compareObservations(
         o.material === a.material &&
         o.segment === a.segment &&
         o.finish === a.finish &&
-        (!a.carving_detail ||
-          a.carving_detail === "unknown" ||
-          o.attributes?.carving_detail === a.carving_detail) &&
+        (isBangles
+          ? Number(o.attributes?.pack_count) === Number(a.pack_count)
+          : !a.carving_detail ||
+            a.carving_detail === "unknown" ||
+            o.attributes?.carving_detail === a.carving_detail) &&
         Number.isFinite(Number(o.price_inr)) &&
         Number(o.price_inr) > 0 &&
-        Math.abs(Number(o.size_cm) - Number(a.size_cm)) <=
-          Math.max(2, Number(a.size_cm) * 0.2) &&
+        Math.abs(Number(o.size_cm) - size) <=
+          sizeTolerance(a.category_id, size) + 1e-9 &&
         age >= -1 &&
         age <= 365;
       if (eligible) {
@@ -59,7 +107,7 @@ export function compareObservations(
       ...o,
       reasons: [
         `Same product and material`,
-        `${o.size_cm} cm, within the size tolerance`,
+        `${o.size_cm} cm ${isBangles ? "inner diameter" : "height"}, within the size tolerance`,
         `${o.finish} finish, ${o.segment} setting`,
         `Jaipur, observed within the last year`,
       ],

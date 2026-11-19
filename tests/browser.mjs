@@ -23,7 +23,8 @@ await mkdir(out, { recursive: true });
 const browser = await Browser.launch(),
   page = await browser.newPage({ width, height, mobile: width < 761 });
 const checks = [],
-  requests = [];
+  requests = [],
+  submissionBodies = [];
 let photoMode = "success",
   mockSubmissions = 0,
   mockIdentifications = 0;
@@ -42,31 +43,42 @@ browser.on(page.sessionId, "Fetch.requestPaused", async (e) => {
     preflight = e.request.method === "OPTIONS";
   if (!preflight) {
     if (identifying) mockIdentifications++;
-    else mockSubmissions++;
+    else {
+      mockSubmissions++;
+      submissionBodies.push(JSON.parse(e.request.postData || "{}"));
+    }
   }
   const body = preflight
     ? {}
     : identifying
-      ? photoMode === "success"
+      ? photoMode === "bangles"
         ? {
-            category_id: "wooden_elephant",
-            product_name: "Wooden elephant",
-            material: "wood",
-            finish: "plain",
-            visible_characteristics: "Carved wood. Browser-test fixture.",
-            uncertainty:
-              "Photo cannot verify size, species, origin or quality.",
+            category_id: "bangles",
+            product_name: "Patterned bangles",
+            finish: "patterned",
+            visible_characteristics: "Patterned rigid bangles.",
+            uncertainty: "Material is uncertain.",
           }
-        : {
-            error:
-              "Test photo service unavailable. Enter details manually or retry.",
-          }
+        : photoMode === "success"
+          ? {
+              category_id: "wooden_elephant",
+              product_name: "Wooden elephant",
+              material: "wood",
+              finish: "plain",
+              visible_characteristics: "Carved wood. Browser-test fixture.",
+              uncertainty:
+                "Photo cannot verify size, species, origin or quality.",
+            }
+          : {
+              error:
+                "Test photo service unavailable. Enter details manually or retry.",
+            }
       : { id: "browser-test-not-saved", status: "pending" };
   await page.send("Fetch.fulfillRequest", {
     requestId: e.requestId,
     responseCode: preflight
       ? 200
-      : identifying && photoMode !== "success"
+      : identifying && photoMode === "error"
         ? 502
         : 200,
     responseHeaders: [
@@ -119,7 +131,7 @@ const fill = async (selector, value) =>
     },
     { selector, value },
   );
-const file = async (selector) => {
+const file = async (selector, asset = "plain.webp") => {
   const { root } = await page.send("DOM.getDocument");
   const { nodeId } = await page.send("DOM.querySelector", {
     nodeId: root.nodeId,
@@ -127,7 +139,7 @@ const file = async (selector) => {
   });
   await page.send("DOM.setFileInputFiles", {
     nodeId,
-    files: [resolve("assets/references/plain.webp")],
+    files: [resolve("assets/references", asset)],
   });
 };
 const screens = [];
@@ -223,10 +235,18 @@ try {
       );
       await shot("scan-confirm", '#attributes-form button[type="submit"]', [
         "#size_cm",
-        "#finish",
         "#segment",
         ".attribute-extra > summary",
       ]);
+      assert.ok(
+        await page.eval(
+          () =>
+            !document.querySelector("#finish").checkVisibility() &&
+            document
+              .querySelector(".inferred-detail")
+              .innerText.includes("plain"),
+        ),
+      );
       await click(".attribute-extra > summary");
       await fill("#material", "wood");
       await click(".attribute-extra > summary");
@@ -367,6 +387,7 @@ try {
   await check(
     "contributor five-step flow validates, retains drafts and submits pending",
     async () => {
+      photoMode = "bangles";
       await page.goto(base + "/contribute");
       await shot("contributor-desk", ".contribution-start .primary");
       await click(".contribution-start .primary");
@@ -377,7 +398,7 @@ try {
       await shot("contributor-photo", "#contributor-camera", [
         "#contributor-gallery",
       ]);
-      await file("#contributor-file");
+      await file("#contributor-file", "bangles/lac-patterned.webp");
       await wait("document.querySelector('.wizard-photo img')");
       await shot("contributor-preview", "#wizard-next");
       await click("#wizard-next");
@@ -391,8 +412,11 @@ try {
       await wait(
         "document.querySelector('#contributor-ai').innerText.includes('Suggestions ready')",
       );
-      await fill("#s-size_cm", 14);
-      await fill("#s-finish", "inlay");
+      await fill("#s-size_cm", 5.6);
+      await fill("#s-pack_count", 6);
+      await click(".attribute-extra > summary");
+      await fill("#s-finish", "stonework");
+      await click(".attribute-extra > summary");
       await click("#wizard-next");
       await shot("contributor-price", "#wizard-next", [
         "#price",
@@ -409,7 +433,7 @@ try {
       await click("#wizard-back");
       assert.equal(
         await page.eval(() => document.querySelector("#s-finish").value),
-        "inlay",
+        "stonework",
       );
       await click("#wizard-next");
       assert.equal(
@@ -438,6 +462,8 @@ try {
       await click("#wizard-next");
       await wait("location.pathname==='/submitted'");
       await shot("submitted", ".confirmation .primary");
+      assert.equal(submissionBodies.at(-1).category_id, "bangles");
+      assert.equal(submissionBodies.at(-1).pack_count, 6);
     },
   );
   await check(
@@ -465,6 +491,72 @@ try {
         ),
         false,
       );
+    },
+  );
+  await check(
+    "bangle confirmation uses diameter and quantity, and Back follows the task hierarchy",
+    async () => {
+      photoMode = "bangles";
+      await page.goto(base);
+      await click(".scan-launch");
+      await file("#gallery-input", "bangles/lac-patterned.webp");
+      await wait("document.querySelector('.recognition')");
+      assert.equal(
+        await page.eval(
+          () => document.querySelector(".scan-heading h1").textContent,
+        ),
+        "Bangles",
+      );
+      assert.match(
+        await page.eval(
+          () => document.querySelector('label[for="size_cm"]').textContent,
+        ),
+        /diameter/,
+      );
+      assert.ok(
+        await page.eval(
+          () =>
+            !document.querySelector("#finish").checkVisibility() &&
+            !document.querySelector("#carving_detail"),
+        ),
+      );
+      await shot("bangle-confirm", '#attributes-form button[type="submit"]', [
+        "#size_cm",
+        "#pack_count",
+        "#segment",
+      ]);
+      await fill("#size_cm", 5.6);
+      await fill("#pack_count", 6);
+      await click('#attributes-form button[type="submit"]');
+      await wait("location.pathname==='/compare'");
+      await wait("document.querySelectorAll('.range-option').length===3");
+      await shot("bangle-material-ranges", '[data-range-choice="lac"]');
+      await click('[data-range-choice="lac"]');
+      await shot("bangle-result", "#report-purchase");
+      await click(".result-disclosures>details:first-child>summary");
+      await wait(
+        "[...document.querySelectorAll('.reference-image img')].some(i=>i.complete&&i.naturalWidth>0&&i.src.includes('bangles/lac-patterned'))",
+      );
+      await click(".result-layout .back-link");
+      await wait("location.pathname==='/scan'");
+      assert.equal(
+        await page.eval(() => document.querySelector("#pack_count").value),
+        "6",
+      );
+      await fill("#pack_count", 2);
+      await click('#attributes-form button[type="submit"]');
+      await wait("location.pathname==='/compare'");
+      assert.match(
+        await page.eval(
+          () => document.querySelector(".range-caption").textContent,
+        ),
+        /2 bangles/,
+      );
+      await page.eval(() => history.back());
+      await wait("location.pathname==='/scan'");
+      await click(".scan-heading .back-link");
+      await wait("location.pathname==='/'");
+      photoMode = "success";
     },
   );
   await check("transport controls and ride note work", async () => {
@@ -517,7 +609,29 @@ try {
           ? [".monument-card:nth-child(3) .text-link", "#visitor"]
           : ["#visitor"],
       );
-      await fill("#visitor", "student");
+      assert.match(
+        await page.eval(
+          () =>
+            document.querySelector(".monument-card .availability").textContent,
+        ),
+        /₹400 entry/,
+      );
+      assert.match(
+        await page.eval(
+          () =>
+            document.querySelector(".monument-card:nth-child(3) .availability")
+              .textContent,
+        ),
+        /Free entry/,
+      );
+      await fill("#visitor", "foreign_student");
+      assert.match(
+        await page.eval(
+          () =>
+            document.querySelector(".monument-card .availability").textContent,
+        ),
+        /₹600 entry/,
+      );
       await click(".monument-card details>summary");
       assert.match(
         await page.eval(

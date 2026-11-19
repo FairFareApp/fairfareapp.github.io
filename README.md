@@ -22,9 +22,11 @@ No frontend dependencies, transpilation or build step. Node is used only for loc
 
 The 1,469 approved reference records are **synthetic demonstration scenarios** (29 original plus 1,440 added in the redesign). They are not researched prices, verified purchases or independent real market evidence. Two material assumptions, four finishes, three settings and two carving levels cover the 2–30 cm pilot. Four generated finish illustrations are hosted in Supabase Storage and labelled on listings. See [reference data and image provenance](docs/REFERENCE-DATA.md). Ranges are computed from eligible database rows, never hardcoded in the UI.
 
-Contributions are restricted to Jaipur wooden elephant figurines, 2–30 cm high. Reference matching requires the same category, material, finish and market segment, a Jaipur location, observations within one year, and size within the greater of 2 cm or 20%. Three compatible observations are required. Tukey fences remove extreme prices; the displayed range is the middle 50%, rounded outward to ₹10.
+For wooden elephants, reference matching uses heights from 2–30 cm and allows a height difference of 2 cm or 20%, whichever is greater. Both product categories use Jaipur observations within one year and require at least three compatible records per range. Tukey fences remove extreme prices, then the middle 50% rounds outward to ₹10.
 
-Current auto tariffs and monument fees could not be verified from official sources on 19 November 2026. Those modules display **current fee unavailable**, with source links and check dates. They do not invent prices. There is no live ride-hailing integration, guide-price estimator, authentication flow or admin dashboard.
+The pilot also includes 2,835 synthetic fashion-bangle references with nine illustrations. Comparisons use the package price for the exact quantity, inner diameter, design, material and selling setting. If the material is unclear, the app shows each compatible material’s range separately.
+
+Monuments fetch current official entry prices for City Palace Museum, Jaigarh Fort and Jawahar Kala Kendra through `fairfare-tickets`. Visitor tiers are drawn from the official pages. A source failure is labelled with the last verified date. Auto tariff guidance remains source-linked, with the availability shown on the fare screen. Ride-hailing fare guidance links out to providers.
 
 ## Run locally
 

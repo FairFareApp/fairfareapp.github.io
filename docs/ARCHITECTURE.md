@@ -1,5 +1,9 @@
 # Architecture
 
+The browser selects a question set from the recognized category. The vision response provides controlled material and visible-design labels; measurements, quantities and selling settings are confirmed by the user. Bangle references store inner diameter in `size_cm`, design in `finish` and the package quantity in `attributes.pack_count`. When a material or design is missing, the matcher evaluates each compatible option separately.
+
+`fairfare-tickets` fetches three fixed official venue pages on the server. It reads the published ticket data as JSON without executing remote scripts, checks the free-entry statement separately, and keeps successful results in memory for up to 30 minutes. If a source cannot be read, its card carries a last-verified date. The app links directly to the venue for ticket information.
+
 ## Request paths
 
 1. The browser loads a buildless HTML/CSS/ES-module app from GitHub Pages.

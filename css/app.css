@@ -1908,6 +1908,42 @@ summary {
 .result-actions {
   margin-bottom: 20px;
 }
+.range-options {
+  text-align: left;
+  padding-bottom: 18px;
+}
+.range-options h2 {
+  font-size: 20px;
+  margin: 0 0 6px;
+}
+.range-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface-soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 8px;
+}
+.range-option strong,
+.range-option span,
+.range-option small {
+  display: block;
+}
+.range-option span {
+  font-size: 19px;
+  font-weight: 800;
+}
+.range-option small {
+  color: var(--muted);
+}
+.range-option .button {
+  min-height: 44px;
+}
+.inferred-detail {
+  margin: 2px 0 10px;
+}
 .scan-layout:not(.scan-confirming) .photo-card + .confirm-card {
   align-self: start;
 }

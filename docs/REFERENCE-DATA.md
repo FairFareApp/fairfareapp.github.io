@@ -1,5 +1,11 @@
 # Demonstration reference data
 
+## Fashion bangles
+
+The same pilot now includes 2,835 separately keyed synthetic bangle scenarios. Lac (lakh), glass and fashion metal are modelled separately, each in plain, patterned and stone-set designs. Seven inner-diameter anchors from 4.5 to 7.5 cm, five exact pack quantities (1, 2, 4, 6 or 12 pieces), three selling settings and three locality samples give coverage across the supported combinations. Each sample's width style is recorded. The asking price is the total for the stated quantity. Comparisons allow 0.3 cm of diameter variation and require the same design, material, setting and pack quantity.
+
+Nine generated material/design illustrations are stored as 384px WebP assets under `bangles/` in the same public bucket. Each shows an example pair to illustrate appearance. Listings state the actual modelled quantity separately. Metal refers to fashion metal with no authenticated precious-metal content. When material is unknown, each supported material with at least three compatible records gets its own labelled estimate.
+
 The Jaipur pilot is a demonstration. Its 1,469 approved reference records are synthetic: the original 29 plus 1,440 modelled scenarios added on 19 November 2026. None is a researched market quotation, verified transaction or independent real-world price observation. Modelled locality/date/species values do not assert that an event occurred. Pending public contributions remain separate and excluded.
 
 Coverage: carved wooden elephants, heights 2–30 cm; generic wood with unverified species, or separately assumed sandalwood; plain, painted, inlaid and openwork finishes; street, craft-shop and boutique settings; simple or detailed carving. Ten height anchors have three distinct variations per combination, with different height, price, illustrative date, locality and decorative style. They are scenarios, not copied observations. The price formula lives only in the migration seed, never in the client price calculation. Expensive-looking finish or species in an illustration is not evidence of authenticity.

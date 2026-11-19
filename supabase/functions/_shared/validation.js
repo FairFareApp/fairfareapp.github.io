@@ -4,6 +4,9 @@ export class HttpError extends Error {
     this.status = status;
   }
 }
+const elephantFinishes = ["plain", "painted", "inlay", "openwork"];
+const bangleFinishes = ["plain", "patterned", "stonework"];
+const bangleMaterials = ["lac", "glass", "metal"];
 export function text(value, max = 300) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
@@ -53,28 +56,43 @@ export function normalizeIdentification(value) {
     !value ||
     typeof value !== "object" ||
     Array.isArray(value) ||
-    !["wooden_elephant", "unsupported"].includes(value.category_id) ||
+    !["wooden_elephant", "bangles", "unsupported"].includes(
+      value.category_id,
+    ) ||
     !text(value.product_name)
   )
     throw new HttpError(
       502,
       "The photo service returned unclear details. Try a clearer photo or enter details manually.",
     );
+  const rawMaterial = value.material || "unknown";
+  const rawFinish = value.finish || "unknown";
+  const finishes =
+    value.category_id === "bangles" ? bangleFinishes : elephantFinishes;
+  const materials =
+    value.category_id === "bangles" ? bangleMaterials : ["wood"];
   if (
-    !["wood", "resin", "stone", "unknown"].includes(value.material) ||
-    !["plain", "painted", "inlay", "openwork", "unknown"].includes(value.finish)
+    !["wood", "resin", "stone", "unknown", ...bangleMaterials].includes(
+      rawMaterial,
+    ) ||
+    ![...elephantFinishes, ...bangleFinishes, "unknown"].includes(rawFinish)
   )
     throw new HttpError(
       502,
       "The photo service returned unsupported attributes. Please enter the details manually.",
     );
+  const describedStyle = text(value.decorative_style).toLowerCase();
+  // Some responses put the exact design label in the descriptive field only.
+  const finish = finishes.includes(rawFinish)
+    ? rawFinish
+    : finishes.includes(describedStyle)
+      ? describedStyle
+      : "unknown";
   return {
     category_id: value.category_id,
     product_name: text(value.product_name, 100),
-    material: ["wood", "unknown"].includes(value.material)
-      ? value.material
-      : "unknown",
-    finish: value.finish,
+    material: materials.includes(rawMaterial) ? rawMaterial : "unknown",
+    finish,
     decoration: text(value.decoration),
     shape: text(value.shape, 100),
     colour_pattern: text(value.colour_pattern),
@@ -90,7 +108,7 @@ export function normalizeIdentification(value) {
       "origin",
       "craftsmanship quality",
     ],
-    finish_uncertain: value.finish === "unknown",
+    finish_uncertain: finish === "unknown",
   };
 }
 export function validateSubmission(b, now = new Date()) {
@@ -107,16 +125,21 @@ export function validateSubmission(b, now = new Date()) {
     );
   if (
     !["contributor", "purchase"].includes(b.kind) ||
-    b.category_id !== "wooden_elephant" ||
+    !["wooden_elephant", "bangles"].includes(b.category_id) ||
     b.city !== "Jaipur"
   )
     throw new HttpError(
       400,
-      "The pilot accepts Jaipur wooden elephant observations only.",
+      "The pilot accepts Jaipur wooden elephant and bangle observations.",
     );
+  const isBangle = b.category_id === "bangles";
+  const materials = isBangle
+    ? [...bangleMaterials, "unknown"]
+    : ["wood", "sandalwood", "unknown"];
+  const finishes = isBangle ? bangleFinishes : elephantFinishes;
   if (
-    !["wood", "sandalwood", "unknown"].includes(b.material) ||
-    !["plain", "painted", "inlay", "openwork"].includes(b.finish) ||
+    !materials.includes(b.material) ||
+    !finishes.includes(b.finish) ||
     !["street", "shop", "boutique"].includes(b.segment)
   )
     throw new HttpError(
@@ -126,10 +149,17 @@ export function validateSubmission(b, now = new Date()) {
   if (
     typeof b.size_cm !== "number" ||
     !Number.isFinite(b.size_cm) ||
-    b.size_cm < 2 ||
-    b.size_cm > 30
+    b.size_cm < (isBangle ? 4.5 : 2) ||
+    b.size_cm > (isBangle ? 7.5 : 30)
   )
-    throw new HttpError(400, "Height must be between 2 and 30 cm.");
+    throw new HttpError(
+      400,
+      isBangle
+        ? "Inner diameter must be between 4.5 and 7.5 cm."
+        : "Height must be between 2 and 30 cm.",
+    );
+  if (isBangle && ![1, 2, 4, 6, 12].includes(b.pack_count))
+    throw new HttpError(400, "Choose the number of bangles sold together.");
   if (
     typeof b.price_inr !== "number" ||
     !Number.isFinite(b.price_inr) ||
@@ -216,9 +246,13 @@ export function validateSubmission(b, now = new Date()) {
       notes: text(b.notes, 2000),
       attributes: {
         decoration: text(b.decoration),
-        carving_detail: ["simple", "detailed"].includes(b.carving_detail)
-          ? b.carving_detail
-          : "unknown",
+        ...(isBangle
+          ? { pack_count: b.pack_count }
+          : {
+              carving_detail: ["simple", "detailed"].includes(b.carving_detail)
+                ? b.carving_detail
+                : "unknown",
+            }),
       },
       image_consent: b.image_consent === true,
       status: "pending",

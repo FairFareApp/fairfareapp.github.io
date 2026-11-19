@@ -1,7 +1,7 @@
 export const policies = {
   pilot: [
     "About this demonstration",
-    `<p>FairFare is a Jaipur demonstration for carved wooden elephants, 2–30 cm. Prices come from labelled synthetic records. These are separate modelled examples, not independent real purchases, seller quotes or verified market evidence.</p><p>Wood of unknown species and assumed sandalwood are kept separate, as are finish and shop setting. Detailed carving can be selected separately. A photo cannot verify species, authenticity, origin or workmanship quality.</p><p>Reference images are AI-generated finish illustrations shared by similar examples. They do not show actual transactions, exact dimensions or the workmanship of a particular listing.</p><p>Public submissions stay pending until a trusted review. Current monument fees and auto tariffs remain unavailable until verified.</p>`,
+    `<p>FairFare’s Jaipur pilot covers wooden elephants and fashion bangles. Comparison prices come from labelled, modelled examples.</p><p>Elephants use height and finish. Bangles use inner diameter, design and the number sold together. When material is unclear, compatible materials get separate ranges. A photo cannot verify composition, authenticity or exact size.</p><p>Generated reference illustrations show a material or style. Public submissions stay pending until reviewed. Monument entry prices come from official venue sources.</p>`,
   ],
   privacy: [
     "Photo privacy",

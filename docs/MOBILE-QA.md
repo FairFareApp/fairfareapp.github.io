@@ -1,5 +1,11 @@
 # Mobile workflow review
 
+## Bangles, ticket prices and Back navigation
+
+The follow-up passed 12 browser workflow groups at 375 × 812, 390 × 844 and 1440 × 900. It checks that inferred elephant finish stays in Edit product details, bangle confirmation asks for inner diameter and quantity, and an unset material shows separate ranges. It also checks bangle submission quantity, hosted images, live prices, the international student tier, and Back following price → edit details → home after multiple price checks.
+
+The read-only data check passed 4,185 bangle combinations and the existing 20,232 elephant combinations. Each bangle range has at least three compatible records. A live OpenRouter retest identified the patterned bangle illustration and left material unknown. A labelled live bangle submission retained its six-piece quantity in pending review before being rejected as QA. All three ticket cards returned fresh official data. Test screenshots are in `.local/bangles-375x812/`, `.local/bangles-390x844/` and `.local/bangles-1440x900/`.
+
 Reviewed 375 × 812 first, from the opening screen through results and submissions. Then ran the same browser checks at 390 × 844 and 1440 × 900.
 
 | Workflow | Issue at 375 × 812 before | Verified behavior |

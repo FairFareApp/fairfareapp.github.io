@@ -11,6 +11,12 @@ import {
 } from "./ui.js";
 import { compressImage, discardImage } from "./images.js";
 import { submitObservation } from "./api.js";
+import {
+  productFor,
+  productName,
+  changeProduct,
+  packLabel,
+} from "./products.js";
 
 export function createContributionFlow({
   state,
@@ -98,7 +104,7 @@ export function createContributionFlow({
   function review(d, purchase) {
     const v = d.values,
       product = purchase ? (v.attach_scan ? state.image : null) : d.product;
-    return `<div class="review-product">${product ? `<img src="${product.url}" width="76" height="76" alt="Product attached for review">` : icon("tag")}<div><strong>Wooden elephant</strong><p>${h(v.size_cm)} cm · ${h(v.finish)} · ${h(v.segment)}</p></div><button class="text-link" type="button" data-edit="${purchase ? 0 : 1}">Edit</button></div><dl class="review-list"><div><dt>${purchase ? "You paid" : h(v.price_type) + " price"}</dt><dd>${money(v.price_inr)}</dd></div><div><dt>Locality</dt><dd>${h(v.locality)}, Jaipur</dd></div><div><dt>Photos</dt><dd>${Number(Boolean(product)) + Number(Boolean(d.evidence))} attached</dd></div></dl><details class="wizard-extra review-extra"><summary>Date, source & other details</summary><dl class="review-list"><div><dt>Date</dt><dd>${h(v.observed_at)}</dd></div><div><dt>Source</dt><dd>${h(v.source_type.replaceAll("_", " "))}</dd></div><div><dt>Material</dt><dd>${h(v.material)}</dd></div><div><dt>Carving</dt><dd>${h(v.carving_detail || "unknown")}</dd></div>${v.notes ? `<div><dt>Notes</dt><dd>${h(v.notes)}</dd></div>` : ""}</dl><button type="button" class="text-link" data-edit="${purchase ? 0 : 2}">Edit price & location</button><button type="button" class="text-link" data-edit="${purchase ? 1 : 3}">Edit evidence</button></details><label class="check honest-check"><input id="honest-observation" name="accurate" type="checkbox" required ${v.accurate ? "checked" : ""}><span>I confirm this is accurate and my photos contain no personal details.</span></label><p class="review-note">${icon("clock")}Submissions go to review.</p><p class="small muted">By submitting, you agree to the <button type="button" class="text-link" data-dialog="terms">contribution terms</button> and <button type="button" class="text-link" data-dialog="privacy">privacy notice</button>.</p>`;
+    return `<div class="review-product">${product ? `<img src="${product.url}" width="76" height="76" alt="Product attached for review">` : icon("tag")}<div><strong>${h(productName(v.category_id))}</strong><p>${h(v.size_cm)} cm · ${h(productFor(v.category_id)?.finishes[v.finish] || v.finish)} · ${v.category_id === "bangles" ? h(packLabel(Number(v.pack_count))) + " · " : ""}${h(v.segment)}</p></div><button class="text-link" type="button" data-edit="${purchase ? 0 : 1}">Edit</button></div><dl class="review-list"><div><dt>${purchase ? "You paid" : h(v.price_type) + " price"}</dt><dd>${money(v.price_inr)}</dd></div><div><dt>Locality</dt><dd>${h(v.locality)}, Jaipur</dd></div><div><dt>Photos</dt><dd>${Number(Boolean(product)) + Number(Boolean(d.evidence))} attached</dd></div></dl><details class="wizard-extra review-extra"><summary>Date, source & other details</summary><dl class="review-list"><div><dt>Date</dt><dd>${h(v.observed_at)}</dd></div><div><dt>Source</dt><dd>${h(v.source_type.replaceAll("_", " "))}</dd></div><div><dt>Material</dt><dd>${h(v.material)}</dd></div>${v.category_id === "wooden_elephant" ? `<div><dt>Carving</dt><dd>${h(v.carving_detail || "unknown")}</dd></div>` : ""}${v.notes ? `<div><dt>Notes</dt><dd>${h(v.notes)}</dd></div>` : ""}</dl><button type="button" class="text-link" data-edit="${purchase ? 0 : 2}">Edit price & location</button><button type="button" class="text-link" data-edit="${purchase ? 1 : 3}">Edit evidence</button></details><label class="check honest-check"><input id="honest-observation" name="accurate" type="checkbox" required ${v.accurate ? "checked" : ""}><span>I confirm this is accurate and my photos contain no personal details.</span></label><p class="review-note">${icon("clock")}Submissions go to review.</p><p class="small muted">By submitting, you agree to the <button type="button" class="text-link" data-dialog="terms">contribution terms</button> and <button type="button" class="text-link" data-dialog="privacy">privacy notice</button>.</p>`;
   }
   function page(purchase) {
     const d = draft(purchase),
@@ -117,7 +123,7 @@ export function createContributionFlow({
     if (step === "Photo")
       content = `<div class="wizard-photo">${d.product ? `<img class="product-preview" src="${d.product.url}" alt="Your contribution product photo">` : `<button type="button" id="contributor-camera" class="capture-tile"><span class="viewfinder">${icon("camera")}</span><strong>Take a photo</strong></button>`}</div><div class="photo-actions">${d.product ? `<button type="button" class="button secondary" id="contributor-camera">${icon("camera")}Retake</button>` : ""}<button type="button" class="button secondary" id="contributor-gallery">${icon("image")}${d.product ? "Replace" : "Gallery"}</button></div><input id="contributor-photo" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" tabindex="-1"><input id="contributor-file" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1"><div id="photo-feedback" aria-live="polite"></div>`;
     if (step === "Details")
-      content = `${attributesForm(d.values, "s-")}<button class="text-link" type="button" id="contributor-identify">${icon("magnifying-glass")}Suggest details from photo${devMock ? " (mock)" : ""}</button><div id="contributor-ai" aria-live="polite"></div>`;
+      content = `${attributesForm(d.values, "s-", { detected: d.detected })}<button class="text-link" type="button" id="contributor-identify">${icon("magnifying-glass")}Suggest details from photo${devMock ? " (mock)" : ""}</button><div id="contributor-ai" aria-live="polite"></div>`;
     if (step === "Price") content = priceFields(d, purchase);
     if (step === "Evidence") content = evidenceFields(d, purchase);
     if (step === "Review") content = review(d, purchase);
@@ -130,6 +136,7 @@ export function createContributionFlow({
       step = d.step,
       evidenceStep = purchase ? 1 : 3,
       last = purchase ? 2 : 4;
+    const category = d.values.category_id;
     const save = () => {
       for (const el of form.elements) {
         if (!el.name || el.type === "file" || el.type === "submit") continue;
@@ -142,6 +149,16 @@ export function createContributionFlow({
       e.target.setCustomValidity?.("");
     };
     form.onchange = (event) => {
+      if (
+        event.target.name === "category_id" &&
+        event.target.value !== category
+      ) {
+        save();
+        d.values = changeProduct(d.values, category);
+        d.detected = false;
+        render();
+        return;
+      }
       const source = form.elements.source_type;
       if (event.target.name === "source_type") d.sourceEdited = true;
       if (event.target.name === "price_type" && source && !d.sourceEdited) {
@@ -218,16 +235,19 @@ export function createContributionFlow({
         try {
           const a = await identify(d.product, signal);
           if (signal.aborted) return;
+          d.detected = true;
           d.values = {
-            ...d.values,
-            category_id: a.category_id,
-            material: a.material,
-            finish: a.finish,
+            ...changeProduct(
+              { ...d.values, category_id: a.category_id },
+              d.values.category_id,
+            ),
+            material: a.material || "unknown",
+            finish: a.finish || "unknown",
             decoration: a.decoration || "",
           };
           render();
           document.querySelector("#contributor-ai").innerHTML = notice(
-            "Suggestions ready. Please check them; height and wood species cannot be measured from a photo.",
+            "Suggestions ready. Check the visible details and enter the measurement yourself.",
           );
         } catch (e) {
           if (!signal.aborted) {
@@ -270,16 +290,21 @@ export function createContributionFlow({
         showError("Add a product photo to continue.", "contributor-photo");
         return;
       }
-      if ((!purchase && step === 1) || (purchase && step === 0)) {
-        form.elements.category_id.setCustomValidity(
-          d.values.category_id === "wooden_elephant"
+      if (form.elements.locality)
+        form.elements.locality.setCustomValidity(
+          d.values.locality.trim().length >= 2
             ? ""
-            : "This pilot accepts wooden elephants only.",
+            : "Enter a market or locality.",
         );
-        form.elements.finish.setCustomValidity(
-          ["plain", "painted", "inlay", "openwork"].includes(d.values.finish)
+      if ((!purchase && step === 1) || (purchase && step === 0)) {
+        const product = productFor(d.values.category_id);
+        form.elements.category_id.setCustomValidity(
+          product ? "" : "Choose wooden elephant or bangles.",
+        );
+        form.elements.finish?.setCustomValidity(
+          product?.finishes[d.values.finish]
             ? ""
-            : "Choose a finish before continuing.",
+            : "Confirm the visible finish or design.",
         );
       }
       if (
@@ -328,6 +353,9 @@ export function createContributionFlow({
         kind: purchase ? "purchase" : "contributor",
         ...v,
         size_cm: Number(v.size_cm),
+        ...(v.category_id === "bangles"
+          ? { pack_count: Number(v.pack_count) }
+          : {}),
         city: "Jaipur",
         price_inr: Number(v.price_inr),
         price_type: purchase ? "paid" : v.price_type,

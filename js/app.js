@@ -21,6 +21,12 @@ import {
 import { policies } from "./policies.js";
 import { comparable, bindReferenceImages } from "./references.js";
 import { createContributionFlow } from "./contribution.js";
+import {
+  productFor,
+  productName,
+  changeProduct,
+  packLabel,
+} from "./products.js";
 
 const app = document.querySelector("#app");
 const defaults = () => ({
@@ -57,8 +63,8 @@ try {
 const nav = [
   ["/", "house", "Home"],
   ["/scan", "camera", "Scan"],
-  ["/taxis", "taxi", "App taxis"],
-  ["/autos", "car-side", "Autos"],
+  ["/taxis", "taxi", "Taxi fares"],
+  ["/autos", "car-side", "Auto fares"],
   ["/monuments", "landmark", "Monuments"],
 ];
 const flow = createContributionFlow({
@@ -77,9 +83,9 @@ function shell(content, path) {
   ${!contributor ? `<nav class="bottom-nav" aria-label="Mobile main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}>${icon(i)}<span>${label}</span></a>`).join("")}</nav>` : ""}<dialog id="info-dialog" class="dialog" aria-labelledby="dialog-title"><div class="dialog-top"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog">${icon("xmark")}</button></div><div id="dialog-body"></div></dialog>`;
 }
 function home() {
-  return `<section class="home-start" aria-labelledby="home-title"><p class="location">${icon("location-dot")} Jaipur, Rajasthan</p><h1 id="home-title">A price check, before you buy.</h1><a href="/scan" class="scan-launch"><span class="scan-launch-icon">${icon("camera")}</span><span>Scan a Product</span><small>Wooden elephant pilot</small></a></section><nav class="home-shortcuts" aria-label="More in Jaipur">${[
-    ["/taxis", "taxi", "App taxis"],
-    ["/autos", "car-side", "Autos & taxis"],
+  return `<section class="home-start" aria-labelledby="home-title"><p class="location">${icon("location-dot")} Jaipur, Rajasthan</p><h1 id="home-title">A price check, before you buy.</h1><a href="/scan" class="scan-launch"><span class="scan-launch-icon">${icon("camera")}</span><span>Scan a Product</span><small>Elephants & bangles</small></a></section><nav class="home-shortcuts" aria-label="More in Jaipur">${[
+    ["/taxis", "taxi", "Taxi fares"],
+    ["/autos", "car-side", "Auto fares"],
     ["/monuments", "landmark", "Monuments"],
   ]
     .map(
@@ -93,24 +99,21 @@ function home() {
 function scan() {
   const ready = Boolean(state.analysis);
   const title = ready
-    ? state.analysis.category_id === "wooden_elephant"
-      ? "Wooden elephant"
-      : "Outside the pilot"
+    ? productName(state.attributes.category_id)
     : state.manual && !state.image
       ? "Product details"
       : "Scan a product";
-  const back = state.result ? "/compare" : "/";
   const photoActions = `<div class="photo-actions">
     ${state.image ? `<button class="button secondary" id="take-photo">${icon("camera")}Retake</button>` : ""}
     <button class="button secondary" id="choose-photo">${icon("image")}${state.image ? "Replace" : "Gallery"}</button>
   </div>`;
   const form = `<form id="attributes-form">
-    ${attributesForm(state.attributes)}
+    ${attributesForm(state.attributes, "", { detected: ready })}
     <div id="comparison-feedback" aria-live="polite"></div>
     <div class="task-actions"><button class="button primary full" type="submit" ${state.scanBusy ? "disabled" : ""}>See price</button></div>
   </form>`;
   return `<div class="page-heading scan-heading">
-    <a class="back-link" href="${back}">${icon("arrow-left")}${back === "/" ? "Home" : "Price comparison"}</a>
+    <a class="back-link" data-up href="/">${icon("arrow-left")}Home</a>
     <h1>${title}</h1>
   </div>
   ${devMock ? notice("Development mock · no AI request is sent.") : ""}
@@ -134,7 +137,7 @@ function scan() {
           : state.scanError
             ? notice(h(state.scanError), "error")
             : ready
-              ? '<span class="sr-only recognition">Photo identified. Confirm height, finish and shop type.</span>'
+              ? '<span class="sr-only recognition">Photo identified. Confirm the product details.</span>'
               : ""
       }</div>
       ${state.image && !state.scanBusy && !ready ? '<button class="button secondary" id="retry-identify">Retry identification</button>' : ""}
@@ -153,10 +156,23 @@ function comparison() {
       "/scan",
       "Scan a product",
     );
-  return `<div class="result-layout"><div class="page-heading"><a class="back-link" href="/scan">${icon("arrow-left")}Edit details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${a.category_id === "wooden_elephant" ? "Wooden elephant" : "Outside this pilot"}</h1><p>${h(a.size_cm)} cm · ${h(a.finish)} · ${h(a.segment)}</p></div></div></div><section class="price-panel panel">${r.status === "ready" ? `<p class="eyebrow">${r.synthetic ? "Illustrative price range" : "Typical comparison range"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${r.matches.length} comparable observations${r.synthetic ? ` · ${r.synthetic} synthetic` : ""}</p><div class="buying-tip">${icon("comment-dollar")}<p>Ask for the total. Check carving, finish and condition before making an offer.</p></div>` : `<div class="empty-result">${icon("scale-balanced")}<h2>Not enough similar observations</h2><p>${h(r.reason)}</p><a href="/scan" class="button secondary">Review details</a></div>`}</section>${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button primary full" id="report-purchase">Bought it? Share the price</button></div>` : ""}<div class="result-disclosures"><details><summary>Compare ${r.matches.length} similar ${r.synthetic ? "demo records" : "observations"}</summary><p class="small muted">Images illustrate finish only. Shared across examples, not photos of purchases or exact dimensions.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "No matching approved records."}</div></details><details><summary>Product details & matching</summary><dl class="attribute-list"><div><dt>Material</dt><dd>${h(a.material === "wood" ? "Wood · species unverified" : a.material)}</dd></div><div><dt>Carving</dt><dd>${h(a.carving_detail || "Either")}</dd></div><div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>Same product, material, finish and selling setting. Height within 2 cm or 20%, whichever is larger. Records no older than a year; pending submissions excluded. Carving detail matches exactly when selected. Wood species and quality cannot be established from a photo.</p></details><details><summary>Sources, uncertainty & calculation</summary><p>${h(r.method || "At least three compatible records are required.")}</p><p>${r.excluded || 0} extreme prices excluded. Asking, observed and paid prices may differ; each listing names its type.</p><p>Synthetic records are separately modelled examples, not independent real-world transactions. Reference illustrations do not establish species, workmanship, origin or authenticity. This is a demonstration, not an appraisal or a verdict on a seller.</p><button data-dialog="pilot" class="text-link">About the demonstration</button></details>${r.status === "ready" ? `<details><summary>Have a seller’s quote?</summary><form id="quote-form"><label for="quoted-price">Quoted price (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare quote</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
+  const product = productFor(a.category_id);
+  const bangles = a.category_id === "bangles";
+  const finish = product?.finishes[a.finish];
+  const unit = bangles ? packLabel(Number(a.pack_count)) : "";
+  const alternativePanel =
+    r.status === "alternatives"
+      ? `
+    <div class="range-options">
+      <h2>${r.field === "material" ? "Prices by possible material" : `Prices by possible ${product.finishLabel.toLowerCase()}`}</h2>
+      <p class="small muted">Illustrative ranges${bangles ? ` for ${h(unit)}` : ""}. Confirm with the seller before choosing.</p>
+      ${r.alternatives.map(({ label, value, result }) => `<div class="range-option"><div><strong>${h(label)}</strong><span>${money(result.low)}–${money(result.high)}</span><small>${result.matches.length} comparisons${result.synthetic ? ` · ${result.synthetic} synthetic` : ""}</small></div><button type="button" class="button secondary" data-range-choice="${h(value)}" aria-label="Use ${h(label)}">Use</button></div>`).join("")}
+    </div>`
+      : "";
+  return `<div class="result-layout"><div class="page-heading"><a class="back-link" data-up href="/scan">${icon("arrow-left")}Edit details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${h(productName(a.category_id))}</h1><p>${a.size_cm ? `${h(a.size_cm)} cm${bangles ? " inside" : " high"}` : ""}${unit ? ` · ${h(unit)}` : ""}${finish ? ` · ${h(finish)}` : ""} · ${h(a.segment)}</p></div></div></div><section class="price-panel panel">${r.status === "ready" ? `<p class="eyebrow">${r.synthetic ? "Illustrative price range" : "Typical comparison range"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${unit ? `${h(unit)} · ` : ""}${r.matches.length} comparable observations${r.synthetic ? ` · ${r.synthetic} synthetic` : ""}</p><div class="buying-tip">${icon("comment-dollar")}<p>${h(product?.tip)}</p></div>` : alternativePanel || `<div class="empty-result">${icon("scale-balanced")}<h2>Not enough similar observations</h2><p>${h(r.reason)}</p><a href="/scan" data-up class="button secondary">Review details</a></div>`}</section>${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button primary full" id="report-purchase">Bought it? Share the price</button></div>` : ""}<div class="result-disclosures"><details><summary>Compare ${r.matches.length} similar ${r.synthetic ? "demo records" : "observations"}</summary><p class="small muted">Images illustrate material and design across examples. They do not show an actual purchase or exact size.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "No matching approved records."}</div></details><details><summary>Product details & matching</summary><dl class="attribute-list"><div><dt>Material</dt><dd>${h(product?.materials[a.material] || "Unconfirmed")}</dd></div>${bangles ? `<div><dt>Quantity</dt><dd>${h(unit)}</dd></div>` : `<div><dt>Carving</dt><dd>${h(a.carving_detail || "Either")}</dd></div>`}<div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>Same product, material, finish and selling setting. ${bangles ? "Inner diameter within 0.3 cm and the same number of bangles. Metal means fashion metal, not precious metal." : "Height within 2 cm or 20%, whichever is larger. Carving detail matches exactly when selected."} Records are no older than a year. Material cannot be verified from a photo.</p></details><details><summary>Sources, uncertainty & calculation</summary><p>${h(r.method || "Each range requires at least three compatible records. Different possible materials or designs are shown separately.")}</p><p>${r.excluded || 0} extreme prices excluded. Asking, observed and paid prices may differ; each listing names its type.</p><p>Synthetic records are separately modelled examples, not independent real-world transactions. Reference illustrations do not establish species, workmanship, origin or authenticity. This is a demonstration, not an appraisal or a verdict on a seller.</p><button data-dialog="pilot" class="text-link">About the demonstration</button></details>${r.status === "ready" ? `<details><summary>Have a seller’s quote?</summary><form id="quote-form"><label for="quoted-price">Quoted price (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare quote</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
 }
 function contributorHome() {
-  return `<div class="desk-layout"><div class="page-heading"><h1>Contributor desk</h1></div><section class="contribution-start panel"><h2>Record a Jaipur price</h2><p>Wooden elephant figurines, 2–30 cm.</p><a class="button primary full" href="/contribute/new">${icon("plus")}Add an observation</a></section><p class="review-note">${icon("clock")}Reviewed before it becomes a reference.</p><details><summary>What to prepare</summary><ul><li>A clear product photo you have permission to share.</li><li>Height, finish and where it was sold.</li><li>Price, date and the Jaipur locality.</li><li>Optional evidence with personal details removed.</li></ul><p>Evidence is private. Nothing is published automatically.</p></details></div>`;
+  return `<div class="desk-layout"><div class="page-heading"><h1>Contributor desk</h1></div><section class="contribution-start panel"><h2>Record a Jaipur price</h2><p>Wooden elephants and bangles.</p><a class="button primary full" href="/contribute/new">${icon("plus")}Add an observation</a></section><p class="review-note">${icon("clock")}Reviewed before it becomes a reference.</p><details><summary>What to prepare</summary><ul><li>A clear product photo you have permission to share.</li><li>Height, finish and where it was sold.</li><li>Price, date and the Jaipur locality.</li><li>Optional evidence with personal details removed.</li></ul><p>Evidence is private. Nothing is published automatically.</p></details></div>`;
 }
 function confirmation() {
   return `<section class="confirmation panel">${devMock ? notice("Development mock · nothing was submitted or stored.") : ""}<div class="success-mark">${icon("check")}</div><p class="eyebrow">Pending review</p><h1>Thanks. We’ve got it.</h1><p>Your observation will be checked before it can become a reference.</p><div class="receipt-note"><span>Submission reference</span><strong>${h(state.submission.id.slice(0, 8))}</strong></div><a href="/" class="button primary full">Back to home</a><a href="/contribute/new" class="button secondary full">Add another observation</a></section>`;
@@ -165,8 +181,16 @@ function empty(title, text, url, label) {
   return `<section class="empty-page"><span class="large-icon">${icon("compass")}</span><h1>${title}</h1><p>${text}</p><a class="button primary" href="${url}">${label}</a></section>`;
 }
 function navigate(path) {
-  history.pushState({}, "", path);
+  if (location.pathname + location.search === path) return;
+  history.pushState({ parent: location.pathname }, "", path);
   render();
+}
+function goUp(path) {
+  if (history.state?.parent === path) history.back();
+  else {
+    history.replaceState({}, "", path);
+    render();
+  }
 }
 function render() {
   controller.abort();
@@ -220,8 +244,8 @@ function render() {
       "/": "Jaipur",
       "/scan": "Scan a product",
       "/compare": "Your price comparison",
-      "/taxis": "App taxis",
-      "/autos": "Autos & taxis",
+      "/taxis": "Taxi fares",
+      "/autos": "Auto fares",
       "/monuments": "Monuments",
       "/contribute": "Contributor desk",
       "/contribute/new": "Add an observation",
@@ -310,7 +334,13 @@ async function analyse() {
     const a = await identifyPhoto(image, signal);
     if (signal.aborted || version !== scanVersion) return;
     state.analysis = a;
-    state.attributes = { ...state.attributes, ...a, carving_detail: "unknown" };
+    state.attributes = {
+      ...state.attributes,
+      ...a,
+      material: a.material || "unknown",
+      finish: a.finish || "unknown",
+      carving_detail: "unknown",
+    };
   } catch (e) {
     if (signal.aborted || version !== scanVersion) return;
     state.scanError = e.message;
@@ -323,6 +353,15 @@ async function analyse() {
 }
 function bindScan(signal) {
   const form = document.querySelector("#attributes-form");
+  const category = state.attributes.category_id;
+  form.onchange = (event) => {
+    if (event.target.name !== "category_id" || event.target.value === category)
+      return;
+    state.attributes = changeProduct(readAttributes(form), category);
+    state.analysis = null;
+    state.manual = true;
+    render();
+  };
   form.oninput = () => {
     state.attributes = readAttributes(form);
   };
@@ -377,6 +416,8 @@ function bindScan(signal) {
       state.result = null;
       state.scanBusy = false;
       state.scanError = "";
+      state.manual = false;
+      state.attributes = defaults();
       render();
     };
   const retry = document.querySelector("#retry-identify");
@@ -384,13 +425,23 @@ function bindScan(signal) {
   form.onsubmit = async (e) => {
     e.preventDefault();
     state.attributes = readAttributes(form);
-    state.result = null;
     const button = form.querySelector('button[type="submit"]'),
       target = document.querySelector("#comparison-feedback");
+    const attrs = state.attributes;
+    const product = productFor(attrs.category_id);
+    if (product && attrs.material === "unknown" && attrs.finish === "unknown") {
+      target.innerHTML = notice(
+        `Choose the ${product.finishLabel.toLowerCase()} or edit the material to see prices.`,
+        "error",
+      );
+      target.scrollIntoView({ block: "nearest" });
+      return;
+    }
+    state.result = null;
     button.disabled = true;
     target.innerHTML = loading("Finding similar products…");
     try {
-      const rows = await getObservations(signal, state.attributes);
+      const rows = product ? await getObservations(signal, attrs) : [];
       if (signal.aborted) return;
       state.result = compareObservations(state.attributes, rows);
       navigate("/compare");
@@ -404,6 +455,18 @@ function bindScan(signal) {
   };
 }
 function bindComparison() {
+  for (const button of document.querySelectorAll("[data-range-choice]")) {
+    button.onclick = () => {
+      const { field, alternatives } = state.result;
+      const choice = alternatives.find(
+        (x) => x.value === button.dataset.rangeChoice,
+      );
+      if (!choice) return;
+      state.attributes[field] = choice.value;
+      state.result = choice.result;
+      render();
+    };
+  }
   const report = document.querySelector("#report-purchase");
   if (report)
     report.onclick = () => {
@@ -438,7 +501,14 @@ document.addEventListener("click", (e) => {
   const u = new URL(a.href, location.href);
   if (u.origin === location.origin && !u.hash) {
     e.preventDefault();
-    navigate(u.pathname + u.search);
+    if (
+      a.hasAttribute("data-up") ||
+      ((location.pathname === "/report" ||
+        location.pathname === "/contribute/new") &&
+        a.classList.contains("back-link"))
+    )
+      goUp(u.pathname);
+    else navigate(u.pathname + u.search);
   }
 });
 document.addEventListener("keydown", (e) => {

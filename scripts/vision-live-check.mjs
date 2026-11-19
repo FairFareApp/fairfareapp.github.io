@@ -26,7 +26,10 @@ console.log(
   JSON.stringify({
     status: r.status,
     validResponse:
-      r.ok && ["wooden_elephant", "unsupported"].includes(result.category_id),
+      r.ok &&
+      ["wooden_elephant", "bangles", "unsupported"].includes(
+        result.category_id,
+      ),
     category: result.category_id,
     error: result.error,
     intentionalLiveInferenceCalls: 1,

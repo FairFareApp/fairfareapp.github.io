@@ -110,3 +110,31 @@ test("rejects malformed model structure; marks uncertain finish", () => {
     true,
   );
 });
+test("a recognizable bangle can have uncertain material, and submissions preserve pack quantity", () => {
+  const detected = normalizeIdentification({
+    category_id: "bangles",
+    product_name: "Bangles",
+    decorative_style: "Patterned",
+    material: null,
+    pack_count: 12,
+  });
+  assert.equal(detected.material, "unknown");
+  assert.equal(detected.finish, "patterned");
+  assert.equal(detected.pack_count, undefined);
+  const bangle = {
+    ...input,
+    category_id: "bangles",
+    material: "lac",
+    size_cm: 5.7,
+    finish: "stonework",
+    pack_count: 6,
+  };
+  assert.equal(validateSubmission(bangle, now).record.attributes.pack_count, 6);
+  for (const change of [
+    { pack_count: 3 },
+    { material: "wood" },
+    { finish: "openwork" },
+    { size_cm: 10 },
+  ])
+    assert.throws(() => validateSubmission({ ...bangle, ...change }, now));
+});

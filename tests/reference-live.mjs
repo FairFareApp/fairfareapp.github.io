@@ -4,7 +4,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { getObservations } from "../js/api.js";
 import { compareObservations } from "../js/matching.js";
 globalThis.location = { hostname: "test.invalid", search: "" };
-const rows = await getObservations();
+const [rows, bangleRows] = await Promise.all([
+  getObservations(undefined, { category_id: "wooden_elephant" }),
+  getObservations(undefined, { category_id: "bangles" }),
+]);
 assert.ok(
   rows.length >= 1469,
   "Expanded reference data must be reachable beyond the original 1000-row cap.",
@@ -94,9 +97,74 @@ assert.ok(
         Math.abs(o.size_cm - 14) <= 2.8,
     ),
 );
+assert.equal(bangleRows.length, 2835);
+assert.equal(
+  new Set(bangleRows.map((o) => o.independence_key)).size,
+  bangleRows.length,
+);
+assert.ok(
+  bangleRows.every(
+    (o) =>
+      o.status === "approved" &&
+      o.provenance === "synthetic" &&
+      o.image_path === `bangles/${o.material}-${o.finish}.webp` &&
+      o.image_alt &&
+      o.image_credit &&
+      o.image_license,
+  ),
+);
+let bangleCases = 0;
+let minBangleMatches = Infinity;
+const now = new Date("2026-11-19T12:00:00Z");
+for (const pack_count of [1, 2, 4, 6, 12])
+  for (const segment of ["street", "shop", "boutique"])
+    for (const finish of ["plain", "patterned", "stonework"])
+      for (let diameter = 45; diameter <= 75; diameter++) {
+        const a = {
+          category_id: "bangles",
+          size_cm: diameter / 10,
+          pack_count,
+          segment,
+          finish,
+          material: "unknown",
+        };
+        const result = compareObservations(a, bangleRows, now);
+        assert.equal(result.status, "alternatives", JSON.stringify(a));
+        assert.equal(result.alternatives.length, 3);
+        for (const { value, result: option } of result.alternatives) {
+          assert.ok(
+            option.matches.every(
+              (o) =>
+                o.material === value && o.attributes.pack_count === pack_count,
+            ),
+          );
+          minBangleMatches = Math.min(minBangleMatches, option.matches.length);
+          bangleCases++;
+        }
+      }
+const actualFiltered = await getObservations(undefined, {
+  category_id: "bangles",
+  size_cm: 5.6,
+  pack_count: 6,
+  segment: "shop",
+  finish: "patterned",
+  material: "unknown",
+});
+assert.ok(
+  actualFiltered.length >= 9 &&
+    actualFiltered.every(
+      (o) =>
+        o.attributes.pack_count === 6 &&
+        o.finish === "patterned" &&
+        o.segment === "shop",
+    ),
+);
 const result = {
   at: new Date().toISOString(),
   records: rows.length,
+  bangleRecords: bangleRows.length,
+  bangleCases,
+  minBangleMatches,
   cases: cases.length,
   minComparables: Math.min(...cases.map((c) => c.count)),
   maxComparables: Math.max(...cases.map((c) => c.count)),

@@ -1,3 +1,5 @@
+import { products, productFor, packCounts, packLabel } from "./products.js";
+
 export const escapeHTML = (v) =>
   String(v ?? "").replace(
     /[&<>"']/g,
@@ -41,70 +43,86 @@ export const options = (list, selected) =>
 export function field(label, name, content, hint = "") {
   return `<div class="field"><label for="${name}">${label}</label>${content}${hint ? `<small id="${name}-hint">${hint}</small>` : ""}</div>`;
 }
-export function attributesForm(a = {}, prefix = "") {
-  const select = (name, list) =>
-    `<select id="${prefix + name}" name="${name}" required>${options(list, a[name])}</select>`;
+export function attributesForm(a = {}, prefix = "", { detected = false } = {}) {
+  const product = productFor(a.category_id);
+  const bangles = a.category_id === "bangles";
+  const select = (name, list, required = true) =>
+    `<select id="${prefix + name}" name="${name}" ${required ? "required" : ""}>${options(list, a[name])}</select>`;
+  const category = field(
+    "Product",
+    prefix + "category_id",
+    select("category_id", [
+      ...Object.entries(products).map(([key, value]) => [key, value.name]),
+      ["unsupported", "Another product"],
+    ]),
+  );
+  if (!product) return category;
+  const guess = product.finishes[a.finish];
+  const visibleFinish = !detected || !guess;
+  const finish = field(
+    product.finishLabel,
+    prefix + "finish",
+    select("finish", [
+      ["unknown", "Not sure"],
+      ...Object.entries(product.finishes),
+    ]),
+  );
+  const material = field(
+    "Material",
+    prefix + "material",
+    select("material", [
+      ["unknown", "Not sure"],
+      ...Object.entries(product.materials),
+    ]),
+    "Confirm with the seller if it affects what you’re willing to pay.",
+  );
+  const materialUnknown = !product.materials[a.material];
   return `<div class="form-grid essential-attributes">
- ${field("Height (cm)", prefix + "size_cm", `<input id="${prefix}size_cm" name="size_cm" type="number" inputmode="decimal" min="2" max="30" step="0.1" value="${escapeHTML(a.size_cm || "")}" placeholder="e.g. 10" required aria-describedby="${prefix}size_cm-hint">`, "Base to highest point. Please estimate or measure.")}
- ${field(
-   "Finish",
-   prefix + "finish",
-   select("finish", [
-     ["unknown", "Not sure"],
-     ["plain", "Plain carved wood"],
-     ["painted", "Painted"],
-     ["inlay", "Inlaid"],
-     ["openwork", "Openwork / elephant inside"],
-   ]),
- )}
- ${field(
-   "Where is it sold?",
-   prefix + "segment",
-   select("segment", [
-     ["shop", "Local craft shop"],
-     ["street", "Street or market stall"],
-     ["boutique", "Boutique or gallery"],
-   ]),
- )}
- </div><details class="attribute-extra"><summary>${a.material === "unknown" ? "Edit details · material unconfirmed" : "Edit product details"}</summary><div class="form-grid">
- ${field(
-   "Product",
-   prefix + "category_id",
-   select("category_id", [
-     ["wooden_elephant", "Carved wooden elephant"],
-     ["unsupported", "Another product (outside pilot)"],
-   ]),
- )}
- ${field(
-   "Material",
-   prefix + "material",
-   select("material", [
-     ["unknown", "Not sure"],
-     ["wood", "Wood · species unverified"],
-     ["sandalwood", "Sandalwood · independently verified by me"],
-   ]),
-   "A photo cannot verify wood species or authenticity.",
- )}
- ${field(
-   "Carving detail",
-   prefix + "carving_detail",
-   select("carving_detail", [
-     ["unknown", "Not sure / either"],
-     ["simple", "Simple carving"],
-     ["detailed", "Detailed carving"],
-   ]),
-   "Choose only if you can inspect the object.",
- )}
- </div></details>`;
+    ${detected ? "" : category}
+    ${field(product.sizeLabel, prefix + "size_cm", `<input id="${prefix}size_cm" name="size_cm" type="number" inputmode="decimal" min="${product.min}" max="${product.max}" step="0.1" value="${escapeHTML(a.size_cm || "")}" required aria-describedby="${prefix}size_cm-hint">`, product.sizeHint)}
+    ${bangles ? field("Sold together", prefix + "pack_count", select("pack_count", [["", "Choose quantity"], ...packCounts.map((count) => [String(count), packLabel(count)])])) : ""}
+    ${field(
+      "Where is it sold?",
+      prefix + "segment",
+      select("segment", [
+        ["shop", "Local craft shop"],
+        ["street", "Street or market stall"],
+        ["boutique", "Boutique or gallery"],
+      ]),
+    )}
+    ${visibleFinish ? finish : ""}
+  </div>
+  ${detected && guess ? `<p class="small muted inferred-detail">${product.finishLabel}: ${escapeHTML(guess.toLowerCase())} · ${materialUnknown ? "material unclear" : escapeHTML(a.material === "wood" ? "wood" : product.materials[a.material])}</p>` : ""}
+  <details class="attribute-extra"><summary>Edit product details</summary><div class="form-grid">
+    ${detected ? category : ""}
+    ${!visibleFinish ? finish : ""}
+    ${material}
+    ${
+      bangles
+        ? ""
+        : field(
+            "Carving detail",
+            prefix + "carving_detail",
+            select("carving_detail", [
+              ["unknown", "Not sure / either"],
+              ["simple", "Simple carving"],
+              ["detailed", "Detailed carving"],
+            ]),
+            "Choose only if you can inspect the object.",
+          )
+    }
+  </div></details>
+  <input type="hidden" name="decoration" value="${escapeHTML(a.decoration || "")}">`;
 }
 export function readAttributes(form) {
   const f = new FormData(form);
   return {
     category_id: f.get("category_id"),
-    material: f.get("material"),
+    material: f.get("material") || "unknown",
     size_cm: Number(f.get("size_cm")),
-    finish: f.get("finish"),
-    segment: f.get("segment"),
+    finish: f.get("finish") || "unknown",
+    segment: f.get("segment") || "shop",
+    pack_count: Number(f.get("pack_count")) || "",
     decoration: String(f.get("decoration") || "").trim(),
     carving_detail: String(f.get("carving_detail") || "unknown"),
   };

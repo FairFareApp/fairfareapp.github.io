@@ -51,11 +51,54 @@ test("requires at least three comparisons and never broadens categories", () => 
   );
   assert.equal(
     compareObservations(
-      { ...a, material: "unknown" },
+      { ...a, category_id: "unsupported" },
       [row(200), row(300), row(400)],
       now,
     ).status,
     "insufficient",
+  );
+});
+test("missing bangle material gives separate pack prices with exact design, size and selling setting", () => {
+  const b = {
+    category_id: "bangles",
+    size_cm: 5.8,
+    finish: "patterned",
+    segment: "shop",
+    pack_count: 6,
+  };
+  const bRow = (price, material, extra = {}) =>
+    row(price, {
+      ...b,
+      material,
+      id: `${material}-${price}`,
+      attributes: { pack_count: 6 },
+      ...extra,
+    });
+  const rows = [
+    ...[90, 100, 110].map((p) => bRow(p, "glass")),
+    ...[285, 300, 315].map((p) => bRow(p, "lac", { size_cm: 6.1 })),
+    bRow(1, "metal"),
+    bRow(2, "metal"),
+    bRow(800, "lac", { attributes: { pack_count: 12 } }),
+    bRow(810, "lac", { finish: "plain" }),
+    bRow(820, "lac", { status: "pending" }),
+    bRow(830, "lac", { size_cm: 6.2 }),
+    bRow(840, "lac", { segment: "street" }),
+  ];
+  const r = compareObservations(b, rows, now);
+  assert.equal(r.status, "alternatives");
+  assert.equal(r.field, "material");
+  assert.deepEqual(
+    r.alternatives.map((x) => [
+      x.value,
+      x.result.matches.length,
+      x.result.low,
+      x.result.high,
+    ]),
+    [
+      ["lac", 3, 290, 310],
+      ["glass", 3, 90, 110],
+    ],
   );
 });
 test("prices are computed, not fixed, and extreme prices are excluded", () => {
