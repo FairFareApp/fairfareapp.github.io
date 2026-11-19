@@ -2,10 +2,9 @@ import { icon, escapeHTML as h, notice, loading, date, options } from "./ui.js";
 import { getGuidance } from "./api.js";
 const external = (url, label) =>
   `<a class="text-link" href="${h(url)}" target="_blank" rel="noopener noreferrer">${label} ${icon("arrow-up-right-from-square")}</a>`;
-const heading = (title, sub) =>
-  `<div class="page-heading"><a class="back-link" href="/">${icon("arrow-left")}Home</a><h1>${title}</h1><p>${sub}</p></div>`;
+const heading = (title) => `<div class="page-heading"><h1>${title}</h1></div>`;
 export function taxiPage() {
-  return `${heading("App taxis", "Keep the fare and payment in your booking.")}<div class="work-grid"><section class="panel"><h2>How are you paying?</h2><div class="choice-row" role="group" aria-label="Payment method"><button class="choice active" data-payment="app" aria-pressed="true">In the app</button><button class="choice" data-payment="direct" aria-pressed="false">Cash / UPI to driver</button></div><div id="payment-advice" class="advice-block" aria-live="polite"></div><details><summary>Before the car arrives</summary><div class="checklist">${["Vehicle & number plate match", "Driver matches the booking", "Pickup & destination are correct", "Fare & payment method are clear"].map((text, i) => `<label class="check"><input type="checkbox" name="taxi-${i}"><span>${text}</span></label>`).join("")}</div><p class="small muted" id="taxi-progress" aria-live="polite">0 of 4 checked</p></details><div class="source-links">${external("https://www.uber.com/in/en/ride/", "Open Uber")}${external("https://www.olacabs.com/", "Open Ola")}</div></section><aside class="panel"><h2>Check the final total</h2><ul class="plain-list"><li>Review tolls, parking, waiting and airport charges.</li><li>Check the payment method before paying twice.</li><li>Use your ride app’s tracking and support.</li></ul><details><summary>Asked to cancel the booking?</summary><p>Decide before starting. A trip outside the app may lose the original booking’s tracking and support.</p><p>Share the trip details with someone you trust.</p></details><p class="small muted">No live taxi fares or booking connection in FairFare.</p></aside></div>`;
+  return `${heading("App taxis")}<div class="work-grid"><section class="panel"><h2>How are you paying?</h2><div class="choice-row" role="group" aria-label="Payment method"><button class="choice active" data-payment="app" aria-pressed="true">In the app</button><button class="choice" data-payment="direct" aria-pressed="false">Cash / UPI to driver</button></div><div id="payment-advice" class="advice-block" aria-live="polite"></div><details><summary>Before the car arrives</summary><div class="checklist">${["Vehicle & number plate match", "Driver matches the booking", "Pickup & destination are correct", "Fare & payment method are clear"].map((text, i) => `<label class="check"><input type="checkbox" name="taxi-${i}"><span>${text}</span></label>`).join("")}</div><p class="small muted" id="taxi-progress" aria-live="polite">0 of 4 checked</p></details><div class="source-links">${external("https://www.uber.com/in/en/ride/", "Open Uber")}${external("https://www.olacabs.com/", "Open Ola")}</div></section><details class="travel-extra"><summary>Fare extras & ride safety</summary><ul class="plain-list"><li>Review tolls, parking, waiting and airport charges.</li><li>Check the payment method before paying twice.</li><li>Use your ride app’s tracking and support.</li></ul><details><summary>Asked to cancel the booking?</summary><p>Decide before starting. A trip outside the app may lose the original booking’s tracking and support.</p><p>Share the trip details with someone you trust.</p></details><p class="small muted">FairFare has no live app fares.</p></details></div>`;
 }
 export function bindTaxi(root) {
   const choose = (mode) => {
@@ -32,14 +31,14 @@ export function bindTaxi(root) {
   );
 }
 export function autosPage() {
-  return `${heading("Autos & local taxis", "Agree the full journey before you leave.")}<div class="fare-unavailable"><h2>Current official fare unavailable</h2><p>No verified Jaipur meter tariff in this pilot.</p><details><summary>Official source & date</summary><div id="auto-data">${loading("Checking source…")}</div></details></div><div class="work-grid"><section class="panel"><h2>Agree your ride</h2><div class="choice-row" role="group" aria-label="Fare arrangement"><button class="choice active" data-fare="negotiated" aria-pressed="true">Agree a fare</button><button class="choice" data-fare="meter" aria-pressed="false">Use the meter</button></div><div id="fare-advice" class="advice-block" aria-live="polite"></div><form id="ride-plan"><div class="field"><label for="ride-destination">Destination</label><input id="ride-destination" name="destination" maxlength="120" placeholder="Where are you going?" required></div><div class="field"><label for="ride-fare">Agreed total (₹)</label><input id="ride-fare" name="fare" type="number" min="1" max="100000" step="0.01" inputmode="decimal" placeholder="Whole ride, not per person" required></div><label class="check"><input type="checkbox" name="return"><span>Return journey included</span></label><button class="button primary full">Make a ride note</button><div id="ride-note" aria-live="polite"></div><p class="small muted">Kept on this screen only. Your agreement, not a fare estimate.</p></form></section><aside class="panel"><h2>Before paying</h2><ul class="plain-list"><li>Confirm whole vehicle or per passenger.</li><li>Agree waiting, stops, parking and return travel.</li><li>Check the UPI recipient and amount.</li><li>Keep valuables and the vehicle registration with you.</li></ul><details><summary>Other fare references</summary><p>No approved community or illustrative ride-price references are available. Handicraft demonstration prices are never used for transport.</p></details></aside></div>`;
+  return `${heading("Autos & local taxis")}<div class="fare-unavailable"><details><summary>Current official fare unavailable</summary><div id="auto-data">${loading("Checking source…")}</div></details></div><div class="work-grid"><section class="panel"><h2>Ride note</h2><div class="choice-row" role="group" aria-label="Fare arrangement"><button class="choice active" data-fare="negotiated" aria-pressed="true">Agree a fare</button><button class="choice" data-fare="meter" aria-pressed="false">Use the meter</button></div><div id="fare-advice" class="advice-block" aria-live="polite"></div><form id="ride-plan"><div class="field"><label for="ride-destination">Destination</label><input id="ride-destination" name="destination" maxlength="120" placeholder="Where are you going?" required></div><div class="field"><label for="ride-fare">Agreed total (₹)</label><input id="ride-fare" name="fare" type="number" min="1" max="100000" step="0.01" inputmode="decimal" placeholder="Whole ride, not per person" required></div><label class="check"><input type="checkbox" name="return"><span>Return journey included</span></label><button class="button primary full">Make a ride note</button><div id="ride-note" aria-live="polite"></div><p class="small muted ride-note-context" hidden>On this screen only · based on your agreement.</p></form></section><details class="travel-extra"><summary>Before paying</summary><ul class="plain-list"><li>Confirm whole vehicle or per passenger.</li><li>Agree waiting, stops, parking and return travel.</li><li>Check the UPI recipient and amount.</li><li>Keep valuables and the vehicle registration with you.</li></ul><details><summary>Other fare references</summary><p>No approved community or illustrative ride-price references are available. Handicraft demonstration prices are never used for transport.</p></details></details></div>`;
 }
 export function bindAutos(root, signal) {
   const choose = (mode) => {
     root.querySelector("#fare-advice").innerHTML =
       mode === "meter"
-        ? "<h3>Check that the meter starts correctly.</h3><p>Confirm the tariff and extras. If no meter is used, agree a total first.</p>"
-        : "<h3>One total, for the whole journey.</h3><p>Confirm passengers, stops, waiting and whether the return is included.</p>";
+        ? "<p>Confirm the meter tariff and any extras.</p>"
+        : "<p>Agree one total for passengers, stops and waiting.</p>";
     root.querySelectorAll("[data-fare]").forEach((b) => {
       b.classList.toggle("active", b.dataset.fare === mode);
       b.setAttribute("aria-pressed", String(b.dataset.fare === mode));
@@ -52,6 +51,7 @@ export function bindAutos(root, signal) {
   root.querySelector("#ride-plan").onsubmit = (e) => {
     e.preventDefault();
     const d = new FormData(e.target);
+    root.querySelector(".ride-note-context").hidden = false;
     root.querySelector("#ride-note").innerHTML = notice(
       `<strong>Your ride note</strong><br>${h(d.get("destination"))} · ₹${h(d.get("fare"))} for the whole ride.<br>${d.has("return") ? "Return included." : "Return not included."} Confirm all extras.`,
     );
@@ -100,7 +100,7 @@ const photos = {
   },
 };
 export function monumentsPage() {
-  return `${heading("Monuments", "Check your ticket. Choose extras separately.")}<div class="monuments-toolbar"><p>Three Jaipur visits</p><label class="inline-label" for="visitor">Visitor category<select id="visitor">${options(
+  return `${heading("Monuments")}<div class="monuments-toolbar"><label class="inline-label" for="visitor">Visitor category<select id="visitor">${options(
     [
       ["indian", "Indian visitor"],
       ["foreign", "Foreign visitor"],

@@ -77,7 +77,7 @@ function shell(content, path) {
   ${!contributor ? `<nav class="bottom-nav" aria-label="Mobile main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}>${icon(i)}<span>${label}</span></a>`).join("")}</nav>` : ""}<dialog id="info-dialog" class="dialog" aria-labelledby="dialog-title"><div class="dialog-top"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog">${icon("xmark")}</button></div><div id="dialog-body"></div></dialog>`;
 }
 function home() {
-  return `<section class="home-start" aria-labelledby="home-title"><p class="location">${icon("location-dot")} Jaipur, Rajasthan</p><h1 id="home-title">A price check, before you buy.</h1><a href="/scan" class="scan-launch"><span class="scan-launch-icon">${icon("camera")}</span><span>Scan a Product</span><small>Wooden elephant pilot</small></a><p class="home-subline">Photo. Confirm. Compare.</p></section><nav class="home-shortcuts" aria-label="More in Jaipur">${[
+  return `<section class="home-start" aria-labelledby="home-title"><p class="location">${icon("location-dot")} Jaipur, Rajasthan</p><h1 id="home-title">A price check, before you buy.</h1><a href="/scan" class="scan-launch"><span class="scan-launch-icon">${icon("camera")}</span><span>Scan a Product</span><small>Wooden elephant pilot</small></a></section><nav class="home-shortcuts" aria-label="More in Jaipur">${[
     ["/taxis", "taxi", "App taxis"],
     ["/autos", "car-side", "Autos & taxis"],
     ["/monuments", "landmark", "Monuments"],
@@ -90,14 +90,58 @@ function home() {
       "",
     )}</nav><div class="home-meta"><span class="demo-label">Illustrative prices · demonstration</span><a href="/contribute">Contribute a price ${icon("chevron-right")}</a></div>`;
 }
-function photoPreview(image) {
-  return image
-    ? `<img class="product-preview" src="${image.url}" alt="Your selected product photo">`
-    : `<div class="photo-empty"><div class="viewfinder">${icon("camera")}</div><p>Keep the whole object in view.</p></div>`;
-}
 function scan() {
   const ready = Boolean(state.analysis);
-  return `<div class="page-heading"><a class="back-link" href="/">${icon("arrow-left")}Home</a><h1>${ready ? (state.analysis.category_id === "wooden_elephant" ? "Looks like a wooden elephant." : "This looks outside the pilot.") : "Scan a product"}</h1><p>${ready ? "Check the details. Then see the price." : "Start with a photo of your find."}</p></div>${devMock ? notice("Development mock · no AI request or submission is sent.") : ""}<div class="scan-layout"><section class="photo-card"><div id="photo-area">${photoPreview(state.image)}</div><div class="photo-actions"><button class="button primary" id="take-photo">${icon("camera")}${state.image ? "Retake" : "Take a photo"}</button><button class="button secondary" id="choose-photo">${icon("image")}${state.image ? "Replace" : "Gallery"}</button></div><input id="camera-input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" tabindex="-1"><input id="gallery-input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1"><div id="photo-feedback" aria-live="polite"></div><p class="privacy-note">${icon("shield-halved")}Not saved. Sent for identification when selected.<button class="text-link" data-dialog="privacy">Privacy</button></p>${state.image ? '<button class="text-link" id="clear-scan">Remove photo</button>' : ""}</section><section class="confirm-card"><div id="analysis-feedback" aria-live="polite">${state.scanBusy ? loading("Taking a closer look…") : state.scanError ? notice(h(state.scanError), "error") : ready ? `<div class="recognition"><span>${icon("check")} ${devMock ? "Mock identification" : "Photo identified"}</span><h2>${h(state.analysis.category_id === "wooden_elephant" ? "Wooden elephant" : "Outside this pilot")}</h2></div>` : ""}</div>${state.image && !state.scanBusy && state.scanError ? '<button class="button secondary" id="retry-identify">Try identification again</button>' : ""}<details class="confirmation-details" ${ready || state.scanError || state.manual ? "open" : ""}><summary>${ready ? "Confirm your product" : "Enter details yourself"}</summary><form id="attributes-form">${attributesForm(state.attributes)}<div id="comparison-feedback" aria-live="polite"></div><button class="button primary full" type="submit" ${state.scanBusy ? "disabled" : ""}>See price ${icon("chevron-right")}</button><p class="small muted">Illustrative demonstration prices.</p></form></details>${ready ? `<details class="recognition-details"><summary>What the photo can tell us</summary><p>${h(state.analysis.visible_characteristics)}</p><p>${h(state.analysis.uncertainty)}</p></details>` : ""}</section></div>`;
+  const title = ready
+    ? state.analysis.category_id === "wooden_elephant"
+      ? "Wooden elephant"
+      : "Outside the pilot"
+    : state.manual && !state.image
+      ? "Product details"
+      : "Scan a product";
+  const back = state.result ? "/compare" : "/";
+  const photoActions = `<div class="photo-actions">
+    ${state.image ? `<button class="button secondary" id="take-photo">${icon("camera")}Retake</button>` : ""}
+    <button class="button secondary" id="choose-photo">${icon("image")}${state.image ? "Replace" : "Gallery"}</button>
+  </div>`;
+  const form = `<form id="attributes-form">
+    ${attributesForm(state.attributes)}
+    <div id="comparison-feedback" aria-live="polite"></div>
+    <div class="task-actions"><button class="button primary full" type="submit" ${state.scanBusy ? "disabled" : ""}>See price</button></div>
+  </form>`;
+  return `<div class="page-heading scan-heading">
+    <a class="back-link" href="${back}">${icon("arrow-left")}${back === "/" ? "Home" : "Price comparison"}</a>
+    <h1>${title}</h1>
+  </div>
+  ${devMock ? notice("Development mock · no AI request is sent.") : ""}
+  <div class="scan-layout ${ready ? "scan-confirming" : ""}">
+    <section class="photo-card ${state.image ? "photo-selected" : ""}" aria-label="Product photo">
+      <div id="photo-area">${
+        state.image
+          ? `<img class="product-preview" src="${state.image.url}" alt="Your selected product photo">`
+          : `<button class="capture-tile" id="take-photo"><span class="viewfinder">${icon("camera")}</span><strong>Take a photo</strong></button>`
+      }</div>
+      ${photoActions}
+      <input id="camera-input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" tabindex="-1">
+      <input id="gallery-input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1">
+      <div id="photo-feedback" aria-live="polite"></div>
+      ${state.image ? '<button class="text-link" id="clear-scan">Remove photo</button>' : `<p class="privacy-note">Photos are sent for identification. <button class="text-link" data-dialog="privacy">Photo privacy</button></p>`}
+    </section>
+    <section class="confirm-card" aria-label="Product details">
+      <div id="analysis-feedback" aria-live="polite">${
+        state.scanBusy
+          ? loading("Identifying photo…")
+          : state.scanError
+            ? notice(h(state.scanError), "error")
+            : ready
+              ? '<span class="sr-only recognition">Photo identified. Confirm height, finish and shop type.</span>'
+              : ""
+      }</div>
+      ${state.image && !state.scanBusy && !ready ? '<button class="button secondary" id="retry-identify">Retry identification</button>' : ""}
+      ${ready ? form : `<details class="confirmation-details" ${state.scanError || state.manual ? "open" : ""}><summary><span class="manual-closed-label">Enter details manually</span><span class="manual-open-label">Use a photo instead</span></summary>${form}</details>`}
+      ${ready ? `<details class="recognition-details"><summary>Identification notes</summary><p>${h(state.analysis.visible_characteristics)}</p><p>${h(state.analysis.uncertainty)}</p></details>` : ""}
+    </section>
+  </div>`;
 }
 function comparison() {
   const r = state.result,
@@ -109,13 +153,13 @@ function comparison() {
       "/scan",
       "Scan a product",
     );
-  return `<div class="result-layout"><div class="page-heading"><a class="back-link" href="/scan">${icon("arrow-left")}Edit details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${a.category_id === "wooden_elephant" ? "Wooden elephant" : "Outside this pilot"}</h1><p>${h(a.size_cm)} cm · ${h(a.finish)} · ${h(a.segment)}</p></div></div></div><section class="price-panel panel">${r.status === "ready" ? `<p class="eyebrow">${r.synthetic ? "Illustrative price range" : "Typical comparison range"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">Middle half of ${r.matches.length} comparable ${r.synthetic ? "demo records" : "observations"}.</p>${r.synthetic ? `<p class="demo-label">Demonstration · ${r.synthetic}/${r.matches.length} synthetic records<br><span>Illustrative only. Not verified Jaipur market prices.</span></p>` : ""}<div class="buying-tip">${icon("comment-dollar")}<p>Ask for the total. Check carving, finish and condition before making an offer.</p></div>` : `<div class="empty-result">${icon("scale-balanced")}<h2>Not enough similar observations</h2><p>${h(r.reason)}</p><a href="/scan" class="button secondary">Review details</a></div>`}</section>${r.status === "ready" ? `<button class="share-price" id="report-purchase"><span><strong>Bought it? Share the price.</strong><small>Details ready. Add what you paid.</small></span>${icon("chevron-right")}</button>` : ""}<div class="result-disclosures"><details><summary>Compare ${r.matches.length} similar ${r.synthetic ? "demo records" : "observations"}</summary><p class="small muted">Images illustrate finish only. Shared across examples, not photos of purchases or exact dimensions.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "No matching approved records."}</div></details><details><summary>Product details & matching</summary><dl class="attribute-list"><div><dt>Material</dt><dd>${h(a.material === "wood" ? "Wood · species unverified" : a.material)}</dd></div><div><dt>Carving</dt><dd>${h(a.carving_detail || "Either")}</dd></div><div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>Same product, material, finish and selling setting. Height within 2 cm or 20%, whichever is larger. Records no older than a year; pending submissions excluded. Carving detail matches exactly when selected. Wood species and quality cannot be established from a photo.</p></details><details><summary>Sources, uncertainty & calculation</summary><p>${h(r.method || "At least three compatible records are required.")}</p><p>${r.excluded || 0} extreme prices excluded. Asking, observed and paid prices may differ; each listing names its type.</p><p>Synthetic records are separately modelled examples, not independent real-world transactions. Reference illustrations do not establish species, workmanship, origin or authenticity. This is a demonstration, not an appraisal or a verdict on a seller.</p><button data-dialog="pilot" class="text-link">About the demonstration</button></details>${r.status === "ready" ? `<details><summary>Have a seller’s quote?</summary><form id="quote-form"><label for="quoted-price">Quoted price (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare quote</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
+  return `<div class="result-layout"><div class="page-heading"><a class="back-link" href="/scan">${icon("arrow-left")}Edit details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${a.category_id === "wooden_elephant" ? "Wooden elephant" : "Outside this pilot"}</h1><p>${h(a.size_cm)} cm · ${h(a.finish)} · ${h(a.segment)}</p></div></div></div><section class="price-panel panel">${r.status === "ready" ? `<p class="eyebrow">${r.synthetic ? "Illustrative price range" : "Typical comparison range"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${r.matches.length} comparable observations${r.synthetic ? ` · ${r.synthetic} synthetic` : ""}</p><div class="buying-tip">${icon("comment-dollar")}<p>Ask for the total. Check carving, finish and condition before making an offer.</p></div>` : `<div class="empty-result">${icon("scale-balanced")}<h2>Not enough similar observations</h2><p>${h(r.reason)}</p><a href="/scan" class="button secondary">Review details</a></div>`}</section>${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button primary full" id="report-purchase">Bought it? Share the price</button></div>` : ""}<div class="result-disclosures"><details><summary>Compare ${r.matches.length} similar ${r.synthetic ? "demo records" : "observations"}</summary><p class="small muted">Images illustrate finish only. Shared across examples, not photos of purchases or exact dimensions.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "No matching approved records."}</div></details><details><summary>Product details & matching</summary><dl class="attribute-list"><div><dt>Material</dt><dd>${h(a.material === "wood" ? "Wood · species unverified" : a.material)}</dd></div><div><dt>Carving</dt><dd>${h(a.carving_detail || "Either")}</dd></div><div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>Same product, material, finish and selling setting. Height within 2 cm or 20%, whichever is larger. Records no older than a year; pending submissions excluded. Carving detail matches exactly when selected. Wood species and quality cannot be established from a photo.</p></details><details><summary>Sources, uncertainty & calculation</summary><p>${h(r.method || "At least three compatible records are required.")}</p><p>${r.excluded || 0} extreme prices excluded. Asking, observed and paid prices may differ; each listing names its type.</p><p>Synthetic records are separately modelled examples, not independent real-world transactions. Reference illustrations do not establish species, workmanship, origin or authenticity. This is a demonstration, not an appraisal or a verdict on a seller.</p><button data-dialog="pilot" class="text-link">About the demonstration</button></details>${r.status === "ready" ? `<details><summary>Have a seller’s quote?</summary><form id="quote-form"><label for="quoted-price">Quoted price (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare quote</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
 }
 function contributorHome() {
-  return `<div class="desk-layout"><div class="page-heading"><p class="eyebrow">Contributor desk · Jaipur</p><h1>Share a local price.</h1><p>One product. One observation.</p></div><section class="contribution-start panel"><span class="desk-icon">${icon("clipboard-list")}</span><h2>What did you find?</h2><p>Wooden elephant figurines, 2–30 cm.</p><a class="button primary full" href="/contribute/new">${icon("plus")}Add an observation</a><div class="step-preview"><span>Photo</span>${icon("chevron-right")}<span>Details</span>${icon("chevron-right")}<span>Price</span>${icon("chevron-right")}<span>Review</span></div></section><p class="review-note">${icon("clock")}Reviewed before it becomes a reference.</p><details><summary>What to prepare</summary><ul><li>A clear product photo you have permission to share.</li><li>Height, finish and where it was sold.</li><li>Price, date and the Jaipur locality.</li><li>Optional evidence with personal details removed.</li></ul><p>Evidence is private. Nothing is published automatically.</p></details></div>`;
+  return `<div class="desk-layout"><div class="page-heading"><h1>Contributor desk</h1></div><section class="contribution-start panel"><h2>Record a Jaipur price</h2><p>Wooden elephant figurines, 2–30 cm.</p><a class="button primary full" href="/contribute/new">${icon("plus")}Add an observation</a></section><p class="review-note">${icon("clock")}Reviewed before it becomes a reference.</p><details><summary>What to prepare</summary><ul><li>A clear product photo you have permission to share.</li><li>Height, finish and where it was sold.</li><li>Price, date and the Jaipur locality.</li><li>Optional evidence with personal details removed.</li></ul><p>Evidence is private. Nothing is published automatically.</p></details></div>`;
 }
 function confirmation() {
-  return `<section class="confirmation panel">${devMock ? notice("Development mock · nothing was submitted or stored.") : ""}<div class="success-mark">${icon("check")}</div><p class="eyebrow">Pending review</p><h1>Thanks. We’ve got it.</h1><p>Your observation will be checked before it can become a reference.</p><div class="receipt-note"><span>Submission reference</span><strong>${h(state.submission.id.slice(0, 8))}</strong></div><p class="small muted">Published prices haven’t changed.</p><a href="/" class="button primary full">Back to home</a><a href="/contribute/new" class="button secondary full">Add another observation</a></section>`;
+  return `<section class="confirmation panel">${devMock ? notice("Development mock · nothing was submitted or stored.") : ""}<div class="success-mark">${icon("check")}</div><p class="eyebrow">Pending review</p><h1>Thanks. We’ve got it.</h1><p>Your observation will be checked before it can become a reference.</p><div class="receipt-note"><span>Submission reference</span><strong>${h(state.submission.id.slice(0, 8))}</strong></div><a href="/" class="button primary full">Back to home</a><a href="/contribute/new" class="button secondary full">Add another observation</a></section>`;
 }
 function empty(title, text, url, label) {
   return `<section class="empty-page"><span class="large-icon">${icon("compass")}</span><h1>${title}</h1><p>${text}</p><a class="button primary" href="${url}">${label}</a></section>`;
@@ -149,6 +193,15 @@ function render() {
             "Scan a product",
           ),
   };
+  app.dataset.screen = path;
+  app.classList.toggle(
+    "focused-task",
+    path === "/scan" ||
+      path === "/compare" ||
+      path === "/contribute/new" ||
+      path === "/report" ||
+      path === "/submitted",
+  );
   app.innerHTML = shell(
     (
       pages[path] ||
@@ -269,15 +322,19 @@ async function analyse() {
   }
 }
 function bindScan(signal) {
-  if (state.image)
-    document
-      .querySelector("#take-photo")
-      .classList.replace("primary", "secondary");
   const form = document.querySelector("#attributes-form");
   form.oninput = () => {
     state.attributes = readAttributes(form);
-    state.manual = true;
   };
+  const manual = document.querySelector(".confirmation-details");
+  if (manual)
+    manual.ontoggle = () => {
+      state.manual = manual.open;
+      if (!state.image)
+        document.querySelector(".scan-heading h1").textContent = manual.open
+          ? "Product details"
+          : "Scan a product";
+    };
   const camera = document.querySelector("#camera-input"),
     gallery = document.querySelector("#gallery-input");
   document.querySelector("#take-photo").onclick = () => camera.click();
@@ -322,19 +379,6 @@ function bindScan(signal) {
       state.scanError = "";
       render();
     };
-  if (
-    state.image &&
-    !state.scanBusy &&
-    !state.analysis &&
-    !document.querySelector("#retry-identify")
-  ) {
-    document
-      .querySelector("#analysis-feedback")
-      .insertAdjacentHTML(
-        "afterend",
-        '<button class="button secondary" id="retry-identify">Identify photo</button>',
-      );
-  }
   const retry = document.querySelector("#retry-identify");
   if (retry) retry.onclick = analyse;
   form.onsubmit = async (e) => {
@@ -354,6 +398,7 @@ function bindScan(signal) {
       if (!signal.aborted) {
         target.innerHTML = notice(h(e.message), "error");
         button.disabled = false;
+        target.scrollIntoView({ block: "nearest" });
       }
     }
   };
@@ -436,6 +481,22 @@ window.addEventListener("offline", () => {
   document.querySelector("#announcer").textContent =
     "You are offline. Identification and submissions need a connection.";
 });
+if (window.visualViewport) {
+  const updateKeyboardInset = () => {
+    const viewport = window.visualViewport;
+    const inset =
+      viewport.scale === 1
+        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+        : 0;
+    document.documentElement.style.setProperty(
+      "--keyboard-inset",
+      `${inset}px`,
+    );
+  };
+  window.visualViewport.addEventListener("resize", updateKeyboardInset);
+  window.visualViewport.addEventListener("scroll", updateKeyboardInset);
+  updateKeyboardInset();
+}
 if ("serviceWorker" in navigator)
   navigator.serviceWorker.register("/sw.js").catch(() => {});
 render();

@@ -44,7 +44,7 @@ export function field(label, name, content, hint = "") {
 export function attributesForm(a = {}, prefix = "") {
   const select = (name, list) =>
     `<select id="${prefix + name}" name="${name}" required>${options(list, a[name])}</select>`;
-  return `<div class="form-grid">
+  return `<div class="form-grid essential-attributes">
  ${field("Height (cm)", prefix + "size_cm", `<input id="${prefix}size_cm" name="size_cm" type="number" inputmode="decimal" min="2" max="30" step="0.1" value="${escapeHTML(a.size_cm || "")}" placeholder="e.g. 10" required aria-describedby="${prefix}size_cm-hint">`, "Base to highest point. Please estimate or measure.")}
  ${field(
    "Finish",
@@ -66,7 +66,7 @@ export function attributesForm(a = {}, prefix = "") {
      ["boutique", "Boutique or gallery"],
    ]),
  )}
- </div><details class="attribute-extra" ${a.category_id === "unsupported" || a.material === "unknown" ? "open" : ""}><summary>Material & carving details</summary><div class="form-grid">
+ </div><details class="attribute-extra"><summary>${a.material === "unknown" ? "Edit details · material unconfirmed" : "Edit product details"}</summary><div class="form-grid">
  ${field(
    "Product",
    prefix + "category_id",

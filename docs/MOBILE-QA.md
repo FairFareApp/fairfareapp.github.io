@@ -1,0 +1,18 @@
+# Mobile workflow review
+
+Reviewed 375 × 812 first, from the opening screen through results and submissions. Then ran the same browser checks at 390 × 844 and 1440 × 900.
+
+| Workflow | Issue at 375 × 812 before | Verified behavior |
+| --- | --- | --- |
+| Home and scanning | Home repeated the bottom navigation. Scan put a decorative viewfinder above its camera action, and manual entry expanded beneath it. | The camera tile opens the camera picker. Gallery and manual entry are secondary. Choosing manual entry replaces the empty photo picker on mobile. |
+| Photo confirmation | Product title and explanatory copy repeated above the three fields. The price action followed the form. | One title, a compact photo, height, finish and selling setting. Product, material and carving edits open on request. See price stays in the bottom action bar. |
+| Results and buying | The comparison panel repeated the demo caveat and the reporting action scrolled with the page. | One range and record-count label. Listing, matching, source and quote details start closed. Sharing the price stays visible even while the comparison list is open. |
+| Purchase and contributor | The review action and required accuracy checkbox were below the first screen. | Three purchase steps and five contributor steps. The review summary and accuracy control fit on the first screen. Back and Continue share the bottom bar. Price source and date are editable in a disclosure. |
+| Autos and app taxis | Auto mode, repeated fare copy and the note form pushed Make a ride note below the first screen. | The fare status, mode choice, two fields and note action fit. Tips and source details open on request. Taxi payment and booking checklist remain available. |
+| Monuments | Only the first destination was visible on a phone. | Compact thumbnail rows show all three names, fee statuses and official ticket links at 375 × 812. |
+
+All three viewport runs passed 11 workflow groups, with 20 captured states checking the primary action from the initial viewport. The checks hit-test each specified control to catch fixed bars covering it. On phones those controls are at least 44 px tall. All 11 direct routes fit in both themes. The service worker opened the shell offline. The browser suites intercepted four identification requests and two submissions per run. Price calculations and reference images used the live public Supabase records.
+
+The longest initial states on 375 × 812 are identification recovery and monuments. Identification recovery shows the retry, the three essential fields and See price. Its optional product edits sit just below the action bar. Monuments show the three ticket links with the guide disclosure farther down. Expanding all comparable listings or optional details naturally extends the page. Phone screenshots and browser reports are generated under `.local/browser-<width>x<height>/`.
+
+The browser checks use phone-sized viewports. Camera hardware, provider recognition, native keyboard behavior and installed PWA behavior still need a real phone check.

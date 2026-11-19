@@ -12,12 +12,16 @@ const driver =
   );
 const { Browser } = await import(pathToFileURL(driver));
 const base = process.env.TEST_BASE_URL || "http://localhost:4173";
+const [width, height] = (process.env.FAIRFARE_VIEWPORT || "375x812")
+  .split("x")
+  .map(Number);
 const out = resolve(
-  ".local/browser-redesign" + (base.includes("github.io") ? "-production" : ""),
+  process.env.FAIRFARE_SCREENSHOTS ||
+    `.local/browser-${width}x${height}${base.includes("github.io") ? "-production" : ""}`,
 );
 await mkdir(out, { recursive: true });
 const browser = await Browser.launch(),
-  page = await browser.newPage({ width: 390, height: 844, mobile: true });
+  page = await browser.newPage({ width, height, mobile: width < 761 });
 const checks = [],
   requests = [];
 let photoMode = "success",
@@ -126,9 +130,50 @@ const file = async (selector) => {
     files: [resolve("assets/references/plain.webp")],
   });
 };
-const shot = async (name) => {
+const screens = [];
+const phone = width < 761;
+const shot = async (name, primary, required = []) => {
   await page.eval(() => window.scrollTo(0, 0));
-  await page.screenshot({ path: join(out, name + ".jpg"), fullPage: true });
+  if (primary) {
+    const metrics = await page.eval(
+      ({ primary, required }) => {
+        const controls = [primary, ...required].map((selector) => {
+          const el = document.querySelector(selector);
+          const rect = el.getBoundingClientRect();
+          const inView =
+            rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight;
+          const target = inView
+            ? document.elementFromPoint(
+                rect.x + rect.width / 2,
+                rect.y + rect.height / 2,
+              )
+            : null;
+          return {
+            selector,
+            top: Math.round(rect.top),
+            bottom: Math.round(rect.bottom),
+            height: Math.round(rect.height),
+            unobscured: Boolean(target && el.contains(target)),
+          };
+        });
+        return {
+          controls,
+          scrollHeight: document.documentElement.scrollHeight,
+        };
+      },
+      { primary, required },
+    );
+    for (const control of metrics.controls) {
+      assert.ok(
+        control.unobscured,
+        `${name}: ${control.selector} obscured at ${width}×${height} (${JSON.stringify(control)})`,
+      );
+      if (phone)
+        assert.ok(control.height >= 44, `${name}: touch target below 44px`);
+    }
+    screens.push({ name, ...metrics });
+  }
+  await page.screenshot({ path: join(out, name + ".jpg"), quality: 88 });
 };
 const check = async (name, fn) => {
   await fn();
@@ -149,9 +194,22 @@ try {
           return r.height >= 180 && r.bottom < innerHeight - 72;
         }),
       );
-      await shot("home-mobile");
+      await shot("home", ".scan-launch");
       await click(".scan-launch");
       await wait("location.pathname==='/scan'");
+      assert.equal(
+        await page.eval(
+          () => document.querySelector(".confirmation-details").open,
+        ),
+        false,
+      );
+      await shot("scan-photo", "#take-photo", [
+        "#choose-photo",
+        ".confirmation-details > summary",
+      ]);
+      await click(".confirmation-details > summary");
+      await shot("scan-manual", '#attributes-form button[type="submit"]');
+      await click(".confirmation-details > summary");
     },
   );
   await check(
@@ -163,6 +221,15 @@ try {
         await page.eval(() => document.querySelector("#photo-area img").src),
         /^blob:/,
       );
+      await shot("scan-confirm", '#attributes-form button[type="submit"]', [
+        "#size_cm",
+        "#finish",
+        "#segment",
+        ".attribute-extra > summary",
+      ]);
+      await click(".attribute-extra > summary");
+      await fill("#material", "wood");
+      await click(".attribute-extra > summary");
       await fill('[name="size_cm"]', 10);
       await click('#attributes-form button[type="submit"]');
       await wait("location.pathname==='/compare'");
@@ -176,7 +243,7 @@ try {
           (r) => !r.url.includes("/storage/v1/object/") || r.method === "GET",
         ),
       );
-      await shot("result-mobile");
+      await shot("result", "#report-purchase");
     },
   );
   await check(
@@ -208,7 +275,33 @@ try {
         await page.eval(() => document.querySelector(".comparable").innerText),
         /illustration/,
       );
-      await shot("comparables-mobile");
+      if (phone) {
+        assert.equal(
+          await page.eval(
+            () =>
+              getComputedStyle(document.querySelector(".result-actions"))
+                .position,
+          ),
+          "fixed",
+        );
+        assert.ok(await page.eval(() => window.scrollY > 0));
+        assert.ok(
+          await page.eval(() => {
+            const button = document.querySelector("#report-purchase"),
+              rect = button.getBoundingClientRect();
+            return button.contains(
+              document.elementFromPoint(
+                rect.x + rect.width / 2,
+                rect.y + rect.height / 2,
+              ),
+            );
+          }),
+        );
+      }
+      await page.screenshot({
+        path: join(out, "comparables.jpg"),
+        quality: 88,
+      });
       await click(".result-disclosures>details:last-child>summary");
       await fill("#quoted-price", 600);
       await click("#quote-form button");
@@ -222,11 +315,21 @@ try {
     async () => {
       await click("#report-purchase");
       await wait("location.pathname==='/report'");
+      await shot("purchase-price", "#wizard-next", ["#price", "#locality"]);
       await fill("#price", 400);
       await fill("#locality", "Bapu Bazaar");
       await click("#wizard-next");
       await wait("document.querySelector('#evidence-file')");
+      assert.equal(
+        await page.eval(() => document.querySelector("#photo-consent").hidden),
+        true,
+      );
+      await shot("purchase-evidence", "#wizard-next");
       await fill("#attach-scan", true);
+      assert.equal(
+        await page.eval(() => document.querySelector("#photo-consent").hidden),
+        false,
+      );
       await click("#wizard-next");
       assert.match(
         await page.eval(
@@ -250,7 +353,7 @@ try {
       await click("#wizard-next");
       await click("#wizard-next");
       await fill("#honest-observation", true);
-      await shot("purchase-review");
+      await shot("purchase-review", "#wizard-next", [".honest-check"]);
       await click("#wizard-next");
       await wait("location.pathname==='/submitted'");
       assert.match(
@@ -264,18 +367,26 @@ try {
   await check(
     "contributor five-step flow validates, retains drafts and submits pending",
     async () => {
-      await page.goto(base + "/contribute/new");
-      await click("#wizard-next");
-      assert.match(
-        await page.eval(
-          () => document.querySelector("#submission-feedback").innerText,
-        ),
-        /photo/,
+      await page.goto(base + "/contribute");
+      await shot("contributor-desk", ".contribution-start .primary");
+      await click(".contribution-start .primary");
+      assert.equal(
+        await page.eval(() => document.querySelector(".wizard-actions").hidden),
+        true,
       );
+      await shot("contributor-photo", "#contributor-camera", [
+        "#contributor-gallery",
+      ]);
       await file("#contributor-file");
       await wait("document.querySelector('.wizard-photo img')");
+      await shot("contributor-preview", "#wizard-next");
       await click("#wizard-next");
       await wait("document.querySelector('#s-size_cm')");
+      await shot("contributor-details", "#wizard-next", [
+        "#s-size_cm",
+        "#s-finish",
+        "#s-segment",
+      ]);
       await click("#contributor-identify");
       await wait(
         "document.querySelector('#contributor-ai').innerText.includes('Suggestions ready')",
@@ -283,6 +394,16 @@ try {
       await fill("#s-size_cm", 14);
       await fill("#s-finish", "inlay");
       await click("#wizard-next");
+      await shot("contributor-price", "#wizard-next", [
+        "#price",
+        "#price-type",
+        "#locality",
+      ]);
+      await fill("#price-type", "observed");
+      assert.equal(
+        await page.eval(() => document.querySelector("#source-type").value),
+        "field_observation",
+      );
       await fill("#price", 900);
       await fill("#locality", "Johari Bazaar");
       await click("#wizard-back");
@@ -296,6 +417,10 @@ try {
         "900",
       );
       await click("#wizard-next");
+      await shot("contributor-evidence", "#wizard-next", [
+        "#evidence-file",
+        "#photo-consent",
+      ]);
       await file("#evidence-file");
       await wait("document.querySelector('#remove-evidence')");
       await click("#remove-evidence");
@@ -308,10 +433,11 @@ try {
       await fill("#image-consent", true);
       await click("#wizard-next");
       await wait("document.querySelector('.review-list')");
-      await shot("contributor-review");
+      await shot("contributor-review", "#wizard-next", [".honest-check"]);
       await fill("#honest-observation", true);
       await click("#wizard-next");
       await wait("location.pathname==='/submitted'");
+      await shot("submitted", ".confirmation .primary");
     },
   );
   await check(
@@ -326,6 +452,9 @@ try {
           () => document.querySelector(".confirmation-details").open,
         ),
       );
+      await shot("scan-recovery", '#attributes-form button[type="submit"]', [
+        "#retry-identify",
+      ]);
       photoMode = "success";
       await click("#retry-identify");
       await wait("document.querySelector('.recognition')");
@@ -340,6 +469,7 @@ try {
   );
   await check("transport controls and ride note work", async () => {
     await page.goto(base + "/taxis");
+    await shot("taxis", '[data-payment="app"]', [".source-links a"]);
     await click('[data-payment="direct"]');
     assert.equal(
       await page.eval(() =>
@@ -356,6 +486,10 @@ try {
       true,
     );
     await page.goto(base + "/autos");
+    await shot("autos", "#ride-plan button", [
+      "#ride-destination",
+      "#ride-fare",
+    ]);
     await click('[data-fare="meter"]');
     await fill("#ride-destination", "City Palace");
     await fill("#ride-fare", 250);
@@ -369,13 +503,20 @@ try {
       ),
       /unavailable/,
     );
-    await shot("autos-mobile");
+    await shot("autos-note");
   });
   await check(
     "monument photos, categories and source disclosures work",
     async () => {
       await page.goto(base + "/monuments");
       await wait("document.querySelectorAll('.monument-card').length===3");
+      await shot(
+        "monuments",
+        ".monument-card .text-link",
+        phone
+          ? [".monument-card:nth-child(3) .text-link", "#visitor"]
+          : ["#visitor"],
+      );
       await fill("#visitor", "student");
       await click(".monument-card details>summary");
       assert.match(
@@ -387,36 +528,43 @@ try {
       await wait(
         "[...document.querySelectorAll('.monument-photo')].every(i=>i.naturalWidth>0)",
       );
-      await shot("monuments-mobile");
+      await shot("monument-details");
     },
   );
   await check("keyboard menu, dialogs and theme are usable", async () => {
-    await click("#menu-toggle");
-    assert.equal(
-      await page.eval(() => document.querySelector("#mobile-menu").hidden),
-      false,
-    );
-    await page.send("Input.dispatchKeyEvent", {
-      type: "keyDown",
-      key: "Escape",
-      code: "Escape",
-    });
-    await page.send("Input.dispatchKeyEvent", {
-      type: "keyUp",
-      key: "Escape",
-      code: "Escape",
-    });
-    assert.equal(
-      await page.eval(() => document.querySelector("#mobile-menu").hidden),
-      true,
-    );
+    if (phone) {
+      await click("#menu-toggle");
+      assert.equal(
+        await page.eval(() => document.querySelector("#mobile-menu").hidden),
+        false,
+      );
+      await page.send("Input.dispatchKeyEvent", {
+        type: "keyDown",
+        key: "Escape",
+        code: "Escape",
+      });
+      await page.send("Input.dispatchKeyEvent", {
+        type: "keyUp",
+        key: "Escape",
+        code: "Escape",
+      });
+      assert.equal(
+        await page.eval(() => document.querySelector("#mobile-menu").hidden),
+        true,
+      );
+    }
     await click("#theme-toggle");
     assert.equal(
       await page.eval(() => document.documentElement.dataset.theme),
       "dark",
     );
-    await shot("monuments-dark-mobile");
-    await click('.site-footer [data-dialog="privacy"]');
+    await shot("monuments-dark");
+    if (phone) await click("#menu-toggle");
+    await click(
+      phone
+        ? '#mobile-menu [data-dialog="privacy"]'
+        : '.site-footer [data-dialog="privacy"]',
+    );
     await wait("document.querySelector('#info-dialog').open");
     await page.send("Input.dispatchKeyEvent", {
       type: "keyDown",
@@ -434,46 +582,34 @@ try {
     );
   });
   await check(
-    "all direct routes reflow at 320, 390, 768 and 1440px in both themes",
+    "all direct routes fit this viewport in both themes",
     async () => {
-      for (const width of [320, 390, 768, 1440]) {
-        await page.setViewport({ width, height: 900, mobile: width < 768 });
-        for (const route of [
-          "/",
-          "/scan",
-          "/compare",
-          "/taxis",
-          "/autos",
-          "/monuments",
-          "/contribute",
-          "/contribute/new",
-          "/report",
-          "/submitted",
-          "/not-a-page",
-        ]) {
-          await page.goto(base + route, { settleMs: 250 });
-          await wait("document.querySelector('#main h1')");
-          for (const theme of ["light", "dark"]) {
+      for (const route of [
+        "/",
+        "/scan",
+        "/compare",
+        "/taxis",
+        "/autos",
+        "/monuments",
+        "/contribute",
+        "/contribute/new",
+        "/report",
+        "/submitted",
+        "/not-a-page",
+      ]) {
+        await page.goto(base + route, { settleMs: 250 });
+        await wait("document.querySelector('#main h1')");
+        for (const theme of ["light", "dark"]) {
+          await page.eval(
+            (t) => (document.documentElement.dataset.theme = t),
+            theme,
+          );
+          assert.ok(
             await page.eval(
-              (t) => (document.documentElement.dataset.theme = t),
-              theme,
-            );
-            assert.ok(
-              await page.eval(
-                () => document.documentElement.scrollWidth <= innerWidth + 1,
-              ),
-              `${width} ${route} ${theme} overflows`,
-            );
-          }
-          if (
-            width === 1440 &&
-            ["/", "/scan", "/contribute", "/monuments"].includes(route)
-          )
-            await shot(
-              route === "/"
-                ? "home-desktop-dark"
-                : route.slice(1) + "-desktop-dark",
-            );
+              () => document.documentElement.scrollWidth <= innerWidth + 1,
+            ),
+            `${width} ${route} ${theme} overflows`,
+          );
         }
       }
     },
@@ -526,7 +662,9 @@ try {
   const report = {
     at: new Date().toISOString(),
     base,
+    viewport: { width, height },
     checks,
+    screens,
     mockIdentifications,
     mockSubmissions,
     consoleErrors: page.consoleErrors,

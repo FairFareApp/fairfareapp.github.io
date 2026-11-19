@@ -40,7 +40,7 @@ npm test
 npm run check
 ```
 
-`npm run test:references` checks the actual database's full coverage without writes or vision calls. `npm run test:browser` drives installed Chrome/Edge through the design inspector's CDP utility (set `TASTE_CDP_PATH` if installed elsewhere). It mocks identification/submission endpoints, reads actual reference data, checks all routes/themes at four widths and tests offline reopening. `TEST_BASE_URL=https://fairfareapp.github.io` repeats the browser checks on production without sending real AI/submission requests.
+`npm run test:references` checks the actual database's full coverage without writes or vision calls. `npm run test:browser` uses installed Chrome/Edge and the design inspector's CDP utility. It runs at 375 × 812 by default. Set `FAIRFARE_VIEWPORT` to `390x844` or `1440x900` to repeat the full flow at either size. Set `TASTE_CDP_PATH` if the driver is installed elsewhere. The suite captures screenshots, checks action visibility and both themes, reads real reference data, and mocks identification and submissions. Set `TEST_BASE_URL` to verify the deployed site. See the [mobile workflow review](docs/MOBILE-QA.md).
 
 Tests cover matching, outliers, insufficient data, pending isolation, server validation, model response normalization, API error handling, SPA restoration and service-worker cache exclusions. `check` verifies JavaScript syntax, credential patterns, secret-file tracking and computed light/dark contrast pairs.
 
