@@ -1,161 +1,148 @@
 import { icon, escapeHTML as h, notice, loading, date, options } from "./ui.js";
 import { getGuidance } from "./api.js";
-const sourceLink = (url, label) =>
+const external = (url, label) =>
   `<a class="text-link" href="${h(url)}" target="_blank" rel="noopener noreferrer">${label} ${icon("arrow-up-right-from-square")}</a>`;
+const heading = (title, sub) =>
+  `<div class="page-heading"><a class="back-link" href="/">${icon("arrow-left")}Home</a><h1>${title}</h1><p>${sub}</p></div>`;
 export function taxiPage() {
-  return `<div class="page-heading"><a class="back-link" href="/">${icon("arrow-left")} Jaipur guide</a><h1>App-booked taxis</h1><p>A quoted fare is a starting point. Keep the booking, payment and trip details together.</p></div>
-<div class="work-grid"><section class="panel"><div class="section-heading"><h2>Before you ride</h2>${icon("taxi")}</div>
-<div class="choice-row" role="group" aria-label="Payment method"><button class="choice active" data-payment="app" aria-pressed="true">Pay through the app</button><button class="choice" data-payment="direct" aria-pressed="false">Pay the driver directly</button></div>
-<div id="payment-advice" class="advice-block"></div>
-<h3>Your booking check</h3><div class="checklist">${[
-    ["plate", "Vehicle and number plate match the booking"],
-    ["driver", "Driver details match the app"],
-    ["destination", "Destination and pickup point are correct"],
-    ["fare", "Fare breakdown and payment method are clear"],
-  ]
-    .map(
-      ([id, label]) =>
-        `<label class="check"><input type="checkbox" name="${id}"><span>${label}</span></label>`,
-    )
-    .join(
-      "",
-    )}</div><p id="taxi-progress" class="small muted" aria-live="polite">Check these details in your ride-hailing app.</p></section>
-<aside class="panel"><h2>Check the fare breakdown</h2><div class="prose"><p>Demand, route, waiting time, tolls, parking and airport charges may affect the final amount. Read the terms shown for your booking.</p><p>If the driver asks you to cancel and pay outside the app, decide before starting. The original booking’s tracking and support may no longer cover that ride.</p><p>Share trip details with someone you trust. Use the original app’s safety and support features if you need help.</p></div>${notice("FairFare has no live ride-hailing connection and does not calculate or guarantee app fares.")}<div class="source-links">${sourceLink("https://www.uber.com/in/en/ride/", "Open Uber")}${sourceLink("https://www.olacabs.com/", "Open Ola")}</div></aside></div>`;
+  return `${heading("App taxis", "Keep the fare and payment in your booking.")}<div class="work-grid"><section class="panel"><h2>How are you paying?</h2><div class="choice-row" role="group" aria-label="Payment method"><button class="choice active" data-payment="app" aria-pressed="true">In the app</button><button class="choice" data-payment="direct" aria-pressed="false">Cash / UPI to driver</button></div><div id="payment-advice" class="advice-block" aria-live="polite"></div><details><summary>Before the car arrives</summary><div class="checklist">${["Vehicle & number plate match", "Driver matches the booking", "Pickup & destination are correct", "Fare & payment method are clear"].map((text, i) => `<label class="check"><input type="checkbox" name="taxi-${i}"><span>${text}</span></label>`).join("")}</div><p class="small muted" id="taxi-progress" aria-live="polite">0 of 4 checked</p></details><div class="source-links">${external("https://www.uber.com/in/en/ride/", "Open Uber")}${external("https://www.olacabs.com/", "Open Ola")}</div></section><aside class="panel"><h2>Check the final total</h2><ul class="plain-list"><li>Review tolls, parking, waiting and airport charges.</li><li>Check the payment method before paying twice.</li><li>Use your ride app’s tracking and support.</li></ul><details><summary>Asked to cancel the booking?</summary><p>Decide before starting. A trip outside the app may lose the original booking’s tracking and support.</p><p>Share the trip details with someone you trust.</p></details><p class="small muted">No live taxi fares or booking connection in FairFare.</p></aside></div>`;
 }
 export function bindTaxi(root) {
-  const render = (mode) => {
+  const choose = (mode) => {
     root.querySelector("#payment-advice").innerHTML =
       mode === "app"
-        ? "<h3>Follow the payment method on your booking.</h3><p>Check whether your app will charge a card, wallet or UPI method. Confirm the completed trip before paying a second time.</p>"
-        : "<h3>Confirm cash or UPI before starting.</h3><p>Make sure direct payment is the method selected in your booking. Check the final fare, recipient name and amount before confirming a transfer. Keep the receipt.</p>";
+        ? "<h3>Use the method on your booking.</h3><p>Check whether your card, wallet or UPI will be charged before paying again.</p>"
+        : "<h3>Confirm direct payment first.</h3><p>Make sure cash or UPI is selected in the booking. Check the final amount and recipient. Keep the receipt.</p>";
     root.querySelectorAll("[data-payment]").forEach((b) => {
-      const active = b.dataset.payment === mode;
-      b.classList.toggle("active", active);
-      b.setAttribute("aria-pressed", String(active));
+      b.classList.toggle("active", b.dataset.payment === mode);
+      b.setAttribute("aria-pressed", String(b.dataset.payment === mode));
     });
   };
   root
     .querySelectorAll("[data-payment]")
-    .forEach((b) =>
-      b.addEventListener("click", () => render(b.dataset.payment)),
-    );
-  render("app");
-  root.querySelectorAll(".checklist input").forEach((b) =>
-    b.addEventListener("change", () => {
-      const n = root.querySelectorAll(".checklist input:checked").length;
-      root.querySelector("#taxi-progress").textContent =
-        `${n} of 4 booking details checked. ${n === 4 ? "Confirm these again when your vehicle arrives." : "Continue in your ride-hailing app."}`;
-    }),
+    .forEach((b) => (b.onclick = () => choose(b.dataset.payment)));
+  choose("app");
+  root.querySelectorAll(".checklist input").forEach(
+    (i) =>
+      (i.onchange = () => {
+        const n = root.querySelectorAll(".checklist input:checked").length;
+        root.querySelector("#taxi-progress").textContent =
+          `${n} of 4 checked${n === 4 ? " · Check again when the car arrives." : ""}`;
+      }),
   );
 }
 export function autosPage() {
-  return `<div class="page-heading"><a class="back-link" href="/">${icon("arrow-left")} Jaipur guide</a><h1>Autos & local taxis</h1><p>A clear agreement before departure makes for a better journey.</p></div><div class="work-grid"><section class="panel"><h2>Agree your ride</h2><div class="choice-row" role="group" aria-label="Fare arrangement"><button class="choice active" data-fare="negotiated" aria-pressed="true">Negotiated fare</button><button class="choice" data-fare="meter" aria-pressed="false">Metered ride</button></div><div id="fare-advice" class="advice-block"></div><form id="ride-plan"><div class="form-grid">${["Destination", "Total agreed fare (₹)"].map((s, i) => `<div class="field"><label for="ride-${i}">${s}</label><input id="ride-${i}" name="${i ? "fare" : "destination"}" ${i ? 'type="number" min="1" max="100000" inputmode="decimal"' : 'maxlength="120"'} required placeholder="${i ? "Amount for the whole ride" : "Where are you going?"}"></div>`).join("")}</div><label class="check"><input type="checkbox" name="return"><span>Return journey is included</span></label><button class="button secondary" type="submit">Make a ride note</button><div id="ride-note" aria-live="polite"></div><p class="small muted">This note stays on this screen. It is your agreement, not an official fare estimate.</p></form></section><aside class="panel"><h2>Local fare references</h2><div id="auto-data">${loading("Checking Jaipur fare references…")}</div><h3>Before paying</h3><ul class="plain-list"><li>Confirm whether the amount is for the vehicle or per passenger.</li><li>Ask about waiting, stops, luggage, parking and return travel.</li><li>Check the UPI recipient and amount. Keep your own payment confirmation.</li><li>Keep valuables with you and note the vehicle registration.</li></ul></aside></div>`;
+  return `${heading("Autos & local taxis", "Agree the full journey before you leave.")}<div class="fare-unavailable"><h2>Current official fare unavailable</h2><p>No verified Jaipur meter tariff in this pilot.</p><details><summary>Official source & date</summary><div id="auto-data">${loading("Checking source…")}</div></details></div><div class="work-grid"><section class="panel"><h2>Agree your ride</h2><div class="choice-row" role="group" aria-label="Fare arrangement"><button class="choice active" data-fare="negotiated" aria-pressed="true">Agree a fare</button><button class="choice" data-fare="meter" aria-pressed="false">Use the meter</button></div><div id="fare-advice" class="advice-block" aria-live="polite"></div><form id="ride-plan"><div class="field"><label for="ride-destination">Destination</label><input id="ride-destination" name="destination" maxlength="120" placeholder="Where are you going?" required></div><div class="field"><label for="ride-fare">Agreed total (₹)</label><input id="ride-fare" name="fare" type="number" min="1" max="100000" step="0.01" inputmode="decimal" placeholder="Whole ride, not per person" required></div><label class="check"><input type="checkbox" name="return"><span>Return journey included</span></label><button class="button primary full">Make a ride note</button><div id="ride-note" aria-live="polite"></div><p class="small muted">Kept on this screen only. Your agreement, not a fare estimate.</p></form></section><aside class="panel"><h2>Before paying</h2><ul class="plain-list"><li>Confirm whole vehicle or per passenger.</li><li>Agree waiting, stops, parking and return travel.</li><li>Check the UPI recipient and amount.</li><li>Keep valuables and the vehicle registration with you.</li></ul><details><summary>Other fare references</summary><p>No approved community or illustrative ride-price references are available. Handicraft demonstration prices are never used for transport.</p></details></aside></div>`;
 }
-export async function bindAutos(root, signal) {
-  const render = (mode) => {
+export function bindAutos(root, signal) {
+  const choose = (mode) => {
     root.querySelector("#fare-advice").innerHTML =
       mode === "meter"
-        ? "<h3>Check the meter starts correctly.</h3><p>Ask which tariff applies and what extras are excluded. If the meter is not being used, agree a total before departure.</p>"
-        : "<h3>Agree the whole journey, not just the headline fare.</h3><p>Say the destination, number of passengers and any stops. Confirm a total and whether waiting or a return is included.</p>";
+        ? "<h3>Check that the meter starts correctly.</h3><p>Confirm the tariff and extras. If no meter is used, agree a total first.</p>"
+        : "<h3>One total, for the whole journey.</h3><p>Confirm passengers, stops, waiting and whether the return is included.</p>";
     root.querySelectorAll("[data-fare]").forEach((b) => {
-      const active = b.dataset.fare === mode;
-      b.classList.toggle("active", active);
-      b.setAttribute("aria-pressed", String(active));
+      b.classList.toggle("active", b.dataset.fare === mode);
+      b.setAttribute("aria-pressed", String(b.dataset.fare === mode));
     });
   };
   root
     .querySelectorAll("[data-fare]")
-    .forEach((b) => b.addEventListener("click", () => render(b.dataset.fare)));
-  render("negotiated");
-  root.querySelector("#ride-plan").addEventListener("submit", (e) => {
+    .forEach((b) => (b.onclick = () => choose(b.dataset.fare)));
+  choose("negotiated");
+  root.querySelector("#ride-plan").onsubmit = (e) => {
     e.preventDefault();
     const d = new FormData(e.target);
     root.querySelector("#ride-note").innerHTML = notice(
-      `<strong>Your ride note</strong><br>${h(d.get("destination"))}: ₹${h(d.get("fare"))} for the whole ride. ${d.has("return") ? "Return included." : "Return not included."} Confirm all extras with the driver.`,
+      `<strong>Your ride note</strong><br>${h(d.get("destination"))} · ₹${h(d.get("fare"))} for the whole ride.<br>${d.has("return") ? "Return included." : "Return not included."} Confirm all extras.`,
     );
-  });
+  };
+  loadAutos(root, signal);
+}
+async function loadAutos(root, signal) {
   const target = root.querySelector("#auto-data");
   try {
-    const data = await getGuidance("autos", signal);
+    const rows = await getGuidance("autos", signal);
     if (signal.aborted) return;
-    target.innerHTML = data.length
-      ? data
+    target.innerHTML = rows.length
+      ? rows
           .map(
             (g) =>
-              `${notice(h(g.content.note))}<p class="small muted">Official source index checked ${date(g.checked_at)}. Current tariff unavailable.</p>${sourceLink(g.source_url, "View Rajasthan fare notifications")}`,
+              `<p>${h(g.content.note)}</p><p class="small muted">Source check attempted ${date(g.checked_at)}. Current tariff not verified.</p>${external(g.source_url, "Rajasthan fare notifications")}`,
           )
           .join("")
-      : notice(
-          "No verified local tariff is available. Confirm the meter or agree the fare before departure.",
-        );
+      : "<p>No current tariff is verified. Ask which meter tariff applies or agree a total before departure.</p>";
   } catch (e) {
     if (signal.aborted) return;
     target.innerHTML =
       notice(h(e.message), "error") +
-      '<button class="button secondary" id="retry-guidance">Retry fare references</button>';
-    target.querySelector("button").onclick = () => bindAutosData(root, signal);
+      '<button class="button secondary">Retry source check</button>';
+    target.querySelector("button").onclick = () => loadAutos(root, signal);
   }
 }
-async function bindAutosData(root, signal) {
-  const target = root.querySelector("#auto-data");
-  target.innerHTML = loading("Checking Jaipur fare references…");
-  try {
-    const data = await getGuidance("autos", signal);
-    if (!signal.aborted)
-      target.innerHTML = data.length
-        ? data
-            .map(
-              (g) =>
-                notice(h(g.content.note)) +
-                sourceLink(g.source_url, "View official fare index"),
-            )
-            .join("")
-        : notice("No current tariff is verified.");
-  } catch (e) {
-    if (!signal.aborted) {
-      target.innerHTML =
-        notice(h(e.message), "error") +
-        '<button class="button secondary">Retry fare references</button>';
-      target.querySelector("button").onclick = () =>
-        bindAutosData(root, signal);
-    }
-  }
-}
+const photos = {
+  amber: {
+    author: "Slyronit",
+    source:
+      "https://commons.wikimedia.org/wiki/File:Panorama_of_Amber_Fort.jpg",
+    alt: "Amber Fort above Maota Lake",
+  },
+  hawa: {
+    author: "Wander-earth",
+    source:
+      "https://commons.wikimedia.org/wiki/File:Hawa_Mahal_in_Jaipur_India.jpg",
+    alt: "The rear of Hawa Mahal, Jaipur",
+  },
+  jantar: {
+    author: "Swapnil.Karambelkar",
+    source:
+      "https://commons.wikimedia.org/wiki/File:Full_view_of_jantar_mantar_,Jaipur.jpg",
+    alt: "Astronomical instruments at Jantar Mantar, Jaipur",
+  },
+};
 export function monumentsPage() {
-  return `<div class="page-heading"><a class="back-link" href="/">${icon("arrow-left")} Jaipur guide</a><h1>Monuments & guides</h1><p>Choose the right ticket. Keep the guide’s fee separate.</p></div><div class="work-grid"><section class="panel"><div class="section-heading"><h2>Jaipur visits</h2><label class="inline-label" for="visitor">Visitor category <select id="visitor">${options(
+  return `${heading("Monuments", "Check your ticket. Choose extras separately.")}<div class="monuments-toolbar"><p>Three Jaipur visits</p><label class="inline-label" for="visitor">Visitor category<select id="visitor">${options(
     [
       ["indian", "Indian visitor"],
       ["foreign", "Foreign visitor"],
       ["student", "Student"],
     ],
     "indian",
-  )}</select></label></div><div id="monument-data">${loading("Loading Jaipur visitor information…")}</div></section><aside class="panel"><h2>A guide is a separate choice</h2><div class="prose"><p>Ask to see the guide’s identification and agree the language, duration, places covered and total price before you begin.</p><p>A monument ticket may not include a guide, transport, camera access or an evening show. Ask for each part of a package in writing.</p><p>Avoid paying for a “mandatory” add-on until the official counter confirms it is required.</p></div><details><summary>What should I ask at the counter?</summary><ul class="plain-list"><li>Which visitor category applies to me?</li><li>What proof do students need?</li><li>Is this a single-site or composite ticket?</li><li>Are special exhibits or evening visits separate?</li></ul></details>${notice("No guide-price estimate is available in this pilot. Compare scope as well as price.")}</aside></div>`;
+  )}</select></label></div><div id="monument-data" class="monument-grid">${loading("Loading Jaipur visits…")}</div><details class="guide-note"><summary>Hiring a guide?</summary><p>Check identification. Agree the language, duration, places covered and total before starting. Guide services, transport, camera access and evening shows may be separate.</p><p>No guide-price estimate is available. Check any “mandatory” add-on with the official counter.</p><details><summary>Questions at the counter</summary><ul><li>Which visitor category and proof do I need?</li><li>Single-site or composite ticket?</li><li>Are special exhibits or evening visits separate?</li></ul></details></details>`;
 }
 export async function bindMonuments(root, signal) {
   const target = root.querySelector("#monument-data");
   try {
-    const data = await getGuidance("monuments", signal);
+    const rows = await getGuidance("monuments", signal);
     if (signal.aborted) return;
-    const render = () => {
+    const draw = () => {
       const cat = root.querySelector("#visitor").value;
-      target.innerHTML = data.length
-        ? data
-            .map(
-              (g) =>
-                `<article class="monument-row"><div class="monument-title">${icon("landmark")}<div><h3>${h(g.title)}</h3><p class="small muted">${h(g.content.locality)}</p></div></div><p class="availability">Current fee unavailable</p><p>${h(g.content.note)}</p><p class="small muted">${cat === "student" ? "Carry valid student identification; eligibility must be checked." : cat === "foreign" ? "Check the foreign visitor category and any passport requirements." : "Check the Indian visitor category and required proof."}</p>${sourceLink(g.source_url, "Check official tickets")}<p class="small muted">Source check attempted ${date(g.checked_at)}. Fee not verified.</p></article>`,
-            )
+      target.innerHTML = rows.length
+        ? rows
+            .map((g) => {
+              const photo = photos[g.id];
+              return `<article class="monument-card">${photo ? `<img class="monument-photo" src="/assets/monuments/${g.id}.webp" alt="${photo.alt}" width="720" height="420" loading="lazy">` : ""}<div class="monument-card-body"><h2>${h(g.title)}</h2><p class="locality">${h(g.content.locality)}</p><p class="availability">Current fee unavailable</p>${external(g.source_url, "Check official tickets")}<details><summary>Visit details & sources</summary><p>${h(g.content.note)}</p><p>${cat === "student" ? "Carry valid student ID; check eligibility." : cat === "foreign" ? "Check the foreign visitor category and passport requirements." : "Check the Indian visitor category and required proof."}</p><p class="small muted">Fee not verified. Source check attempted ${date(g.checked_at)}.</p>${photo ? `<p class="small muted">Photo: ${h(photo.author)}. Cropped, resized to WebP.<br>${external(photo.source, "Original photo")}${external("https://creativecommons.org/licenses/by-sa/4.0/", "CC BY-SA 4.0")}</p>` : ""}</details></div></article>`;
+            })
             .join("")
         : notice(
-            "No visitor records are published yet. Check the official ticket counter.",
+            "No visitor records are published. Check the official counter.",
           );
+      target.querySelectorAll("img").forEach(
+        (img) =>
+          (img.onerror = () => {
+            const placeholder = document.createElement("div");
+            placeholder.className = "monument-photo image-fallback";
+            placeholder.textContent = "Photo unavailable";
+            img.replaceWith(placeholder);
+          }),
+      );
     };
-    root.querySelector("#visitor").addEventListener("change", render);
-    render();
+    root.querySelector("#visitor").onchange = draw;
+    draw();
   } catch (e) {
     if (signal.aborted) return;
     target.innerHTML =
       notice(h(e.message), "error") +
-      '<button class="button secondary">Retry visitor information</button>';
+      '<button class="button secondary">Retry visits</button>';
     target.querySelector("button").onclick = () => bindMonuments(root, signal);
   }
 }

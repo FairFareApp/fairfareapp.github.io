@@ -45,26 +45,9 @@ export function attributesForm(a = {}, prefix = "") {
   const select = (name, list) =>
     `<select id="${prefix + name}" name="${name}" required>${options(list, a[name])}</select>`;
   return `<div class="form-grid">
+ ${field("Height (cm)", prefix + "size_cm", `<input id="${prefix}size_cm" name="size_cm" type="number" inputmode="decimal" min="2" max="30" step="0.1" value="${escapeHTML(a.size_cm || "")}" placeholder="e.g. 10" required aria-describedby="${prefix}size_cm-hint">`, "Base to highest point. Please estimate or measure.")}
  ${field(
-   "Product",
-   prefix + "category_id",
-   select("category_id", [
-     ["wooden_elephant", "Carved wooden elephant"],
-     ["unsupported", "Another product (outside pilot)"],
-   ]),
- )}
- ${field(
-   "Probable material",
-   prefix + "material",
-   select("material", [
-     ["unknown", "Not sure"],
-     ["wood", "Wood, species unknown"],
-     ["sandalwood", "Sandalwood (independently verified)"],
-   ]),
- )}
- ${field("Approximate height (cm)", prefix + "size_cm", `<input id="${prefix}size_cm" name="size_cm" type="number" inputmode="decimal" min="2" max="30" step="0.1" value="${escapeHTML(a.size_cm || "")}" placeholder="Measure or estimate" required aria-describedby="${prefix}size_cm-hint">`, "From base to highest point. The photo cannot measure this.")}
- ${field(
-   "Finish and decoration",
+   "Finish",
    prefix + "finish",
    select("finish", [
      ["unknown", "Not sure"],
@@ -83,8 +66,36 @@ export function attributesForm(a = {}, prefix = "") {
      ["boutique", "Boutique or gallery"],
    ]),
  )}
- ${field("Colour, pattern or visible details", prefix + "decoration", `<input id="${prefix}decoration" name="decoration" maxlength="300" value="${escapeHTML(a.decoration || "")}" placeholder="Describe what you can see">`)}
- </div>`;
+ </div><details class="attribute-extra" ${a.category_id === "unsupported" || a.material === "unknown" ? "open" : ""}><summary>Material & carving details</summary><div class="form-grid">
+ ${field(
+   "Product",
+   prefix + "category_id",
+   select("category_id", [
+     ["wooden_elephant", "Carved wooden elephant"],
+     ["unsupported", "Another product (outside pilot)"],
+   ]),
+ )}
+ ${field(
+   "Material",
+   prefix + "material",
+   select("material", [
+     ["unknown", "Not sure"],
+     ["wood", "Wood · species unverified"],
+     ["sandalwood", "Sandalwood · independently verified by me"],
+   ]),
+   "A photo cannot verify wood species or authenticity.",
+ )}
+ ${field(
+   "Carving detail",
+   prefix + "carving_detail",
+   select("carving_detail", [
+     ["unknown", "Not sure / either"],
+     ["simple", "Simple carving"],
+     ["detailed", "Detailed carving"],
+   ]),
+   "Choose only if you can inspect the object.",
+ )}
+ </div></details>`;
 }
 export function readAttributes(form) {
   const f = new FormData(form);
@@ -95,5 +106,6 @@ export function readAttributes(form) {
     finish: f.get("finish"),
     segment: f.get("segment"),
     decoration: String(f.get("decoration") || "").trim(),
+    carving_detail: String(f.get("carving_detail") || "unknown"),
   };
 }

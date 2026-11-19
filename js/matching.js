@@ -16,6 +16,8 @@ export function compareObservations(
   if (
     a.category_id !== PILOT_CATEGORY ||
     !Number.isFinite(Number(a.size_cm)) ||
+    Number(a.size_cm) < 2 ||
+    Number(a.size_cm) > 30 ||
     !["wood", "sandalwood"].includes(a.material)
   )
     return {
@@ -24,21 +26,34 @@ export function compareObservations(
       reason:
         "Confirm a wooden elephant, its material and approximate size to find a useful comparison.",
     };
+  const seen = new Set(),
+    seenIds = new Set();
   const matches = observations
     .filter((o) => {
+      const key = o.independence_key || o.id;
+      if (!key || seen.has(key) || seenIds.has(o.id)) return false;
       const age = (now - new Date(o.observed_at)) / (86400 * 1000);
-      return (
+      const eligible =
         o.status === "approved" &&
         o.category_id === a.category_id &&
         o.ff_markets?.city === "Jaipur" &&
         o.material === a.material &&
         o.segment === a.segment &&
         o.finish === a.finish &&
+        (!a.carving_detail ||
+          a.carving_detail === "unknown" ||
+          o.attributes?.carving_detail === a.carving_detail) &&
+        Number.isFinite(Number(o.price_inr)) &&
+        Number(o.price_inr) > 0 &&
         Math.abs(Number(o.size_cm) - Number(a.size_cm)) <=
           Math.max(2, Number(a.size_cm) * 0.2) &&
         age >= -1 &&
-        age <= 365
-      );
+        age <= 365;
+      if (eligible) {
+        seen.add(key);
+        seenIds.add(o.id);
+      }
+      return eligible;
     })
     .map((o) => ({
       ...o,

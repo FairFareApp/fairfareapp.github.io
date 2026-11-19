@@ -7,7 +7,9 @@
     "dev": "node scripts/serve.mjs",
     "test": "node --test tests/*.test.mjs",
     "check": "node scripts/check.mjs",
-    "test:backend": "node tests/backend-live.mjs"
+    "test:backend": "node tests/backend-live.mjs",
+    "test:references": "node tests/reference-live.mjs",
+    "test:browser": "node tests/browser.mjs"
   },
   "devDependencies": {
     "sharp": "0.35.5"

@@ -89,3 +89,36 @@ test("matches estimated size within defined tolerance only", () => {
   );
   assert.equal(r.matches.length, 3);
 });
+
+test("repeated records cannot satisfy the three-observation minimum", () => {
+  const one = row(200, { independence_key: "same-source" });
+  const copies = [one, { ...one, id: "copy-2" }, { ...one, id: "copy-3" }];
+  assert.equal(compareObservations(a, copies, now).status, "insufficient");
+  assert.equal(
+    compareObservations(a, [row(200), row(200), row(300)], now).status,
+    "insufficient",
+  );
+});
+test("selected carving detail is kept separate and pending detail matches are excluded", () => {
+  const rows = [200, 220, 240].map((p) =>
+    row(p, { attributes: { carving_detail: "simple" } }),
+  );
+  rows.push(
+    ...[400, 420, 440].map((p) =>
+      row(p, { attributes: { carving_detail: "detailed" } }),
+    ),
+    row(600, { status: "pending", attributes: { carving_detail: "simple" } }),
+  );
+  const r = compareObservations({ ...a, carving_detail: "simple" }, rows, now);
+  assert.equal(r.matches.length, 3);
+  assert.equal(r.high, 230);
+  assert.ok(r.matches.every((o) => o.attributes.carving_detail === "simple"));
+  assert.equal(
+    compareObservations({ ...a, size_cm: 1 }, rows, now).status,
+    "insufficient",
+  );
+  assert.equal(
+    compareObservations({ ...a, size_cm: 31 }, rows, now).status,
+    "insufficient",
+  );
+});

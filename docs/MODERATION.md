@@ -17,6 +17,8 @@ For one selected submission, inspect `ff_evidence` by `submission_id`, then view
 
 Check the product/category, actual material evidence, approximate measured size, finish, market segment, price type, date, location and duplicate evidence. A claimed species is not authenticated by a photograph. Reject out-of-scope, implausible, duplicate or personally identifying evidence. Do not approve QA fixtures or relabel synthetic records as genuine observations.
 
+The redesign adds `independence_key` to published references. Use a stable key for the underlying observation/source; repeated submissions of the same receipt or seller quote must not become separate evidence. A unique submission UUID alone does not prove independence. The matcher also deduplicates record IDs. Carving detail is optional and stays unknown unless inspected. New public image metadata must describe an authorized public photograph or a clearly labelled appropriate finish illustration; never copy private evidence into the public bucket without separate permission. Every current main demonstration listing has a finish illustration; future records without authorized imagery show an honest fallback.
+
 ## Approve atomically
 
 Replace both UUID and market ID deliberately. Ensure the market exists and belongs to Jaipur. The example **does not execute until an operator runs it**.

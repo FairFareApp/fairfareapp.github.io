@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { request } from "../js/api.js";
+import { request, getObservations } from "../js/api.js";
 globalThis.location = { hostname: "test.invalid", search: "" };
 test("API requests never cache data and carry only public credentials", async () => {
   const original = globalThis.fetch;
@@ -14,6 +14,39 @@ test("API requests never cache data and carry only public credentials", async ()
     assert.deepEqual(await request("/rest/v1/ff_observations"), [
       { status: "approved" },
     ]);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("comparison queries filter before pagination and fetch beyond one page", async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (url) => {
+    const q = new URL(url).searchParams;
+    assert.equal(q.get("finish"), "eq.inlay");
+    assert.equal(q.get("material"), "eq.wood");
+    assert.equal(q.get("status"), "eq.approved");
+    assert.equal(q.get("ff_markets.city"), "eq.Jaipur");
+    assert.match(q.get("and"), /size_cm.gte.8,size_cm.lte.12/);
+    assert.equal(q.get("offset"), String(calls * 500));
+    calls++;
+    return Response.json(
+      Array.from({ length: calls === 1 ? 500 : 12 }, (_, i) => ({
+        id: `${calls}-${i}`,
+      })),
+    );
+  };
+  try {
+    const rows = await getObservations(undefined, {
+      category_id: "wooden_elephant",
+      material: "wood",
+      finish: "inlay",
+      segment: "shop",
+      size_cm: 10,
+    });
+    assert.equal(rows.length, 512);
+    assert.equal(calls, 2);
   } finally {
     globalThis.fetch = original;
   }

@@ -32,11 +32,31 @@ export async function request(path, { method = "GET", body, signal } = {}) {
     );
   return data;
 }
-export const getObservations = (signal) =>
-  request(
-    "/rest/v1/ff_observations?select=id,category_id,material,size_cm,finish,segment,price_inr,price_type,observed_at,provenance,source_note,source_url,status,ff_markets(city,locality)&status=eq.approved&limit=1000",
-    { signal },
-  );
+export async function getObservations(signal, attributes = {}) {
+  const tolerance = Math.max(2, Number(attributes.size_cm) * 0.2);
+  const query = new URLSearchParams({
+    select:
+      "id,category_id,material,size_cm,finish,segment,price_inr,price_type,observed_at,attributes,provenance,source_note,source_url,status,image_path,image_alt,image_kind,image_credit,image_license,independence_key,ff_markets!inner(city,locality)",
+    status: "eq.approved",
+    "ff_markets.city": "eq.Jaipur",
+    order: "id.asc",
+    limit: "500",
+  });
+  for (const key of ["category_id", "material", "finish", "segment"])
+    if (attributes[key]) query.set(key, "eq." + attributes[key]);
+  if (Number.isFinite(tolerance))
+    query.set(
+      "and",
+      `(size_cm.gte.${Math.max(2, Number(attributes.size_cm) - tolerance)},size_cm.lte.${Math.min(30, Number(attributes.size_cm) + tolerance)})`,
+    );
+  const rows = [];
+  for (let offset = 0; ; offset += 500) {
+    query.set("offset", String(offset));
+    const page = await request("/rest/v1/ff_observations?" + query, { signal });
+    rows.push(...page);
+    if (page.length < 500) return rows;
+  }
+}
 export const getGuidance = (module, signal) =>
   request(
     `/rest/v1/ff_guidance?select=*&module=eq.${module}&published=eq.true&order=id`,

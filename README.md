@@ -20,11 +20,11 @@ No frontend dependencies, transpilation or build step. Node is used only for loc
 
 ## Pilot data and limits
 
-The 29 initial price observations are **synthetic demonstration fixtures**. They are not researched prices, verified purchases or records of named merchants. The UI labels every affected range and listing. The algorithm actually queries and processes those records; no displayed range is hardcoded.
+The 1,469 approved reference records are **synthetic demonstration scenarios** (29 original plus 1,440 added in the redesign). They are not researched prices, verified purchases or independent real market evidence. Two material assumptions, four finishes, three settings and two carving levels cover the 2–30 cm pilot. Four generated finish illustrations are hosted in Supabase Storage and labelled on listings. See [reference data and image provenance](docs/REFERENCE-DATA.md). Ranges are computed from eligible database rows, never hardcoded in the UI.
 
 Contributions are restricted to Jaipur wooden elephant figurines, 2–30 cm high. Reference matching requires the same category, material, finish and market segment, a Jaipur location, observations within one year, and size within the greater of 2 cm or 20%. Three compatible observations are required. Tukey fences remove extreme prices; the displayed range is the middle 50%, rounded outward to ₹10.
 
-Current auto tariffs and monument fees could not be verified from official sources on 17 November 2026. Those modules display **current fee unavailable**, with source links and check dates. They do not invent prices. There is no live ride-hailing integration, guide-price estimator, authentication flow or admin dashboard.
+Current auto tariffs and monument fees could not be verified from official sources on 19 November 2026. Those modules display **current fee unavailable**, with source links and check dates. They do not invent prices. There is no live ride-hailing integration, guide-price estimator, authentication flow or admin dashboard.
 
 ## Run locally
 
@@ -39,6 +39,8 @@ Open [localhost:4173](http://localhost:4173). The development server serves only
 npm test
 npm run check
 ```
+
+`npm run test:references` checks the actual database's full coverage without writes or vision calls. `npm run test:browser` drives installed Chrome/Edge through the design inspector's CDP utility (set `TASTE_CDP_PATH` if installed elsewhere). It mocks identification/submission endpoints, reads actual reference data, checks all routes/themes at four widths and tests offline reopening. `TEST_BASE_URL=https://fairfareapp.github.io` repeats the browser checks on production without sending real AI/submission requests.
 
 Tests cover matching, outliers, insufficient data, pending isolation, server validation, model response normalization, API error handling, SPA restoration and service-worker cache exclusions. `check` verifies JavaScript syntax, credential patterns, secret-file tracking and computed light/dark contrast pairs.
 

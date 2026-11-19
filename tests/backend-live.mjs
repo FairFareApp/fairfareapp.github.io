@@ -68,6 +68,7 @@ const common = {
   size_cm: 10,
   finish: "plain",
   segment: "shop",
+  carving_detail: "detailed",
   price_inr: 123,
   price_type: "paid",
   observed_at: new Date().toISOString().slice(0, 10),

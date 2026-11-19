@@ -2,7 +2,7 @@
 
 Source: the owner's build brief and supplied logo. Brand colours and warm surfaces are an explicit owner direction, including the terracotta accent exception to taste-skill's default palette rule.
 
-Reading: a quick-use travel app for Jaipur visitors, warm consumer language. ENERGY 2 / RHYTHM 2 / MOTION 1.
+Redesign reading, 19 November 2026: a distracted visitor needs one immediate action. ENERGY 1 / RHYTHM 2 / MOTION 1. Calm, task-first consumer interface; the owner's brief explicitly asks to remove the marketing composition. Preserve the established Pastel consumer palette and Manrope, reduce visible copy, and use progressive disclosure.
 
 Dealt direction: Pastel consumer, seed 521539996. Keep brand palette. Use Manrope for open, readable forms and distinctive tabular money figures. No framework or build pipeline.
 
@@ -26,6 +26,8 @@ Decisions:
 - Radii: 20px task panels, 10px controls, small status labels. Shadows are reserved for dialogs.
 - Motion: short pressed/hover feedback and loading progress only; reduced motion removes transitions.
 - Light/dark themes use neutral surfaces for day and evening use, with separately checked contrast.
-- No generated people, testimonials, product photos or trust metrics. Synthetic prices are labelled on every relevant screen.
+- No generated people, testimonials or trust metrics. Four explicitly commissioned/generated wooden-elephant finish illustrations support synthetic comparison listings; the user specifically permits illustrative images in this redesign. They are never described as purchase photos or independent evidence.
+
+Redesign decisions: the scan action owns the home screen, using the logo's clipped price-tag corner rather than a decorative logo card. Sage provides its calm large action surface; terracotta identifies the next action inside a workflow. Price figures own the result screen. Navigation rows have equal geometry because they are parallel destinations. Contributor steps show one decision group at a time and retain drafts in memory. The centered home canvas is deliberately capped at 820px with equal margins, rather than stretched into a dashboard; the inspector's sidebar inference is inapplicable to this top-navigation app. No gradients, glow, background patterns or decorative motion. Tiny status/navigation text is at least 11px; input text is 16px to avoid iOS zoom. Actual sourced monument photographs are hosted locally, with attribution/license in visit details.
 
 Asset conversion: crop the supplied logo and preserve its own background with rounded transparent corners for favicon and install icons, as requested by the owner.

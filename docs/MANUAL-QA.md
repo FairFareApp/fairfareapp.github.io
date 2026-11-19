@@ -6,16 +6,16 @@ These checks remain necessary on a real phone. Desktop automation cannot prove t
 
 1. Open `/scan` in Safari/Chrome on your phone. Tap **Take a photo**. Confirm the camera flow/permission and rear camera selection.
 2. Photograph a small wooden elephant in natural light. Confirm preview, retake and gallery replacement. Rotate the phone and check the image orientation.
-3. Tap **Identify this product** once. Confirm loading on your mobile connection and actual returned attributes. Check that it does not infer dimensions, exact wood species, authenticity or craftsmanship quality.
+3. Identification starts automatically after selection. Confirm loading and the “Looks like…” confirmation. Check that the app does not infer dimensions, exact wood species, authenticity or craftsmanship quality. If needed, use Retry or Enter details yourself.
 4. Correct material, finish and product type as needed. Enter height and setting, then compare. Confirm the visible synthetic-data disclosure.
 5. Try an unrelated object. It should be outside scope or offer insufficient data, not a confident unrelated price.
 6. Check invalid/unsupported files, camera cancel and denied permissions. The gallery/manual path should remain usable.
 
 ## Submissions and evidence
 
-1. From a comparison, choose **Report my purchase**. Confirm confirmed product details are reused.
+1. From a comparison, choose **Bought it? Share the price.** Confirm product details are reused. Enter price/locality, continue to evidence and then review.
 2. Submit a deliberately labelled test price. Leave photo consent unchecked and verify no image is attached.
-3. Add a new contributor observation with a product photo and optional receipt image containing no personal details. Confirm consent is required and removable evidence behaves correctly.
+3. In Contributor desk, add an observation through Photo → Details → Price → Evidence → Review. Use Back and edit controls and confirm values/photos remain. Use optional photo suggestions once. Remove evidence and check explicit consent is required for remaining attachments.
 4. Confirm the pending-review screen and record its reference.
 5. In Supabase, verify the exact `ff_submissions` record, pending status, attributes and private evidence metadata. Confirm approved reference counts/ranges did not change. Reject the test through trusted operations.
 

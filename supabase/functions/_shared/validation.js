@@ -214,7 +214,12 @@ export function validateSubmission(b, now = new Date()) {
       observed_at: b.observed_at,
       source_type: b.source_type,
       notes: text(b.notes, 2000),
-      attributes: { decoration: text(b.decoration) },
+      attributes: {
+        decoration: text(b.decoration),
+        carving_detail: ["simple", "detailed"].includes(b.carving_detail)
+          ? b.carving_detail
+          : "unknown",
+      },
       image_consent: b.image_consent === true,
       status: "pending",
     },

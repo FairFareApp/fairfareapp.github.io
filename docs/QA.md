@@ -1,5 +1,7 @@
 # Verification record
 
+The current redesign is covered by [19 November redesign verification](REDESIGN-QA.md). The record below describes the original 17 November implementation and is retained as history.
+
 Date: 17 November 2026. Implementation verification is recorded here; real-device acceptance remains with the owner. This report does not claim that a phone camera, on-screen keyboard or installed mobile PWA has been verified.
 
 ## Production verification

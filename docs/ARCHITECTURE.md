@@ -6,8 +6,16 @@
 2. A chosen image is decoded in memory, resized to at most 1280 pixels and re-encoded as JPEG. This also removes original metadata. A 20 MB input cap and 1.5 MB output cap apply.
 3. Identification sends a transient data URL to `fairfare-identify`. That function validates file type/signature and request size, consumes a quota, then calls the configured OpenRouter model with a strict JSON schema, optional reasoning disabled and a 2,048-token output budget. No image or raw response text is logged or stored by FairFare. Failure diagnostics contain only reason, finish status, content type and character count.
 4. The structured response is validated and normalized. Truncated answers are rejected explicitly; a complete JSON object can be read from a plain, fenced or prose-wrapped response without repairing partial data. Dimensions, prices, authenticity, species and quality claims are not accepted as model-derived facts. Unknown finish stays unknown; it does not silently become plain wood.
-5. Confirmed attributes query `ff_observations`, joined to market locations. PostgreSQL privileges and RLS expose approved records only. The pure `matching.js` module filters, excludes outliers and calculates the range.
+5. Confirmed attributes query `ff_observations`, joined to market locations. Category, material, finish, setting, Jaipur and height are filtered before deterministic ID-ordered pagination in pages of 500; no global 1,000-record cutoff is used. PostgreSQL privileges and RLS expose approved records only. The pure `matching.js` module rechecks eligibility, removes duplicate IDs/independence keys, optionally requires selected carving detail, excludes outliers and calculates the range.
 6. Public submissions go to `fairfare-submit`, which ignores approval-related input, enforces the pilot scope and requires image consent. Files receive fresh UUID paths, without upsert. The service-role-only `ff_insert_submission` RPC inserts pending submission and evidence metadata atomically. Failed uploads are cleaned up; uncertain transaction commits are checked before deleting any files. Retries use a request UUID.
+
+## Redesign modules and assets
+
+`app.js` owns routes, the temporary scan and result state. Photo selection starts identification automatically. `contribution.js` keeps contributor/purchase wizard drafts and images in tab memory, saving current inputs before any step change; reload/pagehide clears them. `references.js` renders labelled public illustration metadata and missing-image fallbacks. `policies.js` holds disclosure content. No user scans or drafts are persisted locally.
+
+The public `fairfare-reference-images` bucket holds four optimized finish illustrations; no anonymous write policy exists. `fairfare-evidence` is still private and separate. The index CSP permits image reads only from the named public reference path in addition to local/blob/data images. The one-time fixed-asset importer has been replaced with a 410 response and has no Storage capability. Its final disabled source is versioned. No privileged key entered local source or the browser.
+
+The new migration is `20261119111933_reference_coverage_v2.sql`; schema and data were applied through the connected project's SQL tool. As with the initial migrations, reconcile migration history before a future CLI `db push` rather than reapplying existing DDL. The CLI is not authenticated in this workspace.
 
 ## Tables
 
