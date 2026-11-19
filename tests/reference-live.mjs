@@ -31,7 +31,8 @@ for (const material of ["wood", "sandalwood"])
   for (const finish of ["plain", "painted", "inlay", "openwork"])
     for (const segment of ["street", "shop", "boutique"])
       for (const carving_detail of ["unknown", "simple", "detailed"])
-        for (let size_cm = 2; size_cm <= 30; size_cm++) {
+        for (let heightTick = 20; heightTick <= 300; heightTick++) {
+          const size_cm = heightTick / 10;
           const a = {
             category_id: "wooden_elephant",
             material,
@@ -112,4 +113,10 @@ await writeFile(
   JSON.stringify({ summary: result, cases }, null, 2),
 );
 await writeFile(".local/reference-snapshot.json", JSON.stringify(rows));
-console.log(JSON.stringify(result, null, 2));
+console.log(
+  JSON.stringify(
+    { ...result, representative: result.representative.slice(0, 4) },
+    null,
+    2,
+  ),
+);
