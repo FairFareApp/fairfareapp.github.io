@@ -31,3 +31,14 @@ Decisions:
 Redesign decisions: the scan action owns the home screen, using the logo's clipped price-tag corner rather than a decorative logo card. Sage provides its calm large action surface; terracotta identifies the next action inside a workflow. Price figures own the result screen. Navigation rows have equal geometry because they are parallel destinations. Contributor steps show one decision group at a time and retain drafts in memory. The centered home canvas is deliberately capped at 820px with equal margins, rather than stretched into a dashboard; the inspector's sidebar inference is inapplicable to this top-navigation app. No gradients, glow, background patterns or decorative motion. Tiny status/navigation text is at least 11px; input text is 16px to avoid iOS zoom. Actual sourced monument photographs are hosted locally, with attribution/license in visit details.
 
 Asset conversion: crop the supplied logo and preserve its own background with rounded transparent corners for favicon and install icons, as requested by the owner.
+
+## Colour and motion follow-up
+
+Design read for 20 November 2026. A Jaipur pocket guide for visitors making quick decisions, with colours drawn from lacquered bangles, turmeric, indigo and foliage. ENERGY 2 / RHYTHM 2 / MOTION 2. The Hawa Mahal photograph makes the city recognisable at launch. The photograph is by Wander-earth, with the original and licence linked in About FairFare.
+
+- Use lac for scanning and the main price figure, leaf green for preparation, indigo for ride guidance, and turmeric for bargaining, ticket figures and the submission receipt. Keep the app canvas neutral so the colours mark useful information.
+- Use the clipped corner of the supplied price-tag mark on the home banner, action tiles, tip cards and receipt stamp. Keep dense forms on quiet surfaces.
+- Layer the tip cards and move the top one with the pointer. A brief drag settles back. A swipe or tap advances one card while preserving the link and a way to return. Honour reduced motion and keep each card usable with a keyboard.
+- Show submission feedback while the request is pending. Animate the receipt check only after acceptance for review.
+
+Reference study. Onto gives destinations distinct photographs and clear actions. Duolingo ties short animations to a completed exercise. Revolut uses swiping to browse physical card designs. Phantom puts the quote and primary action within reach and moves the technical details into a disclosure. FairFare applies those patterns to its own travel tasks. [Onto](https://onto.travel/) · [Duolingo](https://blog.duolingo.com/building-character/) · [Revolut](https://www.revolut.com/blog/post/how-to-get-a-revolut-card/) · [Phantom](https://help.phantom.com/articles/5985106844435)

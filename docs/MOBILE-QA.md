@@ -1,5 +1,13 @@
 # Mobile workflow review
 
+## Colour, swipe and submission feedback
+
+Reviewed 375 × 812 first, then 390 × 844 and 1440 × 900. All 14 browser workflow groups passed at each size. The suite hit-tested controls in 27 captured states per viewport and checked every direct route in both themes. At 375 × 812, the Jaipur tips and Scan buttons end at y=470 and y=566. The first card and its fare link fit in the open dialog. The submission action, review checkbox and receipt action also fit without scrolling. Comparison and reference details still extend when opened.
+
+The flashcard check drags the front card before release, cancels a short drag, swipes past the threshold, taps the revealed card, advances with Enter, goes back a card, finishes with reduced motion, replays, and closes with Escape. It also captures the stack in dark mode. The contribution check delays an intercepted response to verify the sending state, then verifies the receipt stamp after the response. Identification and submission are intercepted during these runs. Fare references use the live read paths. Device camera and installed PWA behaviour remain device checks.
+
+Screenshots and reports are under `.local/lively-375x812/`, `.local/lively-390x844/` and `.local/lively-1440x900/`. The home inspector measured a 24 px title before and a 26 px title after at 375 px, with one additional locally hosted photograph. It reported no errors. Its remaining warning is for the existing warm white brand canvas.
+
 ## Jaipur guide and contribution receipts
 
 The home carousel explains the Jaipur demo. Get Ready for Jaipur opens seven browsable tip cards and sits above Scan on mobile. The capture tile and gallery button are taller. The ordered menu links to Your Contributions, the installation guide, privacy, About FairFare and the illustrated motivation story. Results identify the selling setting and show a suggested opening offer with an explanation that actual discounts vary.

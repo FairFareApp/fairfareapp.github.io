@@ -27,7 +27,8 @@ const checks = [],
   submissionBodies = [];
 let photoMode = "success",
   mockSubmissions = 0,
-  mockIdentifications = 0;
+  mockIdentifications = 0,
+  slowSubmission = false;
 browser.on(page.sessionId, "Network.requestWillBeSent", (e) =>
   requests.push({ url: e.request.url, method: e.request.method }),
 );
@@ -77,6 +78,8 @@ browser.on(page.sessionId, "Fetch.requestPaused", async (e) => {
           id: String(mockSubmissions).padStart(8, "0") + "-browser-test",
           status: "pending",
         };
+  if (slowSubmission && !identifying && !preflight)
+    await new Promise((resolve) => setTimeout(resolve, 600));
   await page.send("Fetch.fulfillRequest", {
     requestId: e.requestId,
     responseCode: preflight
@@ -198,7 +201,7 @@ const check = async (name, fn) => {
 try {
   await page.goto(base);
   await check(
-    "home puts Jaipur tips before Scan and both decks are interactive",
+    "home puts Jaipur tips before Scan and intro slides snap into view",
     async () => {
       await wait("document.querySelector('.scan-launch')");
       assert.ok(
@@ -209,28 +212,137 @@ try {
             document.querySelector(".scan-launch").getBoundingClientRect().top,
         ),
       );
-      await click(".intro-deck [data-deck-next]");
+      await click('.intro-deck [data-slide="1"]');
+      await wait(
+        `Math.abs(document.querySelector('.intro-track').scrollLeft - document.querySelector('.intro-track').clientWidth) < 1`,
+      );
       assert.match(
         await page.eval(
-          () => document.querySelector(".intro-deck h3").innerText,
+          () => document.querySelectorAll(".intro-deck h2")[1].innerText,
         ),
         /Get around/,
       );
-      await click(".intro-deck [data-deck-prev]");
+      await click('.intro-deck [data-slide="0"]');
+      await wait(`document.querySelector('.intro-track').scrollLeft === 0`);
       await shot("home", ".ready-launch", [".scan-launch"]);
+    },
+  );
+  await check(
+    "Jaipur cards drag and dismiss with touch or mouse, tap and keyboard",
+    async () => {
       await click(".ready-launch");
       await wait("document.querySelector('#info-dialog').open");
-      assert.match(
-        await page.eval(() => document.querySelector(".tips-deck").innerText),
-        /Google Maps/,
+      const front = '.tip-card[data-depth="0"]';
+      const face = `${front} .tip-dismiss`;
+      const tip = (number) =>
+        wait(
+          `document.querySelector('[data-tip-count]').textContent.startsWith('${number} of')`,
+        );
+      const text = () =>
+        page.eval((s) => document.querySelector(s).innerText, front);
+      assert.match(await text(), /Google Maps/);
+      await shot("jaipur-flashcards", face, [`${front} .tip-link`]);
+      const start = await page.eval((s) => {
+        const { x, y, width, height } = document
+          .querySelector(s)
+          .getBoundingClientRect();
+        return { x: Math.round(x + width / 2), y: Math.round(y + height / 2) };
+      }, face);
+      const sendPointer = (phase, dx) => {
+        const x = start.x + dx;
+        const y = start.y;
+        return width < 761
+          ? page.send("Input.dispatchTouchEvent", {
+              type: { down: "touchStart", move: "touchMove", up: "touchEnd" }[
+                phase
+              ],
+              touchPoints: phase === "up" ? [] : [{ x, y }],
+            })
+          : page.send("Input.dispatchMouseEvent", {
+              type: {
+                down: "mousePressed",
+                move: "mouseMoved",
+                up: "mouseReleased",
+              }[phase],
+              button: phase === "move" ? "none" : "left",
+              buttons: phase === "up" ? 0 : 1,
+              clickCount: 1,
+              x,
+              y,
+            });
+      };
+      await sendPointer("down", 0);
+      await sendPointer("move", -23);
+      await wait(`document.querySelector('${front}').style.transform !== ''`);
+      await sendPointer("up", -23);
+      await wait(`document.querySelector('${front}').style.transform === ''`);
+      assert.match(await text(), /Google Maps/);
+      await sendPointer("down", 0);
+      await sendPointer("move", -92);
+      await wait(
+        `document.querySelector('${front}').style.transform.includes('-92px')`,
       );
-      await shot("jaipur-flashcards", ".tips-deck [data-deck-next]");
-      for (let i = 0; i < 4; i++) await click(".tips-deck [data-deck-next]");
+      await shot("jaipur-flashcards-drag");
+      await sendPointer("up", -92);
+      await tip(2);
+      assert.match(await text(), /meter/i);
+      await sendPointer("down", 0);
+      await sendPointer("up", 0);
+      await tip(3);
+      await page.send("Input.dispatchKeyEvent", {
+        type: "keyDown",
+        key: "Enter",
+        code: "Enter",
+        text: "\r",
+        windowsVirtualKeyCode: 13,
+        nativeVirtualKeyCode: 13,
+      });
+      await page.send("Input.dispatchKeyEvent", {
+        type: "keyUp",
+        key: "Enter",
+        code: "Enter",
+        windowsVirtualKeyCode: 13,
+      });
+      await tip(4);
+      await click(face);
+      await tip(5);
+      assert.match(await text(), /authorised bank/);
+      await shot("jaipur-flashcards-money", face, [`${front} .tip-link`]);
+      await click("[data-tip-back]");
+      await tip(4);
+      await page.send("Emulation.setEmulatedMedia", {
+        features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+      });
+      for (let i = 4; i <= 7; i++) {
+        await tip(i);
+        await click(face);
+      }
+      await wait("!document.querySelector('.tip-complete').hidden");
       assert.match(
-        await page.eval(() => document.querySelector(".tips-deck").innerText),
-        /authorised bank/,
+        await page.eval(
+          () => document.querySelector("[data-tip-count]").innerText,
+        ),
+        /7 tips complete/,
       );
-      await click("#close-dialog");
+      await click("[data-tip-replay]");
+      await tip(1);
+      await page.eval(() => (document.documentElement.dataset.theme = "dark"));
+      await shot("jaipur-flashcards-dark", face, [`${front} .tip-link`]);
+      await page.eval(() => (document.documentElement.dataset.theme = "light"));
+      await page.send("Emulation.setEmulatedMedia", { features: [] });
+      await page.send("Input.dispatchKeyEvent", {
+        type: "keyDown",
+        key: "Escape",
+        code: "Escape",
+        windowsVirtualKeyCode: 27,
+      });
+      await page.send("Input.dispatchKeyEvent", {
+        type: "keyUp",
+        key: "Escape",
+        code: "Escape",
+        windowsVirtualKeyCode: 27,
+      });
+      await wait("!document.querySelector('#info-dialog').open");
       await click(".scan-launch");
       await wait("location.pathname==='/scan'");
       assert.equal(
@@ -489,8 +601,27 @@ try {
       await wait("document.querySelector('.review-list')");
       await shot("contributor-review", "#wizard-next", [".honest-check"]);
       await fill("#honest-observation", true);
+      slowSubmission = true;
       await click("#wizard-next");
+      await wait(
+        "document.querySelector('#wizard-next')?.textContent.includes('Sending')",
+      );
+      assert.equal(
+        await page.eval(() =>
+          document.querySelector("#submission-form")?.getAttribute("aria-busy"),
+        ),
+        "true",
+      );
       await wait("location.pathname==='/submitted'");
+      slowSubmission = false;
+      assert.equal(
+        await page.eval(
+          () =>
+            getComputedStyle(document.querySelector(".success-mark"))
+              .animationName,
+        ),
+        "receipt-stamp",
+      );
       await shot("submitted", ".confirmation .primary");
       assert.equal(submissionBodies.at(-1).category_id, "bangles");
       assert.equal(submissionBodies.at(-1).pack_count, 6);
@@ -906,6 +1037,7 @@ try {
         return urls;
       });
       assert.ok(cache.some((u) => u.endsWith("/js/contribution.js")));
+      assert.ok(cache.some((u) => u.endsWith("/assets/monuments/hawa.webp")));
       assert.ok(
         cache.every(
           (u) =>

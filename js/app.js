@@ -87,7 +87,7 @@ function shell(content, path) {
   ${!contributor ? `<nav class="bottom-nav" aria-label="Mobile main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}>${icon(i)}<span>${label}</span></a>`).join("")}</nav>` : ""}<dialog id="info-dialog" class="dialog" aria-labelledby="dialog-title"><div class="dialog-top"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog">${icon("xmark")}</button></div><div id="dialog-body"></div></dialog>`;
 }
 function home() {
-  return `<section class="home-start" aria-labelledby="home-title"><h1 id="home-title">Explore Jaipur</h1>${deckMarkup("intro")}<div class="home-actions"><button type="button" class="ready-launch" data-dialog="ready"><span class="launch-icon">${icon("map-location-dot")}</span><span><strong>Get Ready for Jaipur</strong><small>Tips for rides, markets and money</small></span>${icon("chevron-right")}</button><a href="/scan" class="scan-launch"><span class="scan-launch-icon">${icon("camera")}</span><span><strong>Scan a Product</strong><small>Elephants & bangles</small></span>${icon("chevron-right")}</a></div></section><nav class="home-shortcuts" aria-label="More in Jaipur">${[
+  return `<section class="home-start" aria-labelledby="home-title"><div class="home-postcard"><h1 id="home-title">Explore<br>Jaipur</h1><img src="/assets/monuments/hawa.webp" alt="Hawa Mahal, Jaipur" decoding="async"></div>${deckMarkup("intro")}<div class="home-actions"><button type="button" class="ready-launch" data-dialog="ready"><span class="launch-icon">${icon("map-location-dot")}</span><span><strong>Get Ready for Jaipur</strong><small>Tips for rides, markets and money</small></span>${icon("chevron-right")}</button><a href="/scan" class="scan-launch"><span class="scan-launch-icon">${icon("camera")}</span><span><strong>Scan a Product</strong><small>Elephants & bangles</small></span>${icon("chevron-right")}</a></div></section><nav class="home-shortcuts" aria-label="More in Jaipur">${[
     ["/taxis", "taxi", "Taxi fares"],
     ["/autos", "car-side", "Auto fares"],
     ["/monuments", "landmark", "Monuments"],
@@ -332,6 +332,7 @@ function showInfo(type) {
   const [title, content] = policies[type] || policies.pilot;
   const body = document.querySelector("#dialog-body");
   const dialog = document.querySelector("#info-dialog");
+  dialog.classList.toggle("tips-dialog", type === "ready");
   document.querySelector("#dialog-title").textContent = title;
   body.innerHTML = type === "ready" ? deckMarkup("tips") : content;
   if (type === "ready") bindDeck(body.querySelector("[data-deck]"));

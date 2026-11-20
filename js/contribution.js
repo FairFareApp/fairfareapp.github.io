@@ -281,6 +281,7 @@ export function createContributionFlow({
       };
     form.onsubmit = async (e) => {
       e.preventDefault();
+      if (form.getAttribute("aria-busy") === "true") return;
       save();
       feedback.innerHTML = "";
       if (pending) {
@@ -366,7 +367,10 @@ export function createContributionFlow({
         image_consent: v.image_consent === true,
         accurate: v.accurate === true,
       };
-      document.querySelector("#wizard-next").disabled = true;
+      const submit = document.querySelector("#wizard-next");
+      form.setAttribute("aria-busy", "true");
+      submit.disabled = true;
+      submit.innerHTML = `${icon("paper-plane")} Sending…`;
       feedback.innerHTML = loading("Sending for review…");
       try {
         const result = devMock
@@ -384,7 +388,9 @@ export function createContributionFlow({
       } catch (e) {
         if (!signal.aborted) {
           showError(e.message);
-          document.querySelector("#wizard-next").disabled = false;
+          form.removeAttribute("aria-busy");
+          submit.disabled = false;
+          submit.textContent = "Submit for review";
         }
       }
     };

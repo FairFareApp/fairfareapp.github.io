@@ -83,6 +83,7 @@ const themes = {
   },
 };
 const contrasts = [];
+const css = await readFile("css/app.css", "utf8");
 for (const [theme, t] of Object.entries(themes)) {
   for (const fg of ["ink", "muted", "accent"])
     for (const bg of ["surface", "ground", "soft"]) {
@@ -98,6 +99,26 @@ for (const [theme, t] of Object.entries(themes)) {
   ]) {
     const ratio = pair(t[fg], t[bg]);
     assert.ok(ratio >= min, `${theme} ${fg}/${bg} = ${ratio}`);
+    contrasts.push({ theme, pair: fg + "/" + bg, ratio: ratio.toFixed(2) });
+  }
+  const selector = theme === "light" ? ":root {" : ':root[data-theme="dark"] {';
+  const tokens = css.split(selector)[1].split("}")[0];
+  for (const [fg, bg] of [
+    ["lac-ink", "lac"],
+    ["leaf-ink", "leaf"],
+    ["indigo-ink", "indigo"],
+    ["turmeric-ink", "turmeric"],
+    ["muted", "leaf"],
+    ["muted", "indigo"],
+    ["muted", "turmeric"],
+    ["ink", "lac"],
+    ["ink", "leaf"],
+  ]) {
+    const colors = [fg, bg].map(
+      (name) => tokens.match(new RegExp(`--${name}: #([a-f0-9]{6});`))[1],
+    );
+    const ratio = pair(...colors);
+    assert.ok(ratio >= 4.5, `${theme} ${fg}/${bg} = ${ratio}`);
     contrasts.push({ theme, pair: fg + "/" + bg, ratio: ratio.toFixed(2) });
   }
 }

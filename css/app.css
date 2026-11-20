@@ -17,6 +17,14 @@
   --danger: #a72c27;
   --danger-bg: #fff0ec;
   --focus: #a3492d;
+  --lac: #f7d9cb;
+  --lac-ink: #853721;
+  --indigo: #e1e5f5;
+  --indigo-ink: #384579;
+  --turmeric: #f8e8b8;
+  --turmeric-ink: #67460d;
+  --leaf: #e1ead5;
+  --leaf-ink: #385138;
   --radius: 20px;
   --control-radius: 10px;
   --gutter: 24px;
@@ -42,6 +50,14 @@
   --danger: #ffb5ab;
   --danger-bg: #402622;
   --focus: #f0a184;
+  --lac: #432923;
+  --lac-ink: #ffb69f;
+  --indigo: #2d3453;
+  --indigo-ink: #c4cdff;
+  --turmeric: #40321b;
+  --turmeric-ink: #f7d891;
+  --leaf: #2e3b2a;
+  --leaf-ink: #d1e5bd;
 }
 *,
 *::before,
@@ -1068,11 +1084,11 @@ progress::-webkit-progress-bar {
   border-radius: 2px;
 }
 progress::-webkit-progress-value {
-  background: var(--sage-ink);
+  background: var(--lac-ink);
   border-radius: 2px;
 }
 progress::-moz-progress-bar {
-  background: var(--sage-ink);
+  background: var(--lac-ink);
 }
 .wizard-photo .photo-empty {
   min-height: 210px;
@@ -1169,15 +1185,54 @@ progress::-moz-progress-bar {
   padding: 36px;
 }
 .success-mark {
+  position: relative;
   width: 58px;
   height: 58px;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  background: var(--surface-green);
-  color: var(--sage-ink);
+  border-radius: 18px 6px 18px 18px;
+  background: var(--leaf);
+  color: var(--leaf-ink);
   font-size: 25px;
   margin: 0 auto 24px;
+  animation: receipt-stamp 380ms cubic-bezier(0.2, 0.85, 0.4, 1) both;
+}
+.success-mark::before,
+.success-mark::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--turmeric);
+  animation: receipt-fan 390ms cubic-bezier(0.2, 0.85, 0.4, 1) 90ms both;
+  --stamp-angle: -22deg;
+}
+.success-mark::after {
+  background: var(--lac);
+  --stamp-angle: 22deg;
+}
+.success-mark > i {
+  position: relative;
+  z-index: 1;
+}
+@keyframes receipt-stamp {
+  0% {
+    transform: translateY(8px) scale(0.75) rotate(-10deg);
+  }
+  65% {
+    transform: translateY(-2px) scale(1.08) rotate(2deg);
+  }
+}
+@keyframes receipt-fan {
+  from {
+    transform: scale(0.72);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1.16) rotate(var(--stamp-angle));
+    opacity: 0.78;
+  }
 }
 .confirmation > p {
   font-size: 14px;
@@ -1196,6 +1251,9 @@ progress::-moz-progress-bar {
   justify-content: space-between;
   gap: 12px;
   font-size: 13px;
+  border-radius: 10px;
+  background: var(--turmeric);
+  color: var(--turmeric-ink);
 }
 .confirmation > .button {
   margin-top: 12px;
@@ -1266,11 +1324,17 @@ progress::-moz-progress-bar {
   font-weight: 600;
   border-radius: 9px;
   min-height: 44px;
+  transition:
+    background var(--duration),
+    color var(--duration);
 }
 .choice.active {
-  background: var(--surface);
-  color: var(--sage-ink);
-  box-shadow: 0 1px 3px #0002;
+  background: var(--leaf);
+  color: var(--leaf-ink);
+}
+.choice.active[data-payment] {
+  background: var(--indigo);
+  color: var(--indigo-ink);
 }
 .advice-block {
   margin: 20px 0;
@@ -1362,6 +1426,7 @@ progress::-moz-progress-bar {
   margin-bottom: 16px;
 }
 .monument-card .availability {
+  color: var(--turmeric-ink);
   font-size: 15px;
   margin: 14px 0 2px;
 }
@@ -1502,6 +1567,14 @@ progress::-moz-progress-bar {
     color: var(--sage-ink);
     background: var(--surface-green);
     font-weight: 800;
+  }
+  .bottom-nav a[aria-current][href="/taxis"] {
+    background: var(--indigo);
+    color: var(--indigo-ink);
+  }
+  .bottom-nav a[aria-current][href="/monuments"] {
+    background: var(--turmeric);
+    color: var(--turmeric-ink);
   }
   .main-content {
     width: calc(100% - 40px);
@@ -1966,18 +2039,27 @@ summary {
   gap: 12px;
   width: 100%;
   min-height: 180px;
-  background: var(--surface-green);
-  color: var(--sage-ink);
+  background: var(--lac);
+  color: var(--lac-ink);
   border-radius: 16px 6px 16px 16px;
   padding: 14px;
+  transition:
+    background var(--duration),
+    transform var(--duration);
 }
 .capture-tile:hover {
-  background: var(--surface-soft);
+  background: color-mix(in srgb, var(--lac) 92%, var(--lac-ink));
+}
+.capture-tile:active {
+  transform: scale(0.98);
 }
 .capture-tile .viewfinder {
   border: 0;
-  width: 60px;
-  height: 46px;
+  width: 82px;
+  height: 72px;
+  border-radius: 18px 6px 18px 18px;
+  background: var(--lac-ink);
+  color: var(--lac);
 }
 .photo-actions > .button:only-child {
   grid-column: 1 / -1;
@@ -2265,26 +2347,81 @@ summary {
   font-size: 14px;
   color: var(--sage-ink);
 }
+.mobile-menu [data-dialog="install"] i,
+.mobile-menu [data-dialog="privacy"] i {
+  color: var(--indigo-ink);
+}
+.mobile-menu [data-dialog="story"] i {
+  color: var(--lac-ink);
+}
 .home-start {
   max-width: 570px;
   margin-inline: auto;
   text-align: left;
 }
-.home-start h1 {
-  margin: 0 0 15px;
-  font-size: 27px;
+.home-postcard {
+  display: grid;
+  grid-template-columns: 1fr 46%;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 23px 8px 23px 23px;
+  margin-bottom: 12px;
+  background: #8f3925;
+  color: #fff6eb;
 }
-.card-deck {
-  background: var(--surface-soft);
-  border-radius: 20px;
-  padding: 14px 16px 7px;
+.home-postcard h1 {
+  margin: 0;
+  padding: 12px 10px 12px 16px;
+  font-size: clamp(26px, 7vw, 32px);
+  line-height: 1.04;
+  letter-spacing: -0.055em;
 }
-.deck-card {
+.home-postcard img {
+  display: block;
+  width: 100%;
+  height: clamp(104px, 29vw, 136px);
+  object-fit: cover;
+  object-position: center 45%;
+}
+.tone-lac {
+  --card-face: var(--lac);
+  --card-ink: var(--lac-ink);
+}
+.tone-indigo {
+  --card-face: var(--indigo);
+  --card-ink: var(--indigo-ink);
+}
+.tone-turmeric {
+  --card-face: var(--turmeric);
+  --card-ink: var(--turmeric-ink);
+}
+.tone-sage {
+  --card-face: var(--leaf);
+  --card-ink: var(--leaf-ink);
+}
+.intro-deck {
+  border-radius: 17px;
+  background: var(--surface);
+}
+.intro-track {
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  min-height: 95px;
-  touch-action: pan-y;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  border-radius: inherit;
+}
+.intro-card {
+  flex: 0 0 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 105px;
+  padding: 12px 13px;
+  scroll-snap-align: start;
+  background: var(--card-face);
+  color: var(--card-ink);
 }
 .deck-icon,
 .launch-icon,
@@ -2294,36 +2431,212 @@ summary {
   height: 45px;
   display: grid;
   place-items: center;
-  background: var(--surface-green);
-  color: var(--sage-ink);
+  background: var(--card-ink, var(--leaf-ink));
+  color: var(--card-face, var(--leaf));
   border-radius: 13px 5px 13px 13px;
   font-size: 19px;
 }
-.deck-card h3 {
-  margin: 2px 0 6px;
-  font-size: 17px;
+.intro-card h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  line-height: 1.3;
 }
-.deck-card p {
-  color: var(--muted);
-  font-size: 14px;
+.intro-card .deck-icon {
+  background: transparent;
+  color: inherit;
+  font-size: 24px;
+}
+.intro-card p {
   margin: 0;
+  font-size: 13px;
 }
-.deck-controls {
+.intro-dots {
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 8px;
 }
-.deck-controls span {
+.intro-dots button {
+  display: grid;
+  width: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 0;
+  border-radius: 10px;
+}
+.intro-dots button > span {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--control-line);
+  border-radius: 12px;
+  transition:
+    width 190ms ease,
+    background 190ms ease;
+}
+.intro-dots button[aria-current] > span {
+  width: 20px;
+  background: var(--lac-ink);
+  border-color: var(--lac-ink);
+}
+.tips-dialog {
+  max-width: 465px;
+  max-height: calc(100svh - 32px);
+  padding: 18px;
+}
+.tips-dialog .dialog-top {
+  margin-bottom: 10px;
+}
+.tips-dialog .dialog-top h2 {
+  font-size: clamp(19px, 6vw, 25px);
+}
+.tip-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
   color: var(--muted);
   font-size: 12px;
+  font-weight: 750;
   font-variant-numeric: tabular-nums;
+  margin-bottom: 14px;
 }
-.deck-controls .icon-button:hover {
-  background: var(--surface);
+.tip-segments {
+  display: flex;
+  gap: 4px;
 }
-.tips-deck .deck-card {
-  min-height: 156px;
+.tip-segments > span {
+  flex: 1;
+  height: 4px;
+  border-radius: 10px;
+  background: var(--line);
+  transition: background 180ms ease;
+}
+.tip-segments > .is-read {
+  background: var(--lac-ink);
+}
+.tip-stack {
+  display: grid;
+  isolation: isolate;
+  min-height: 323px;
+  padding: 3px 4px 21px;
+}
+.tip-card,
+.tip-complete {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  color: var(--card-ink);
+  background: var(--card-face);
+  border-radius: 24px 8px 24px 24px;
+  border: 1px solid color-mix(in srgb, var(--card-ink) 15%, var(--card-face));
+}
+.tip-card[hidden],
+.tip-complete[hidden] {
+  display: none;
+}
+.tip-card[data-depth="0"] {
+  z-index: 3;
+}
+.tip-card[data-depth="1"],
+.tip-card[data-depth="2"] {
+  overflow: hidden;
+  transform-origin: bottom center;
+  transform: translateY(9px) scale(0.965);
+  z-index: 2;
+}
+.tip-card[data-depth="2"] {
+  transform: translateY(17px) scale(0.92);
+  z-index: 1;
+}
+.tip-card[data-depth="2"] > * {
+  visibility: hidden;
+}
+.tip-dismiss {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px;
+  border-radius: inherit;
+  text-align: left;
+  touch-action: pan-y pinch-zoom;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tip-dismiss:active {
+  cursor: grabbing;
+}
+.tip-dismiss > strong,
+.tip-complete h3 {
+  font-size: clamp(23px, 6.7vw, 31px);
+  line-height: 1.13;
+  letter-spacing: -0.032em;
+}
+.tip-dismiss > span:last-child {
+  font-size: 14px;
+  line-height: 1.48;
+}
+.tip-dismiss .deck-icon,
+.tip-complete .deck-icon {
+  flex-basis: 54px;
+  width: 58px;
+  height: 54px;
+  font-size: 23px;
+}
+.tip-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  margin: 0 12px 7px;
+  padding: 0 6px;
+  color: inherit;
+  font-size: 13px;
+}
+.tip-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  column-gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.tip-footer button {
+  min-height: 44px;
+  color: var(--ink);
+  font-weight: 750;
+  padding-inline: 4px;
+}
+.tip-footer button:disabled {
+  visibility: hidden;
+}
+.tips-deck.is-complete #tip-gesture {
+  visibility: hidden;
+}
+.tip-complete {
+  justify-content: center;
+  align-items: stretch;
+  gap: 10px;
+  padding: 18px;
+}
+.tip-complete h3 {
+  margin: 0 0 6px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tip-card[data-depth="0"] {
+    animation: card-arrival 200ms cubic-bezier(0.2, 0.8, 0.35, 1);
+  }
+  .tip-complete {
+    animation: card-arrival 200ms cubic-bezier(0.2, 0.8, 0.35, 1);
+  }
+}
+@keyframes card-arrival {
+  from {
+    transform: translateY(8px) scale(0.966);
+  }
 }
 .home-actions {
   display: grid;
@@ -2343,22 +2656,36 @@ summary {
   border-radius: 17px 6px 17px 17px;
   padding: 12px 15px;
   text-align: left;
+  transition:
+    transform var(--duration),
+    border-color var(--duration);
 }
 .home-actions .ready-launch {
   min-height: 96px;
-  background: var(--surface-green);
-  border-color: var(--sage);
+  background: var(--leaf);
+  border-color: transparent;
 }
-.home-actions .ready-launch:hover,
-.home-actions .scan-launch:hover {
+.home-actions .ready-launch:hover {
   border-color: var(--sage-ink);
 }
+.home-actions .scan-launch:hover {
+  border-color: var(--lac-ink);
+}
 .ready-launch .launch-icon {
-  background: var(--sage-ink);
-  color: var(--surface);
+  background: transparent;
+  color: var(--leaf-ink);
+  font-size: 25px;
 }
 .home-actions .scan-launch {
-  background: var(--surface);
+  background: var(--lac);
+  border-color: transparent;
+}
+.home-actions .scan-launch-icon {
+  background: var(--lac-ink);
+  color: var(--lac);
+}
+.home-actions > :active {
+  transform: scale(0.975);
 }
 .home-actions .scan-launch > span:nth-child(2) {
   font-size: inherit;
@@ -2367,6 +2694,9 @@ summary {
 .home-actions strong,
 .home-actions small {
   display: block;
+}
+.home-actions .scan-launch small {
+  color: var(--lac-ink);
 }
 .home-actions strong {
   font-size: 17px;
@@ -2380,12 +2710,24 @@ summary {
   font-size: 12px;
   color: var(--sage-ink);
 }
+.home-shortcuts :is([href="/taxis"], [href="/taxis"] > i:first-child) {
+  color: var(--indigo-ink);
+}
+.home-shortcuts :is([href="/autos"], [href="/autos"] > i:first-child) {
+  color: var(--leaf-ink);
+}
+.home-shortcuts :is([href="/monuments"], [href="/monuments"] > i:first-child) {
+  color: var(--turmeric-ink);
+}
 
 .price-panel {
   padding-bottom: 14px;
 }
+.price-range {
+  color: var(--lac-ink);
+}
 .bargaining-card {
-  background: var(--surface-green);
+  background: var(--turmeric);
   color: var(--ink);
   padding: 16px 18px 6px;
   border-radius: 16px;
@@ -2398,7 +2740,7 @@ summary {
   margin-bottom: 8px;
 }
 .bargaining-head > i {
-  color: var(--sage-ink);
+  color: var(--turmeric-ink);
   font-size: 20px;
 }
 .bargaining-head h2 {
@@ -2406,7 +2748,7 @@ summary {
   font-size: 17px;
 }
 .bargaining-head small {
-  color: var(--sage-ink);
+  color: var(--turmeric-ink);
   font-size: 12px;
 }
 .bargaining-card > p {
@@ -2460,7 +2802,8 @@ summary {
   font-size: 14px;
 }
 .fare-reference {
-  background: var(--surface-soft);
+  background: var(--indigo);
+  color: var(--indigo-ink);
   border-radius: 12px;
   padding: 5px 16px;
   margin: 0 0 16px;
@@ -2492,9 +2835,6 @@ summary {
 @media (max-width: 760px) {
   .home-content {
     padding-top: 24px;
-  }
-  .home-start h1 {
-    font-size: 24px;
   }
   .mobile-menu {
     top: 58px;
