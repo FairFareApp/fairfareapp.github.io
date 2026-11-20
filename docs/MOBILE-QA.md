@@ -1,5 +1,15 @@
 # Mobile workflow review
 
+## Shared swipe, home scan and trip guides
+
+Home leads with a loop of three logo-inspired images, followed by the camera and gallery controls, the Jaipur pilot and product scope, and the Hawa Mahal tips card. At 375 × 812 the two photo controls end at y=520, and the tips card ends at y=741 above the bottom bar. Confirming a photo or returning from a comparison brings the product form into view on Home. Existing direct scan links continue to work.
+
+The browser suite exercises left and right swipes, tap, keyboard, a cancelled short swipe, autoplay, pause and reduced motion. A separate vertical touch test over the monument card scrolled 413 px while leaving the selected card unchanged. The visitor category stays in place across card changes. The initial visitor selector and official ticket link fit at 375 × 812. Sources and guide details expand below the deck.
+
+On both fare pages the mode selector has the same active colour. The first screen shows the selector and the pre-ride checklist. Practice scenarios, extra tips and the local fare calculator are available by scrolling. The More menu makes the four information pages available with a highlighted route. The contributor landing and existing submission receipts are accessible from the primary navigation.
+
+The 375 × 812 review was followed by 390 × 844 and 1440 × 900. Screenshot and hit-test reports are under `.local/unified-<width>x<height>/` and `.local/unified-live-<width>x<height>/`. The browser suite uses real public comparison and ticket reads and intercepts photo identification and contribution writes. Device camera capture and installation are phone checks.
+
 ## Colour, swipe and submission feedback
 
 Reviewed 375 × 812 first, then 390 × 844 and 1440 × 900. All 14 browser workflow groups passed at each size. The suite hit-tested controls in 27 captured states per viewport and checked every direct route in both themes. At 375 × 812, the Jaipur tips and Scan buttons end at y=470 and y=566. The first card and its fare link fit in the open dialog. The submission action, review checkbox and receipt action also fit without scrolling. Comparison and reference details still extend when opened.

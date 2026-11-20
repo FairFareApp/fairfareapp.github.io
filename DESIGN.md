@@ -42,3 +42,13 @@ Design read for 20 November 2026. A Jaipur pocket guide for visitors making quic
 - Show submission feedback while the request is pending. Animate the receipt check only after acceptance for review.
 
 Reference study. Onto gives destinations distinct photographs and clear actions. Duolingo ties short animations to a completed exercise. Revolut uses swiping to browse physical card designs. Phantom puts the quote and primary action within reach and moves the technical details into a disclosure. FairFare applies those patterns to its own travel tasks. [Onto](https://onto.travel/) · [Duolingo](https://blog.duolingo.com/building-character/) · [Revolut](https://www.revolut.com/blog/post/how-to-get-a-revolut-card/) · [Phantom](https://help.phantom.com/articles/5985106844435)
+
+## Home, rides and visit cards
+
+A Jaipur pocket guide with a larger photographic opening and shared horizontal card motion. ENERGY 2 / RHYTHM 2 / MOTION 2.
+
+- Home opens with three generated still lifes made from the supplied tag silhouette and its green, ivory and clay layers. Campaign subjects represent the actual scan, ride and monument tasks. The product scope and illustrative pricing sit next to the real camera and gallery controls.
+- Use one swipe surface for campaigns, tips and visits. Left moves forward, right moves back, and tapping moves forward. The home carousel loops while visible and has a pause control. Tips end with a replay option. Vertical scrolling stays available.
+- Monument photographs carry the current visitor category and ticket link. Labelled card edges show what is behind the current place. A details disclosure keeps source dates and image attribution within reach.
+- Give the ride pages different feature colours and the same mode control. A ride checklist shows checked items, and a short scenario gives feedback on a travel choice. Keep the local fare calculator and sources within reach.
+- The primary navigation carries the five destinations and More. The information pages use regular routes and keep the active navigation visible.

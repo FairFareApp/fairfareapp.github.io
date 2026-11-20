@@ -54,7 +54,9 @@ const devMock =
   new URLSearchParams(location.search).get("mock") === "1";
 let controller = new AbortController(),
   installPrompt = null,
-  scanVersion = 0;
+  scanVersion = 0,
+  focusScan = false;
+history.scrollRestoration = "manual";
 const restored = new URLSearchParams(location.search).get("__route");
 if (restored && restored.startsWith("/") && !restored.startsWith("//"))
   history.replaceState({}, "", restored);
@@ -66,10 +68,10 @@ try {
 }
 const nav = [
   ["/", "house", "Home"],
-  ["/scan", "camera", "Scan"],
   ["/taxis", "taxi", "Taxi fares"],
   ["/autos", "car-side", "Auto fares"],
   ["/monuments", "landmark", "Monuments"],
+  ["/contribute", "clipboard-list", "Contribute"],
 ];
 const flow = createContributionFlow({
   state,
@@ -79,28 +81,58 @@ const flow = createContributionFlow({
   identify: identifyPhoto,
 });
 
+const infoRoutes = {
+  "/install": ["install", "mobile-screen-button"],
+  "/privacy": ["privacy", "shield-halved"],
+  "/about": ["pilot", "circle-info"],
+  "/story": ["story", "book-open"],
+};
+
+function moreButton(mobile, current) {
+  return `<button type="button" class="${mobile ? "mobile-more" : "icon-button desktop-more"}" data-menu-toggle aria-controls="mobile-menu" aria-expanded="false" ${current ? 'aria-current="location"' : ""} aria-label="More navigation">${icon("ellipsis")}${mobile ? "<span>More</span>" : ""}</button>`;
+}
 function shell(content, path) {
-  const contributor = path.startsWith("/contribute"),
-    active = ["/compare", "/report"].includes(path) ? "/scan" : path;
-  return `<header class="site-header"><div class="header-inner"><a href="/" class="brand" aria-label="FairFare home"><img src="/assets/brand-mark.png" alt="" width="38" height="38"><span>FairFare</span></a><nav class="desktop-nav" aria-label="Main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}>${label}</a>`).join("")}</nav><div class="header-tools"><button class="icon-button" id="theme-toggle" aria-label="Switch colour theme" aria-pressed="${document.documentElement.dataset.theme === "dark"}">${icon(document.documentElement.dataset.theme === "dark" ? "sun" : "moon")}</button><button class="icon-button mobile-menu-button" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false">${icon("bars")}</button></div></div><nav id="mobile-menu" class="mobile-menu" aria-label="More navigation" hidden><a href="/contribute">${icon("clipboard-list")}Your Contributions</a><button data-dialog="install">${icon("mobile-screen-button")}App Installation Guide</button><button data-dialog="privacy">${icon("shield-halved")}Privacy Policy</button><button data-dialog="pilot">${icon("circle-info")}About FairFare</button><button data-dialog="story">${icon("book-open")}Story Behind FairFare</button></nav></header>
-  <main id="main" class="main-content ${path === "/" ? "home-content" : ""}" tabindex="-1">${content}</main><footer class="site-footer"><span>${icon("location-dot")} Jaipur pilot</span><div><button data-dialog="pilot">About FairFare</button><button data-dialog="privacy">Privacy Policy</button><button data-dialog="install">App Installation Guide</button></div></footer>
-  ${!contributor ? `<nav class="bottom-nav" aria-label="Mobile main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}>${icon(i)}<span>${label}</span></a>`).join("")}</nav>` : ""}<dialog id="info-dialog" class="dialog" aria-labelledby="dialog-title"><div class="dialog-top"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog">${icon("xmark")}</button></div><div id="dialog-body"></div></dialog>`;
+  const active =
+    path === "/scan" || path === "/compare"
+      ? "/"
+      : path.startsWith("/contribute") ||
+          ["/report", "/submitted"].includes(path)
+        ? "/contribute"
+        : path;
+  const more = Object.hasOwn(infoRoutes, path);
+  return `<header class="site-header"><div class="header-inner">
+    <a href="/" class="brand" aria-label="FairFare home"><img src="/assets/brand-mark.png" alt="" width="38" height="38"><span>FairFare</span></a>
+    <nav class="desktop-nav" aria-label="Main navigation">${nav.map(([url, , label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}>${label}</a>`).join("")}</nav>
+    <div class="header-tools"><button class="icon-button" id="theme-toggle" aria-label="Switch colour theme" aria-pressed="${document.documentElement.dataset.theme === "dark"}">${icon(document.documentElement.dataset.theme === "dark" ? "sun" : "moon")}</button>${moreButton(false, more)}</div>
+  </div></header>
+  <main id="main" class="main-content ${path === "/" ? "home-content" : ""}" tabindex="-1">${content}</main>
+  <footer class="site-footer"><span>${icon("location-dot")} Jaipur pilot</span><div><a href="/about">About FairFare</a><a href="/privacy">Privacy Policy</a><a href="/install">App Installation Guide</a></div></footer>
+  <nav class="bottom-nav" aria-label="Mobile main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}${url === "/contribute" ? ' aria-label="Your Contributions"' : ""}>${icon(i)}<span>${label}</span></a>`).join("")}${moreButton(true, more)}</nav>
+  <nav id="mobile-menu" class="mobile-menu more-menu" aria-label="More pages" hidden>${Object.entries(
+    infoRoutes,
+  )
+    .map(
+      ([url, [type, glyph]]) =>
+        `<a href="${url}" ${url === path ? 'aria-current="page"' : ""}>${icon(glyph)}${h(policies[type][0])}</a>`,
+    )
+    .join("")}</nav>
+  <dialog id="info-dialog" class="dialog" aria-labelledby="dialog-title"><div class="dialog-top"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog">${icon("xmark")}</button></div><div id="dialog-body"></div></dialog>`;
 }
 function home() {
-  return `<section class="home-start" aria-labelledby="home-title"><div class="home-postcard"><h1 id="home-title">Explore<br>Jaipur</h1><img src="/assets/monuments/hawa.webp" alt="Hawa Mahal, Jaipur" decoding="async"></div>${deckMarkup("intro")}<div class="home-actions"><button type="button" class="ready-launch" data-dialog="ready"><span class="launch-icon">${icon("map-location-dot")}</span><span><strong>Get Ready for Jaipur</strong><small>Tips for rides, markets and money</small></span>${icon("chevron-right")}</button><a href="/scan" class="scan-launch"><span class="scan-launch-icon">${icon("camera")}</span><span><strong>Scan a Product</strong><small>Elephants & bangles</small></span>${icon("chevron-right")}</a></div></section><nav class="home-shortcuts" aria-label="More in Jaipur">${[
-    ["/taxis", "taxi", "Taxi fares"],
-    ["/autos", "car-side", "Auto fares"],
-    ["/monuments", "landmark", "Monuments"],
-  ]
-    .map(
-      ([url, i, text]) =>
-        `<a href="${url}">${icon(i)}<span>${text}</span>${icon("chevron-right")}</a>`,
-    )
-    .join(
-      "",
-    )}</nav><div class="home-meta"><span class="demo-label">Illustrative prices · demonstration</span></div>`;
+  return `<div class="home-start">
+    <h1 class="sr-only">FairFare Jaipur</h1>
+    ${deckMarkup("intro")}
+    ${scan(true)}
+    <button type="button" class="ready-launch" data-dialog="ready"><span class="ready-copy">${icon("map-location-dot")}<strong>Get Ready<br>for Jaipur</strong></span><img src="/assets/monuments/hawa.webp" alt="Hawa Mahal, Jaipur" width="720" height="420" loading="lazy"></button>
+  </div>`;
 }
-function scan() {
+function infoPage(path) {
+  const [type, glyph] = infoRoutes[path];
+  const [title, body] = policies[type];
+  return `<article class="info-page"><header><span>${icon(glyph)}</span><h1>${h(title)}</h1></header><div class="info-copy">${body}${type === "install" ? '<button type="button" class="button primary" id="install-now" hidden>Install FairFare</button>' : ""}</div></article>`;
+}
+
+function scan(embedded = false) {
   const ready = Boolean(state.analysis);
   const title = ready
     ? productName(state.attributes.category_id)
@@ -116,9 +148,14 @@ function scan() {
     <div id="comparison-feedback" aria-live="polite"></div>
     <div class="task-actions"><button class="button primary full" type="submit" ${state.scanBusy ? "disabled" : ""}>See price</button></div>
   </form>`;
-  return `<div class="page-heading scan-heading">
+  return `<section id="scan" class="${embedded ? "home-scan" : "scan-page"}" aria-labelledby="scan-title"><div class="page-heading scan-heading">
+    ${
+      embedded
+        ? `<span class="pilot-label">${icon("location-dot")} Jaipur pilot</span><h2 id="scan-title">${h(title)}</h2><p>Wooden elephants and fashion bangles · illustrative prices</p>`
+        : `
     <a class="back-link" data-up href="/">${icon("arrow-left")}Home</a>
-    <h1>${title}</h1>
+    <h1 id="scan-title">${h(title)}</h1>`
+    }
   </div>
   ${devMock ? notice("Development mock · no AI request is sent.") : ""}
   <div class="scan-layout ${ready ? "scan-confirming" : ""}">
@@ -132,7 +169,7 @@ function scan() {
       <input id="camera-input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" tabindex="-1">
       <input id="gallery-input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1">
       <div id="photo-feedback" aria-live="polite"></div>
-      ${state.image ? '<button class="text-link" id="clear-scan">Remove photo</button>' : `<p class="privacy-note">Photos are sent for identification. <button class="text-link" data-dialog="privacy">Privacy Policy</button></p>`}
+      ${state.image ? '<button class="text-link" id="clear-scan">Remove photo</button>' : `<p class="privacy-note">Photos are sent for identification. <a class="text-link" href="/privacy">Privacy Policy</a></p>`}
     </section>
     <section class="confirm-card" aria-label="Product details">
       <div id="analysis-feedback" aria-live="polite">${
@@ -148,7 +185,7 @@ function scan() {
       ${ready ? form : `<details class="confirmation-details" ${state.scanError || state.manual ? "open" : ""}><summary><span class="manual-closed-label">Enter details manually</span><span class="manual-open-label">Use a photo instead</span></summary>${form}</details>`}
       ${ready ? `<details class="recognition-details"><summary>Identification notes</summary><p>${h(state.analysis.visible_characteristics)}</p><p>${h(state.analysis.uncertainty)}</p></details>` : ""}
     </section>
-  </div>`;
+  </div></section>`;
 }
 function comparison() {
   const r = state.result,
@@ -173,7 +210,7 @@ function comparison() {
       ${r.alternatives.map(({ label, value, result }) => `<div class="range-option"><div><strong>${h(label)}</strong><span>${money(result.low)}–${money(result.high)}</span><small>${result.matches.length} comparisons${result.synthetic ? ` · ${result.synthetic} synthetic` : ""}</small></div><button type="button" class="button secondary" data-range-choice="${h(value)}" aria-label="Use ${h(label)}">Use</button></div>`).join("")}
     </div>`
       : "";
-  return `<div class="result-layout"><div class="page-heading"><a class="back-link" data-up href="/scan">${icon("arrow-left")}Edit details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${h(productName(a.category_id))}</h1><p>${a.size_cm ? `${h(a.size_cm)} cm${bangles ? " inside" : " high"}` : ""}${unit ? ` · ${h(unit)}` : ""}${finish ? ` · ${h(finish)}` : ""} · ${h(a.segment)}</p></div></div></div><section class="price-panel panel">${r.status === "ready" ? `<p class="eyebrow">${r.synthetic ? "Illustrative price range" : "Typical comparison range"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${unit ? `${h(unit)} · ` : ""}${r.matches.length} comparable observations${r.synthetic ? ` · ${r.synthetic} synthetic` : ""}</p>` : alternativePanel || `<div class="empty-result">${icon("scale-balanced")}<h2>Not enough similar observations</h2><p>${h(r.reason)}</p><a href="/scan" data-up class="button secondary">Review details</a></div>`}</section>${["ready", "alternatives"].includes(r.status) ? bargainingMarkup(a.segment, product?.tip) : ""}${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button primary full" id="report-purchase">Bought it? Share the price</button></div>` : ""}<div class="result-disclosures"><details><summary>Compare ${r.matches.length} similar ${r.synthetic ? "demo records" : "observations"}</summary><p class="small muted">Images illustrate material and design across examples. They do not show an actual purchase or exact size.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "No matching approved records."}</div></details><details><summary>Product details & matching</summary><dl class="attribute-list"><div><dt>Material</dt><dd>${h(product?.materials[a.material] || "Unconfirmed")}</dd></div>${bangles ? `<div><dt>Quantity</dt><dd>${h(unit)}</dd></div>` : `<div><dt>Carving</dt><dd>${h(a.carving_detail || "Either")}</dd></div>`}<div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>Same product, material, finish and selling setting. ${bangles ? "Inner diameter within 0.3 cm and the same number of bangles. Metal means fashion metal, not precious metal." : "Height within 2 cm or 20%, whichever is larger. Carving detail matches exactly when selected."} Records are no older than a year. Material cannot be verified from a photo.</p></details><details><summary>Sources, uncertainty & calculation</summary><p>${h(r.method || "Each range requires at least three compatible records. Different possible materials or designs are shown separately.")}</p><p>${r.excluded || 0} extreme prices excluded. Asking, observed and paid prices may differ; each listing names its type.</p><p>Synthetic records are separately modelled examples, not independent real-world transactions. Reference illustrations do not establish species, workmanship, origin or authenticity. This is a demonstration, not an appraisal or a verdict on a seller.</p><button data-dialog="pilot" class="text-link">About FairFare</button></details>${r.status === "ready" ? `<details><summary>Have a seller’s quote?</summary><form id="quote-form"><label for="quoted-price">Quoted price (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare quote</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
+  return `<div class="result-layout"><div class="page-heading"><a class="back-link" data-up data-scan href="${state.scanReturn || "/"}">${icon("arrow-left")}Edit details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${h(productName(a.category_id))}</h1><p>${a.size_cm ? `${h(a.size_cm)} cm${bangles ? " inside" : " high"}` : ""}${unit ? ` · ${h(unit)}` : ""}${finish ? ` · ${h(finish)}` : ""} · ${h(a.segment)}</p></div></div></div><section class="price-panel panel">${r.status === "ready" ? `<p class="eyebrow">${r.synthetic ? "Illustrative price range" : "Typical comparison range"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${unit ? `${h(unit)} · ` : ""}${r.matches.length} comparable observations${r.synthetic ? ` · ${r.synthetic} synthetic` : ""}</p>` : alternativePanel || `<div class="empty-result">${icon("scale-balanced")}<h2>Not enough similar observations</h2><p>${h(r.reason)}</p><a href="${state.scanReturn || "/"}" data-up data-scan class="button secondary">Review details</a></div>`}</section>${["ready", "alternatives"].includes(r.status) ? bargainingMarkup(a.segment, product?.tip) : ""}${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button primary full" id="report-purchase">Bought it? Share the price</button></div>` : ""}<div class="result-disclosures"><details><summary>Compare ${r.matches.length} similar ${r.synthetic ? "demo records" : "observations"}</summary><p class="small muted">Images illustrate material and design across examples. They do not show an actual purchase or exact size.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "No matching approved records."}</div></details><details><summary>Product details & matching</summary><dl class="attribute-list"><div><dt>Material</dt><dd>${h(product?.materials[a.material] || "Unconfirmed")}</dd></div>${bangles ? `<div><dt>Quantity</dt><dd>${h(unit)}</dd></div>` : `<div><dt>Carving</dt><dd>${h(a.carving_detail || "Either")}</dd></div>`}<div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>Same product, material, finish and selling setting. ${bangles ? "Inner diameter within 0.3 cm and the same number of bangles. Metal means fashion metal, not precious metal." : "Height within 2 cm or 20%, whichever is larger. Carving detail matches exactly when selected."} Records are no older than a year. Material cannot be verified from a photo.</p></details><details><summary>Sources, uncertainty & calculation</summary><p>${h(r.method || "Each range requires at least three compatible records. Different possible materials or designs are shown separately.")}</p><p>${r.excluded || 0} extreme prices excluded. Asking, observed and paid prices may differ; each listing names its type.</p><p>Synthetic records are separately modelled examples, not independent real-world transactions. Reference illustrations do not establish species, workmanship, origin or authenticity. This is a demonstration, not an appraisal or a verdict on a seller.</p><a href="/about" class="text-link">About FairFare</a></details>${r.status === "ready" ? `<details><summary>Have a seller’s quote?</summary><form id="quote-form"><label for="quoted-price">Quoted price (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare quote</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
 }
 function bargainingMarkup(setting, productTip) {
   const advice = bargainingFor(setting);
@@ -199,8 +236,7 @@ const receiptMoney = new Intl.NumberFormat("en-IN", {
 function contributorHome() {
   const receipts = contributionReceipts();
   return `<div class="desk-layout">
-    <div class="page-heading"><h1>Your Contributions</h1></div>
-    <section class="contribution-start"><a class="button primary full" href="/contribute/new">${icon("plus")}Add an observation</a></section>
+    <header class="desk-intro">${icon("clipboard-check")}<h1>Your Contributions</h1><p>Found a price in Jaipur? Share it to help the next traveller compare.</p><a class="button primary full" href="/contribute/new">${icon("plus")}Add an observation</a></header>
     <section class="receipt-history" aria-labelledby="receipt-heading">
       <h2 id="receipt-heading">On this device</h2>
       ${receipts.length ? `<ul>${receipts.map((receipt) => `<li><div><strong>${h(productName(receipt.category))}</strong><small>${receipt.kind === "purchase" ? "Bought it?" : "Observation"} · ${h(date(receipt.observed))}</small><small>Ref ${h(receipt.reference)} · Submitted for review</small></div><strong>${receiptMoney.format(receipt.price)}</strong></li>`).join("")}</ul><details><summary>Manage history</summary><p>Clearing the list removes the copies saved in this browser. Your submitted reports remain with FairFare.</p><button type="button" class="button secondary" data-dialog="clear-history">Clear device history</button></details>` : '<p class="receipt-empty">Any new purchase or observation you submit from this browser will appear here.</p>'}
@@ -219,7 +255,8 @@ function navigate(path) {
   history.pushState({ parent: location.pathname }, "", path);
   render();
 }
-function goUp(path) {
+function goUp(path, scan = false) {
+  focusScan = scan && path === "/";
   if (history.state?.parent === path) history.back();
   else {
     history.replaceState({}, "", path);
@@ -231,6 +268,9 @@ function render() {
   controller = new AbortController();
   const signal = controller.signal,
     path = location.pathname.replace(/\/$/, "") || "/";
+  const returningToScan =
+    path === "/" && (focusScan || app.dataset.screen === "/compare");
+  focusScan = false;
   const pages = {
     "/": home,
     "/scan": scan,
@@ -263,6 +303,7 @@ function render() {
   app.innerHTML = shell(
     (
       pages[path] ||
+      (Object.hasOwn(infoRoutes, path) ? () => infoPage(path) : null) ||
       (() =>
         empty(
           "This page isn’t on our map.",
@@ -285,13 +326,17 @@ function render() {
       "/contribute/new": "Add an observation",
       "/report": "Share a purchase",
       "/submitted": "Pending review",
-    }[path] || "Page not found") + " | FairFare";
+    }[path] ||
+      (Object.hasOwn(infoRoutes, path)
+        ? policies[infoRoutes[path][0]][0]
+        : "Page not found")) + " | FairFare";
   window.scrollTo(0, 0);
   document.querySelector("#main").focus({ preventScroll: true });
   bindShell();
-  app.querySelectorAll("[data-deck]").forEach(bindDeck);
+  app.querySelectorAll("[data-deck]").forEach((deck) => bindDeck(deck, signal));
   bindReferenceImages(app);
-  if (path === "/scan") bindScan(signal);
+  if (path === "/" || path === "/scan") bindScan(signal);
+  if (path === "/install") bindInstall();
   if (path === "/compare") bindComparison();
   if (path === "/taxis") bindTaxi(app);
   if (path === "/autos") bindAutos(app);
@@ -299,6 +344,17 @@ function render() {
   if (path === "/contribute/new" || (path === "/report" && state.result))
     flow.bind(path === "/report", signal);
   document.querySelector("#announcer").textContent = document.title;
+  if (returningToScan) revealScan();
+}
+function revealScan() {
+  const title = document.querySelector("#scan-title");
+  title.setAttribute("tabindex", "-1");
+  title.focus({ preventScroll: true });
+  document.querySelector("#scan").scrollIntoView({ block: "start" });
+}
+function renderScan() {
+  focusScan = location.pathname === "/";
+  render();
 }
 function bindShell() {
   const theme = document.querySelector("#theme-toggle");
@@ -311,21 +367,55 @@ function bindShell() {
     theme.setAttribute("aria-pressed", String(dark));
     theme.innerHTML = icon(dark ? "sun" : "moon");
   };
-  const menu = document.querySelector("#mobile-menu"),
-    toggle = document.querySelector("#menu-toggle");
-  toggle.onclick = () => {
-    menu.hidden = !menu.hidden;
-    toggle.setAttribute("aria-expanded", String(!menu.hidden));
-    toggle.setAttribute(
-      "aria-label",
-      menu.hidden ? "Open navigation menu" : "Close navigation menu",
-    );
+  const menu = document.querySelector("#mobile-menu");
+  app.querySelectorAll("[data-menu-toggle]").forEach((button) => {
+    button.onclick = () => {
+      const opening = menu.hidden;
+      setMore(opening);
+      if (opening)
+        (menu.querySelector("[aria-current]") || menu.querySelector("a")).focus(
+          { preventScroll: true },
+        );
+    };
+  });
+  app.onpointerdown = (event) => {
+    if (
+      !menu.hidden &&
+      !event.target.closest("#mobile-menu, [data-menu-toggle]")
+    )
+      setMore(false);
   };
   document.querySelector("#close-dialog").onclick = () =>
     document.querySelector("#info-dialog").close();
   app
     .querySelectorAll("[data-dialog]")
     .forEach((b) => (b.onclick = () => showInfo(b.dataset.dialog)));
+}
+
+function setMore(open) {
+  document.querySelector("#mobile-menu").hidden = !open;
+  app
+    .querySelectorAll("[data-menu-toggle]")
+    .forEach((button) => button.setAttribute("aria-expanded", String(open)));
+}
+
+function bindInstall() {
+  const button = document.querySelector("#install-now");
+  if (!button || !installPrompt) return;
+  button.hidden = false;
+  button.onclick = async () => {
+    const prompt = installPrompt;
+    installPrompt = null;
+    button.disabled = true;
+    try {
+      await prompt.prompt();
+      await prompt.userChoice;
+    } catch {
+      // Keep the manual steps available when the native prompt is withdrawn.
+    } finally {
+      button.hidden = true;
+    }
+  };
 }
 
 function showInfo(type) {
@@ -335,25 +425,8 @@ function showInfo(type) {
   dialog.classList.toggle("tips-dialog", type === "ready");
   document.querySelector("#dialog-title").textContent = title;
   body.innerHTML = type === "ready" ? deckMarkup("tips") : content;
-  if (type === "ready") bindDeck(body.querySelector("[data-deck]"));
-  if (type === "install" && installPrompt) {
-    body.insertAdjacentHTML(
-      "beforeend",
-      '<button type="button" class="button primary" id="install-now">Install FairFare</button>',
-    );
-    body.querySelector("#install-now").onclick = async () => {
-      const prompt = installPrompt;
-      installPrompt = null;
-      try {
-        await prompt.prompt();
-        await prompt.userChoice;
-      } catch {
-        // The guide remains available if the browser withdraws its install prompt.
-      } finally {
-        body.querySelector("#install-now")?.remove();
-      }
-    };
-  }
+  if (type === "ready")
+    bindDeck(body.querySelector("[data-deck]"), controller.signal);
   if (type === "clear-history") {
     body.querySelector("#clear-device-history").onclick = () => {
       if (clearContributionReceipts()) {
@@ -386,7 +459,7 @@ async function analyse() {
   if (!image) return;
   state.scanBusy = true;
   state.scanError = "";
-  render();
+  renderScan();
   const signal = controller.signal;
   try {
     const a = await identifyPhoto(image, signal);
@@ -405,7 +478,7 @@ async function analyse() {
   } finally {
     if (version === scanVersion) {
       state.scanBusy = false;
-      if (!signal.aborted) render();
+      if (!signal.aborted) renderScan();
     }
   }
 }
@@ -418,7 +491,7 @@ function bindScan(signal) {
     state.attributes = changeProduct(readAttributes(form), category);
     state.analysis = null;
     state.manual = true;
-    render();
+    renderScan();
   };
   form.oninput = () => {
     state.attributes = readAttributes(form);
@@ -428,7 +501,7 @@ function bindScan(signal) {
     manual.ontoggle = () => {
       state.manual = manual.open;
       if (!state.image)
-        document.querySelector(".scan-heading h1").textContent = manual.open
+        document.querySelector("#scan-title").textContent = manual.open
           ? "Product details"
           : "Scan a product";
     };
@@ -476,7 +549,7 @@ function bindScan(signal) {
       state.scanError = "";
       state.manual = false;
       state.attributes = defaults();
-      render();
+      renderScan();
     };
   const retry = document.querySelector("#retry-identify");
   if (retry) retry.onclick = analyse;
@@ -502,6 +575,7 @@ function bindScan(signal) {
       const rows = product ? await getObservations(signal, attrs) : [];
       if (signal.aborted) return;
       state.result = compareObservations(state.attributes, rows);
+      state.scanReturn = location.pathname === "/scan" ? "/scan" : "/";
       navigate("/compare");
     } catch (e) {
       if (!signal.aborted) {
@@ -565,7 +639,7 @@ document.addEventListener("click", (e) => {
         location.pathname === "/contribute/new") &&
         a.classList.contains("back-link"))
     )
-      goUp(u.pathname);
+      goUp(u.pathname, a.hasAttribute("data-scan"));
     else navigate(u.pathname + u.search);
   }
 });
@@ -577,13 +651,17 @@ document.addEventListener("keydown", (e) => {
       dialog.close();
       return;
     }
-    const menu = document.querySelector("#mobile-menu"),
-      toggle = document.querySelector("#menu-toggle");
+    const menu = document.querySelector("#mobile-menu");
     if (menu && !menu.hidden) {
-      menu.hidden = true;
-      toggle.setAttribute("aria-expanded", "false");
-      toggle.setAttribute("aria-label", "Open navigation menu");
-      toggle.focus();
+      e.preventDefault();
+      setMore(false);
+      document
+        .querySelector(
+          matchMedia("(max-width: 760px)").matches
+            ? ".mobile-more"
+            : ".desktop-more",
+        )
+        .focus();
     }
   }
 });
@@ -591,6 +669,7 @@ window.addEventListener("popstate", render);
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   installPrompt = e;
+  bindInstall();
 });
 window.addEventListener("pagehide", () => {
   controller.abort();

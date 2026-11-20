@@ -17,7 +17,7 @@ export const policies = {
   ],
   story: [
     "Story Behind FairFare",
-    `<p>Picture a tourist buying a set of bangles in Jaipur. The first price sounds reasonable, so they pay it. Later, they spot the same set at the same shop with a lower price marked on it. They realise they were charged more than the posted price.</p><p>That situation is the motivation for FairFare. A traveller should be able to check what affects a price, compare like with like and ask better questions before deciding to buy.</p><p>The Jaipur demo starts with handcrafted souvenirs, local rides and monument tickets.</p>`,
+    `<p>I went to Jaipur and paid more than the posted price for a souvenir. I only found out afterwards.</p><p>I wished I’d had a way to compare prices before buying and a better idea of what to ask. That’s why I built FairFare.</p><p>I started with Jaipur, covering wooden elephants, fashion bangles, local rides and monument tickets.</p>`,
   ],
   ready: ["Get Ready for Jaipur", ""],
   "clear-history": [

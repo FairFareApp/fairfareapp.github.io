@@ -1,5 +1,6 @@
 import { icon, escapeHTML as h, notice, loading, date, options } from "./ui.js";
 import { getTicketPrices } from "./api.js";
+import { bindDeck, swipeDeck } from "./decks.js";
 import {
   cardTip,
   routeTip,
@@ -16,33 +17,206 @@ const ticketMoney = new Intl.NumberFormat("en-IN", {
 const external = (url, label) =>
   `<a class="text-link" href="${h(url)}" target="_blank" rel="noopener noreferrer">${label} ${icon("arrow-up-right-from-square")}</a>`;
 const heading = (title) => `<div class="page-heading"><h1>${title}</h1></div>`;
-export function taxiPage() {
-  return `${heading("Ride-hailing fares")}<div class="work-grid"><section class="panel"><h2>How are you paying?</h2><div class="choice-row" role="group" aria-label="Payment method"><button class="choice active" data-payment="app" aria-pressed="true">In the app</button><button class="choice" data-payment="direct" aria-pressed="false">Cash / UPI to driver</button></div><div id="payment-advice" class="advice-block" aria-live="polite"></div><details><summary>Before the car arrives</summary><div class="checklist">${["Vehicle & number plate match", "Driver matches the booking", "Pickup & destination are correct", "Fare & payment method are clear"].map((text, i) => `<label class="check"><input type="checkbox" name="taxi-${i}"><span>${text}</span></label>`).join("")}</div><p class="small muted" id="taxi-progress" aria-live="polite">0 of 4 checked</p></details><div class="source-links">${external("https://www.uber.com/in/en/ride/", "Open Uber")}${external("https://www.olacabs.com/", "Open Ola")}</div></section><details class="travel-extra"><summary>Fare extras & ride safety</summary><ul class="plain-list"><li>Review tolls, parking, waiting and airport charges.</li><li>Check the payment method before paying twice.</li><li>Use your ride app’s tracking and support.</li></ul><details><summary>Asked to cancel the booking?</summary><p>Decide before starting. A trip outside the app may lose the original booking’s tracking and support.</p><p>Share the trip details with someone you trust.</p></details><p class="small muted">FairFare has no live app fares.</p></details></div>`;
+
+const rides = {
+  taxi: {
+    title: "Ride-hailing fares",
+    icon: "taxi",
+    tone: "indigo",
+    intro: "Check the car, route and payment before you set off.",
+    group: "Payment method",
+    modes: [
+      [
+        "In the app",
+        "Check what the app will charge",
+        `Check whether your card, wallet or UPI will be charged before paying again. ${cardTip}`,
+      ],
+      [
+        "Cash / UPI to driver",
+        "Confirm direct payment first",
+        "Check that cash or UPI is selected in the booking. Confirm the final amount and the UPI recipient before paying.",
+      ],
+    ],
+    checks: [
+      "Number plate and driver match my booking",
+      "Pickup and destination are correct",
+      "Fare and payment method are clear",
+      "I can follow the route in my map app",
+    ],
+    question:
+      "The driver asks you to cancel in the app and go anyway. What do you check?",
+    answers: [
+      "What happens to ride tracking and support",
+      "Only whether the driver accepts cash",
+    ],
+    explanation:
+      "You may lose the booking’s tracking and support. Decide before getting in and share your trip details with someone you trust.",
+    tips: [
+      [
+        "Check what the fare includes",
+        "Review tolls, parking, waiting and airport charges before you confirm.",
+      ],
+      ["Keep an eye on the route", routeTip],
+      [
+        "Charged twice?",
+        "Check the booking receipt and payment method. Use the ride app’s support if the receipt and payment do not match.",
+      ],
+    ],
+  },
+  auto: {
+    title: "Auto & local taxi fares",
+    icon: "car-side",
+    tone: "turmeric",
+    intro: "Agree the fare, then follow the ride.",
+    group: "Fare arrangement",
+    modes: [
+      [
+        "Agree a fare",
+        "Ask for one total",
+        "Say the destination and ask what the whole vehicle costs, including stops, tolls, parking and waiting.",
+      ],
+      ["Use the meter", "Check the meter before moving", meterTip],
+    ],
+    checks: [
+      "The driver knows my destination and stops",
+      "I know whether the price covers the whole vehicle",
+      "Waiting, parking and return travel are agreed",
+      "I have the route open on my phone",
+    ],
+    question:
+      "The meter is off when you get in. What can you do before leaving?",
+    answers: ["Agree a total first", "Wait until arrival to ask the cost"],
+    explanation:
+      "Ask for the total before the ride starts. Check whether it covers everyone, including any agreed stops or return travel.",
+    tips: [
+      ["Check the route as you go", routeTip],
+      [
+        "Check the amount before paying",
+        "For UPI, check the name and amount. If paying cash, count the change before leaving.",
+      ],
+      [
+        "Going to the airport or station?",
+        "Compare a prepaid counter or ride app quote. Ask about the total, including any pickup or parking fees.",
+      ],
+    ],
+  },
+};
+
+function ridePage(kind) {
+  const r = rides[kind];
+  return `<div class="ride-page tone-${r.tone}">
+    <header class="ride-hero"><span class="ride-hero-icon">${icon(r.icon)}</span><h1>${r.title}</h1><p>${r.intro}</p></header>
+    <section class="ride-mode" aria-label="${r.group}">
+      <div class="ride-switch" role="group" aria-label="${r.group}">${r.modes.map(([label], i) => `<button type="button" data-ride-mode="${i}" aria-pressed="${i === 0}">${label}</button>`).join("")}</div>
+      <div id="ride-advice" class="ride-advice" aria-live="polite"></div>
+    </section>
+    <section class="ride-check panel" aria-labelledby="ride-check-title">
+      <div class="ride-check-head"><h2 id="ride-check-title">Before you get in</h2><output id="ride-progress" aria-live="polite"></output></div>
+      <progress max="${r.checks.length}" value="0" aria-label="Ride checks completed"></progress>
+      <div class="ride-checks">${r.checks.map((label, i) => `<label class="ride-check-row"><input type="checkbox" data-ride-check="${i}"><span>${label}</span></label>`).join("")}</div>
+      <div class="ride-reset"><button type="button" class="text-link" id="ride-reset" hidden>Reset checks</button></div>
+    </section>
+    ${kind === "auto" ? fareReference() : `<div class="ride-providers">${external("https://www.uber.com/in/en/ride/", "Open Uber")}${external("https://www.olacabs.com/", "Open Ola")}<p class="small muted">Open a provider to see its fare and book.</p></div>`}
+    <section class="ride-quiz tone-lac" aria-labelledby="ride-quiz-title">
+      <h2 id="ride-quiz-title">${icon("comment-dots")} What would you do?</h2>
+      <p>${r.question}</p>
+      <div>${r.answers.map((answer, i) => `<button type="button" data-ride-answer="${i}" aria-pressed="false">${answer}</button>`).join("")}</div>
+      <p id="ride-answer" aria-live="polite" hidden></p>
+    </section>
+    <section class="ride-tips" aria-labelledby="ride-tips-title"><h2 id="ride-tips-title">Good to know</h2>${r.tips.map(([title, body]) => `<details><summary>${title}</summary><p>${h(body)}</p></details>`).join("")}</section>
+  </div>`;
 }
-export function bindTaxi(root) {
-  const choose = (mode) => {
-    root.querySelector("#payment-advice").innerHTML =
-      mode === "app"
-        ? `<h3>Use the method on your booking.</h3><p>Check whether your card, wallet or UPI will be charged before paying again.</p><p>${h(cardTip)}</p>`
-        : "<h3>Confirm direct payment first.</h3><p>Make sure cash or UPI is selected in the booking. Check the final amount and recipient. Keep the receipt.</p>";
-    root.querySelectorAll("[data-payment]").forEach((b) => {
-      b.classList.toggle("active", b.dataset.payment === mode);
-      b.setAttribute("aria-pressed", String(b.dataset.payment === mode));
+
+const rideProgress = { taxi: new Set(), auto: new Set() };
+
+function bindRide(root, kind) {
+  const r = rides[kind];
+  const modes = [...root.querySelectorAll("[data-ride-mode]")];
+  const advice = root.querySelector("#ride-advice");
+  function choose(index) {
+    const [, title, text] = r.modes[index];
+    advice.innerHTML = `<h2>${h(title)}</h2><p>${h(text)}</p>`;
+    modes.forEach((button, i) =>
+      button.setAttribute("aria-pressed", String(i === index)),
+    );
+  }
+  modes.forEach((button, i) => {
+    button.onclick = () => choose(i);
+  });
+  choose(0);
+
+  const checks = [...root.querySelectorAll("[data-ride-check]")];
+  const progress = root.querySelector("#ride-progress");
+  const bar = root.querySelector(".ride-check progress");
+  const reset = root.querySelector("#ride-reset");
+  const complete = rideProgress[kind];
+  function showChecks() {
+    const size = complete.size;
+    progress.innerHTML =
+      size === checks.length
+        ? `${icon("check")} Ready to ride`
+        : `${size} / ${checks.length}`;
+    bar.value = size;
+    reset.hidden = size === 0;
+  }
+  checks.forEach((input, i) => {
+    input.checked = complete.has(i);
+    input.onchange = () => {
+      if (input.checked) complete.add(i);
+      else complete.delete(i);
+      showChecks();
+    };
+  });
+  reset.onclick = () => {
+    complete.clear();
+    checks.forEach((input) => {
+      input.checked = false;
     });
+    showChecks();
+    checks[0].focus();
   };
-  root
-    .querySelectorAll("[data-payment]")
-    .forEach((b) => (b.onclick = () => choose(b.dataset.payment)));
-  choose("app");
-  root.querySelectorAll(".checklist input").forEach(
-    (i) =>
-      (i.onchange = () => {
-        const n = root.querySelectorAll(".checklist input:checked").length;
-        root.querySelector("#taxi-progress").textContent =
-          `${n} of 4 checked${n === 4 ? " · Check again when the car arrives." : ""}`;
-      }),
-  );
+  showChecks();
+
+  const answers = [...root.querySelectorAll("[data-ride-answer]")];
+  const answer = root.querySelector("#ride-answer");
+  answers.forEach((button, i) => {
+    button.onclick = () => {
+      answers.forEach((choice) =>
+        choice.setAttribute("aria-pressed", String(choice === button)),
+      );
+      answer.hidden = false;
+      answer.textContent =
+        i === 0
+          ? `Good call. ${r.explanation}`
+          : `Pause and check first. ${r.explanation}`;
+    };
+  });
 }
+
+export const taxiPage = () => ridePage("taxi");
+export const autosPage = () => ridePage("auto");
+export const bindTaxi = (root) => bindRide(root, "taxi");
+export function bindAutos(root) {
+  bindRide(root, "auto");
+  const vehicle = root.querySelector("#fare-vehicle");
+  const distance = root.querySelector("#fare-distance");
+  const estimate = root.querySelector("#fare-estimate");
+  const update = () => {
+    const km = distance.valueAsNumber;
+    const validDistance = distance.validity.valid && Number.isFinite(km);
+    const fare = validDistance ? historicalFare(vehicle.value, km) : null;
+    estimate.textContent =
+      fare === null
+        ? vehicle.value === "auto" || !validDistance
+          ? "Enter a distance from 0.1 to 50 km."
+          : "The prepaid taxi schedule only lists distance bands up to 20 km."
+        : `${ticketMoney.format(fare)} · 2013 distance reference. Extras may apply.`;
+  };
+  vehicle.addEventListener("change", update);
+  distance.addEventListener("input", update);
+  update();
+}
+
 function fareReference() {
   return `<details class="fare-reference">
     <summary><span><strong>Local fare references</strong><small>₹51 for a 5 km auto ride · 2013 schedule</small></span></summary>
@@ -74,62 +248,6 @@ function fareReference() {
   </details>`;
 }
 
-export function autosPage() {
-  return `${heading("Auto & local taxi fares")}${fareReference()}<div class="work-grid"><section class="panel"><h2>Ride note</h2><div class="choice-row" role="group" aria-label="Fare arrangement"><button class="choice active" data-fare="negotiated" aria-pressed="true">Agree a fare</button><button class="choice" data-fare="meter" aria-pressed="false">Use the meter</button></div><div id="fare-advice" class="advice-block" aria-live="polite"></div><form id="ride-plan"><div class="field"><label for="ride-destination">Destination</label><input id="ride-destination" name="destination" maxlength="120" placeholder="Where are you going?" required></div><div class="field"><label for="ride-fare">Agreed total (₹)</label><input id="ride-fare" name="fare" type="number" min="1" max="100000" step="0.01" inputmode="decimal" placeholder="Whole ride, not per person" required></div><label class="check"><input type="checkbox" name="return"><span>Return journey included</span></label><button class="button primary full">Make a ride note</button><div id="ride-note" aria-live="polite"></div><p class="small muted ride-note-context" hidden>On this screen only · based on your agreement.</p></form></section><details class="travel-extra"><summary>Route and payment tips</summary><ul class="plain-list"><li>${h(routeTip)}</li><li>Confirm whole vehicle or per passenger.</li><li>Agree waiting, stops, parking and return travel.</li><li>Check the UPI recipient and amount.</li><li>Keep valuables and the vehicle registration with you.</li></ul></details></div>`;
-}
-
-export function bindAutos(root) {
-  const choose = (mode) => {
-    root.querySelector("#fare-advice").textContent =
-      mode === "meter"
-        ? meterTip
-        : "Agree one total for passengers, stops and waiting.";
-    root.querySelectorAll("[data-fare]").forEach((button) => {
-      button.classList.toggle("active", button.dataset.fare === mode);
-      button.setAttribute("aria-pressed", String(button.dataset.fare === mode));
-    });
-  };
-  root
-    .querySelectorAll("[data-fare]")
-    .forEach((button) => (button.onclick = () => choose(button.dataset.fare)));
-  choose("negotiated");
-
-  const vehicle = root.querySelector("#fare-vehicle");
-  const distance = root.querySelector("#fare-distance");
-  const estimate = root.querySelector("#fare-estimate");
-  const update = () => {
-    const km = distance.valueAsNumber;
-    const validDistance = distance.validity.valid && Number.isFinite(km);
-    const fare = validDistance ? historicalFare(vehicle.value, km) : null;
-    estimate.textContent =
-      fare === null
-        ? vehicle.value === "auto" || !validDistance
-          ? "Enter a distance from 0.1 to 50 km."
-          : "The prepaid taxi schedule only lists distance bands up to 20 km."
-        : `${ticketMoney.format(fare)} · 2013 distance reference. Extras may apply.`;
-  };
-  vehicle.addEventListener("change", update);
-  distance.addEventListener("input", update);
-  update();
-
-  root.querySelector("#ride-plan").onsubmit = (event) => {
-    event.preventDefault();
-    const values = new FormData(event.target);
-    const destination = String(values.get("destination")).trim();
-    if (!destination) {
-      event.target.elements.destination.focus();
-      return;
-    }
-    const map =
-      "https://www.google.com/maps/dir/?api=1&destination=" +
-      encodeURIComponent(destination + ", Jaipur");
-    root.querySelector(".ride-note-context").hidden = false;
-    root.querySelector("#ride-note").innerHTML = notice(
-      `<strong>Your ride note</strong><br>${h(destination)} · ₹${h(values.get("fare"))} for the whole ride.<br>${values.has("return") ? "Return included." : "Return not included."} Confirm all extras.<br>${external(map, "Follow the route in Google Maps")}`,
-    );
-  };
-}
-
 const photos = {
   "city-palace": {
     author: "Miniondo",
@@ -154,7 +272,7 @@ const photos = {
   },
 };
 export function monumentsPage() {
-  return `${heading("Monuments")}<div class="monuments-toolbar"><label class="inline-label" for="visitor">Visitor category<select id="visitor">${options(
+  return `<div class="visits-page">${heading("Monuments")}<div class="monuments-toolbar"><label class="inline-label" for="visitor">Visitor category<select id="visitor">${options(
     [
       ["indian", "Indian resident"],
       ["foreign", "International visitor"],
@@ -162,44 +280,76 @@ export function monumentsPage() {
       ["foreign_student", "International student"],
     ],
     "indian",
-  )}</select></label></div><div id="monument-data" class="monument-grid">${loading("Loading Jaipur visits…")}</div><details class="guide-note"><summary>Hiring a guide?</summary><p>Check identification. Agree the language, duration, places covered and total before starting. Guide services, transport, camera access and evening shows may be separate.</p><p>No guide-price estimate is available. Check any “mandatory” add-on with the official counter.</p><details><summary>Questions at the counter</summary><ul><li>Which visitor category and proof do I need?</li><li>Single-site or composite ticket?</li><li>Are special exhibits or evening visits separate?</li></ul></details></details>`;
+  )}</select></label></div><div id="monument-data">${loading("Loading Jaipur visits…")}</div><details class="guide-note"><summary>Hiring a guide?</summary><p>Check identification. Agree the language, duration, places covered and total before starting. Guide services, transport, camera access and evening shows may be separate.</p><p>No guide-price estimate is available. Check any “mandatory” add-on with the official counter.</p><details><summary>Questions at the counter</summary><ul><li>Which visitor category and proof do I need?</li><li>Single-site or composite ticket?</li><li>Are special exhibits or evening visits separate?</li></ul></details></details></div>`;
 }
+
 export async function bindMonuments(root, signal) {
   const target = root.querySelector("#monument-data");
+  const select = root.querySelector("#visitor");
   try {
     const rows = await getTicketPrices(signal);
     if (signal.aborted) return;
-    const draw = () => {
-      const cat = root.querySelector("#visitor").value;
-      target.innerHTML = rows.length
-        ? rows
-            .map((g) => {
-              const photo = photos[g.id];
-              const fee = g.prices?.[cat];
-              const ticketLabel =
-                fee === 0
-                  ? "Free entry"
-                  : Number.isFinite(fee)
-                    ? `${ticketMoney.format(fee)} entry`
-                    : "Check entry fee";
-              return `<article class="monument-card">${photo ? `<img class="monument-photo" src="/assets/monuments/${g.id}.webp" alt="${photo.alt}" width="720" height="420" loading="lazy">` : ""}<div class="monument-card-body"><h2>${h(g.title)}</h2><p class="locality">${h(g.content.locality)}</p><p class="availability">${ticketLabel}${g.verification === "snapshot" ? " · last verified" : ""}</p>${external(g.source_url, fee === 0 ? "Official visitor info" : "Official ticket info")}<details><summary>Visit details & sources</summary><p>${h(g.content.note)}</p><p>${cat.includes("student") && fee !== 0 ? "Carry valid student ID; check eligibility." : ""}</p><p class="small muted">${g.verification === "official" ? "Official site checked" : "Live source unavailable. Last verified"} ${date(g.checked_at)}.</p>${photo ? `<p class="small muted">Photo: ${h(photo.author)}. Cropped, resized to WebP.<br>${external("https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(photo.source), "Original photo")}${external(photo.licenseUrl, h(photo.license))}</p>` : ""}</details></div></article>`;
-            })
-            .join("")
-        : notice(
-            "No visitor records are published. Check the official counter.",
-          );
-      target.querySelectorAll("img").forEach(
-        (img) =>
-          (img.onerror = () => {
-            const placeholder = document.createElement("div");
-            placeholder.className = "monument-photo image-fallback";
-            placeholder.textContent = "Photo unavailable";
-            img.replaceWith(placeholder);
-          }),
+    if (!rows.length) {
+      target.innerHTML = notice(
+        "No visitor records are published. Check the official counter.",
       );
-    };
-    root.querySelector("#visitor").onchange = draw;
-    draw();
+      return;
+    }
+
+    target.innerHTML =
+      swipeDeck(
+        "visits",
+        "Jaipur monument cards",
+        rows.map((g) => {
+          const photo = photos[g.id];
+          return {
+            label: g.title,
+            tone: "lac",
+            content: `${photo ? `<img class="swipe-photo" src="/assets/monuments/${h(g.id)}.webp" alt="${h(photo.alt)}" width="720" height="420">` : ""}
+        <div class="visit-copy"><p>${h(g.content.locality)}</p><h2>${h(g.title)}</h2><p class="availability"></p><div class="visit-link"></div></div>`,
+          };
+        }),
+      ) +
+      `<details class="visit-detail"><summary>Visit details & sources</summary><div class="visit-detail-body"></div></details>`;
+    const deck = target.querySelector("[data-deck]");
+    const details = target.querySelector(".visit-detail");
+    const detailBody = details.querySelector(".visit-detail-body");
+    const cards = [...deck.querySelectorAll(".swipe-card")];
+    let current = 0;
+    function update() {
+      const cat = select.value;
+      rows.forEach((row, i) => {
+        const fee = row.prices?.[cat];
+        const label =
+          fee === 0
+            ? "Free entry"
+            : Number.isFinite(fee)
+              ? `${ticketMoney.format(fee)} entry`
+              : "Check entry fee";
+        cards[i].querySelector(".availability").textContent =
+          label + (row.verification === "snapshot" ? " · last verified" : "");
+        cards[i].querySelector(".visit-link").innerHTML = external(
+          row.source_url,
+          fee === 0 ? "Official visitor info" : "Official ticket info",
+        );
+      });
+      const row = rows[current];
+      const photo = photos[row.id];
+      detailBody.innerHTML = `<p>${h(row.content.note)}</p>
+        ${cat.includes("student") && row.prices?.[cat] !== 0 ? "<p>Carry valid student ID and confirm eligibility.</p>" : ""}
+        <p>${row.verification === "official" ? "Official site checked" : "Live source unavailable. Last verified"} ${date(row.checked_at)}.</p>
+        ${photo ? `<p>Photo: ${h(photo.author)}. Cropped and resized. ${external("https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(photo.source), "Original photo")} · ${external(photo.licenseUrl, photo.license)}</p>` : ""}`;
+    }
+    deck.addEventListener("cardchange", (event) => {
+      if (current !== event.detail) details.open = false;
+      current = event.detail;
+      update();
+    });
+    select.onchange = update;
+    bindDeck(deck, signal);
+    target.querySelectorAll("img").forEach((img) => {
+      img.onerror = () => img.remove();
+    });
   } catch (e) {
     if (signal.aborted) return;
     target.innerHTML =

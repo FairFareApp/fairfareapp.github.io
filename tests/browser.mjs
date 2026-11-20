@@ -151,7 +151,16 @@ const file = async (selector, asset = "plain.webp") => {
 const screens = [];
 const phone = width < 761;
 const shot = async (name, primary, required = []) => {
-  await page.eval(() => window.scrollTo(0, 0));
+  await page.eval(() => {
+    if (
+      location.pathname === "/" &&
+      document.querySelector(
+        "#scan :is(.photo-selected,.confirmation-details[open])",
+      )
+    )
+      document.querySelector("#scan").scrollIntoView({ block: "start" });
+    else window.scrollTo(0, 0);
+  });
   if (primary) {
     const metrics = await page.eval(
       ({ primary, required }) => {
@@ -198,153 +207,170 @@ const check = async (name, fn) => {
   checks.push({ name, status: "PASS" });
   console.log("PASS", name);
 };
+
+function deckFace(kind) {
+  return `.${kind}-deck .swipe-card[data-depth="0"]`;
+}
+async function deckNumber(kind, number) {
+  await wait(
+    `document.querySelector('.${kind}-deck [data-deck-count]')?.textContent.startsWith('${number} /')`,
+  );
+}
+async function dragCard(kind, dx, capture) {
+  const card = deckFace(kind);
+  const target = `${card} .swipe-target`;
+  const start = await page.eval((selector) => {
+    const { x, y, width, height } = document
+      .querySelector(selector)
+      .getBoundingClientRect();
+    return { x: Math.round(x + width / 2), y: Math.round(y + height * 0.34) };
+  }, target);
+  if (!phone)
+    await page.send("Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      ...start,
+    });
+  const sendPointer = (phase, offset) => {
+    const x = start.x + offset;
+    const y = start.y;
+    return phone
+      ? page.send("Input.dispatchTouchEvent", {
+          type: { down: "touchStart", move: "touchMove", up: "touchEnd" }[
+            phase
+          ],
+          touchPoints: phase === "up" ? [] : [{ x, y }],
+        })
+      : page.send("Input.dispatchMouseEvent", {
+          type: {
+            down: "mousePressed",
+            move: "mouseMoved",
+            up: "mouseReleased",
+          }[phase],
+          button: phase === "move" ? "none" : "left",
+          buttons: phase === "up" ? 0 : 1,
+          clickCount: 1,
+          x,
+          y,
+        });
+  };
+  await sendPointer("down", 0);
+  if (dx) {
+    await sendPointer("move", dx);
+    await wait(`document.querySelector('${card}').style.transform !== ''`);
+    if (capture) await shot(capture);
+  }
+  await sendPointer("up", dx);
+}
+async function key(name, code) {
+  await page.send("Input.dispatchKeyEvent", {
+    type: "keyDown",
+    key: name,
+    code: name,
+    windowsVirtualKeyCode: code,
+    nativeVirtualKeyCode: code,
+    ...(name === "Enter" ? { text: "\r" } : {}),
+  });
+  await page.send("Input.dispatchKeyEvent", {
+    type: "keyUp",
+    key: name,
+    code: name,
+    windowsVirtualKeyCode: code,
+  });
+}
 try {
   await page.goto(base);
   await check(
-    "home puts Jaipur tips before Scan and intro slides snap into view",
+    "Home has an autoplaying brand carousel, embedded scan and Jaipur tips",
     async () => {
-      await wait("document.querySelector('.scan-launch')");
+      await deckNumber("intro", 1);
+      await shot("home", "#take-photo", [
+        ".intro-deck [data-deck-autoplay]",
+        "#choose-photo",
+        ".ready-launch",
+      ]);
       assert.ok(
-        await page.eval(
-          () =>
-            document.querySelector(".ready-launch").getBoundingClientRect()
-              .bottom <
-            document.querySelector(".scan-launch").getBoundingClientRect().top,
+        await page.eval(() => {
+          const scan = document.querySelector("#scan").getBoundingClientRect();
+          const tips = document
+            .querySelector(".ready-launch")
+            .getBoundingClientRect();
+          return (
+            scan.bottom <= tips.top &&
+            document
+              .querySelector("#scan")
+              .innerText.includes("Jaipur pilot") &&
+            !document.querySelector('.bottom-nav a[href="/scan"]')
+          );
+        }),
+      );
+      await deckNumber("intro", 2);
+      await click(".intro-deck [data-deck-autoplay]");
+      assert.equal(
+        await page.eval(() =>
+          document
+            .querySelector("[data-deck-autoplay]")
+            .getAttribute("aria-label"),
         ),
+        "Play carousel",
       );
-      await click('.intro-deck [data-slide="1"]');
-      await wait(
-        `Math.abs(document.querySelector('.intro-track').scrollLeft - document.querySelector('.intro-track').clientWidth) < 1`,
-      );
-      assert.match(
-        await page.eval(
-          () => document.querySelectorAll(".intro-deck h2")[1].innerText,
-        ),
-        /Get around/,
-      );
-      await click('.intro-deck [data-slide="0"]');
-      await wait(`document.querySelector('.intro-track').scrollLeft === 0`);
-      await shot("home", ".ready-launch", [".scan-launch"]);
+      await dragCard("intro", -92);
+      await deckNumber("intro", 3);
+      await dragCard("intro", -92);
+      await deckNumber("intro", 1);
+      await dragCard("intro", 92);
+      await deckNumber("intro", 3);
+      await dragCard("intro", 0);
+      await deckNumber("intro", 1);
     },
   );
   await check(
-    "Jaipur cards drag and dismiss with touch or mouse, tap and keyboard",
+    "Jaipur tips share both swipe directions, tap and keyboard navigation",
     async () => {
       await click(".ready-launch");
       await wait("document.querySelector('#info-dialog').open");
-      const front = '.tip-card[data-depth="0"]';
-      const face = `${front} .tip-dismiss`;
-      const tip = (number) =>
-        wait(
-          `document.querySelector('[data-tip-count]').textContent.startsWith('${number} of')`,
-        );
+      const front = deckFace("tips");
+      const face = `${front} .swipe-target`;
       const text = () =>
         page.eval((s) => document.querySelector(s).innerText, front);
+      await deckNumber("tips", 1);
       assert.match(await text(), /Google Maps/);
-      await shot("jaipur-flashcards", face, [`${front} .tip-link`]);
-      const start = await page.eval((s) => {
-        const { x, y, width, height } = document
-          .querySelector(s)
-          .getBoundingClientRect();
-        return { x: Math.round(x + width / 2), y: Math.round(y + height / 2) };
-      }, face);
-      const sendPointer = (phase, dx) => {
-        const x = start.x + dx;
-        const y = start.y;
-        return width < 761
-          ? page.send("Input.dispatchTouchEvent", {
-              type: { down: "touchStart", move: "touchMove", up: "touchEnd" }[
-                phase
-              ],
-              touchPoints: phase === "up" ? [] : [{ x, y }],
-            })
-          : page.send("Input.dispatchMouseEvent", {
-              type: {
-                down: "mousePressed",
-                move: "mouseMoved",
-                up: "mouseReleased",
-              }[phase],
-              button: phase === "move" ? "none" : "left",
-              buttons: phase === "up" ? 0 : 1,
-              clickCount: 1,
-              x,
-              y,
-            });
-      };
-      await sendPointer("down", 0);
-      await sendPointer("move", -23);
-      await wait(`document.querySelector('${front}').style.transform !== ''`);
-      await sendPointer("up", -23);
-      await wait(`document.querySelector('${front}').style.transform === ''`);
-      assert.match(await text(), /Google Maps/);
-      await sendPointer("down", 0);
-      await sendPointer("move", -92);
-      await wait(
-        `document.querySelector('${front}').style.transform.includes('-92px')`,
-      );
-      await shot("jaipur-flashcards-drag");
-      await sendPointer("up", -92);
-      await tip(2);
-      assert.match(await text(), /meter/i);
-      await sendPointer("down", 0);
-      await sendPointer("up", 0);
-      await tip(3);
-      await page.send("Input.dispatchKeyEvent", {
-        type: "keyDown",
-        key: "Enter",
-        code: "Enter",
-        text: "\r",
-        windowsVirtualKeyCode: 13,
-        nativeVirtualKeyCode: 13,
-      });
-      await page.send("Input.dispatchKeyEvent", {
-        type: "keyUp",
-        key: "Enter",
-        code: "Enter",
-        windowsVirtualKeyCode: 13,
-      });
-      await tip(4);
+      await shot("jaipur-flashcards", face);
+      await dragCard("tips", -23);
+      await deckNumber("tips", 1);
+      await dragCard("tips", -92, "jaipur-flashcards-drag");
+      await deckNumber("tips", 2);
+      await dragCard("tips", 92);
+      await deckNumber("tips", 1);
+      await dragCard("tips", 0);
+      await deckNumber("tips", 2);
+      await key("Enter", 13);
+      await deckNumber("tips", 3);
       await click(face);
-      await tip(5);
+      await deckNumber("tips", 4);
+      await click(face);
+      await deckNumber("tips", 5);
       assert.match(await text(), /authorised bank/);
-      await shot("jaipur-flashcards-money", face, [`${front} .tip-link`]);
-      await click("[data-tip-back]");
-      await tip(4);
+      await shot("jaipur-flashcards-money", face, [`${front} .text-link`]);
+      await click('.tips-deck [data-deck-step="-1"]');
+      await deckNumber("tips", 4);
       await page.send("Emulation.setEmulatedMedia", {
         features: [{ name: "prefers-reduced-motion", value: "reduce" }],
       });
       for (let i = 4; i <= 7; i++) {
-        await tip(i);
+        await deckNumber("tips", i);
         await click(face);
       }
-      await wait("!document.querySelector('.tip-complete').hidden");
-      assert.match(
-        await page.eval(
-          () => document.querySelector("[data-tip-count]").innerText,
-        ),
-        /7 tips complete/,
+      await wait(
+        "document.querySelector('.tips-deck [data-deck-count]').textContent === '7 tips complete'",
       );
-      await click("[data-tip-replay]");
-      await tip(1);
+      await click("[data-deck-first]");
+      await deckNumber("tips", 1);
       await page.eval(() => (document.documentElement.dataset.theme = "dark"));
-      await shot("jaipur-flashcards-dark", face, [`${front} .tip-link`]);
+      await shot("jaipur-flashcards-dark", face);
       await page.eval(() => (document.documentElement.dataset.theme = "light"));
       await page.send("Emulation.setEmulatedMedia", { features: [] });
-      await page.send("Input.dispatchKeyEvent", {
-        type: "keyDown",
-        key: "Escape",
-        code: "Escape",
-        windowsVirtualKeyCode: 27,
-      });
-      await page.send("Input.dispatchKeyEvent", {
-        type: "keyUp",
-        key: "Escape",
-        code: "Escape",
-        windowsVirtualKeyCode: 27,
-      });
+      await key("Escape", 27);
       await wait("!document.querySelector('#info-dialog').open");
-      await click(".scan-launch");
-      await wait("location.pathname==='/scan'");
       assert.equal(
         await page.eval(
           () => document.querySelector(".confirmation-details").open,
@@ -360,6 +386,7 @@ try {
       await click(".confirmation-details > summary");
     },
   );
+
   await check(
     "gallery automatically identifies; confirmation leads to real database range",
     async () => {
@@ -531,8 +558,8 @@ try {
     async () => {
       photoMode = "bangles";
       await page.goto(base + "/contribute");
-      await shot("contributor-desk", ".contribution-start .primary");
-      await click(".contribution-start .primary");
+      await shot("contributor-desk", ".desk-intro .primary");
+      await click(".desk-intro .primary");
       assert.equal(
         await page.eval(() => document.querySelector(".wizard-actions").hidden),
         true,
@@ -659,12 +686,11 @@ try {
     async () => {
       photoMode = "bangles";
       await page.goto(base);
-      await click(".scan-launch");
       await file("#gallery-input", "bangles/lac-patterned.webp");
       await wait("document.querySelector('.recognition')");
       assert.equal(
         await page.eval(
-          () => document.querySelector(".scan-heading h1").textContent,
+          () => document.querySelector("#scan-title").textContent,
         ),
         "Bangles",
       );
@@ -699,7 +725,7 @@ try {
         "[...document.querySelectorAll('.reference-image img')].some(i=>i.complete&&i.naturalWidth>0&&i.src.includes('bangles/lac-patterned'))",
       );
       await click(".result-layout .back-link");
-      await wait("location.pathname==='/scan'");
+      await wait("location.pathname==='/'");
       assert.equal(
         await page.eval(() => document.querySelector("#pack_count").value),
         "6",
@@ -714,8 +740,7 @@ try {
         /2 bangles/,
       );
       await page.eval(() => history.back());
-      await wait("location.pathname==='/scan'");
-      await click(".scan-heading .back-link");
+      await wait("document.activeElement.id==='scan-title'");
       await wait("location.pathname==='/'");
       photoMode = "success";
     },
@@ -749,7 +774,7 @@ try {
           ),
         ),
       );
-      await shot("your-contributions", ".contribution-start .primary");
+      await shot("your-contributions", ".desk-intro .primary");
       await click(".receipt-history summary");
       await click('[data-dialog="clear-history"]');
       await click("#clear-device-history");
@@ -762,39 +787,86 @@ try {
       );
     },
   );
+
   await check(
-    "transport controls, fare calculator and ride note work",
+    "ride pages share selectors and provide checklists, scenarios and fare references",
     async () => {
-      await page.goto(base + "/taxis");
-      assert.match(
-        await page.eval(
-          () => document.querySelector("#payment-advice").innerText,
-        ),
-        /international transactions/,
-      );
-      await shot("taxis", '[data-payment="app"]', [".source-links a"]);
-      await click('[data-payment="direct"]');
-      assert.equal(
-        await page.eval(() =>
-          document
-            .querySelector('[data-payment="direct"]')
-            .getAttribute("aria-pressed"),
-        ),
-        "true",
-      );
-      await click("details summary");
-      await click(".checklist input");
-      assert.equal(
-        await page.eval(
-          () => document.querySelector(".checklist input").checked,
-        ),
-        true,
-      );
-      await page.goto(base + "/autos");
-      await shot("autos", "#ride-plan button", [
-        "#ride-destination",
-        "#ride-fare",
-      ]);
+      let activeFill;
+      for (const route of ["/taxis", "/autos"]) {
+        const taxi = route === "/taxis";
+        await page.goto(base + route);
+        if (taxi)
+          assert.match(
+            await page.eval(
+              () => document.querySelector("#ride-advice").innerText,
+            ),
+            /international transactions/,
+          );
+        const sw = '[data-ride-mode="1"]';
+        await shot(taxi ? "taxis" : "autos", sw, [".ride-check-row"]);
+        await click(sw);
+        assert.equal(
+          await page.eval(
+            (s) => document.querySelector(s).getAttribute("aria-pressed"),
+            sw,
+          ),
+          "true",
+        );
+        assert.match(
+          await page.eval(
+            () => document.querySelector("#ride-advice").innerText,
+          ),
+          taxi ? /UPI recipient/ : /looks faulty/,
+        );
+        await wait(
+          `document.querySelector('${sw}').getAnimations().every(a => a.playState !== 'running')`,
+        );
+        const fill = await page.eval(
+          (s) => getComputedStyle(document.querySelector(s)).backgroundColor,
+          sw,
+        );
+        if (taxi) activeFill = fill;
+        else assert.equal(fill, activeFill);
+        for (let i = 0; i < 4; i++) await click(`[data-ride-check="${i}"]`);
+        assert.match(
+          await page.eval(
+            () => document.querySelector("#ride-progress").innerText,
+          ),
+          /Ready to ride/,
+        );
+        await click("#ride-reset");
+        assert.match(
+          await page.eval(
+            () => document.querySelector("#ride-progress").innerText,
+          ),
+          /0 \/ 4/,
+        );
+        await click('[data-ride-answer="1"]');
+        assert.match(
+          await page.eval(
+            () => document.querySelector("#ride-answer").innerText,
+          ),
+          /Pause and check/,
+        );
+        await click('[data-ride-answer="0"]');
+        assert.match(
+          await page.eval(
+            () => document.querySelector("#ride-answer").innerText,
+          ),
+          /Good call/,
+        );
+        await page.screenshot({
+          path: join(out, taxi ? "taxis-scenario.jpg" : "autos-scenario.jpg"),
+          quality: 88,
+        });
+        await click(".ride-tips summary");
+        assert.match(
+          await page.eval(
+            () => document.querySelector(".ride-tips details[open]").innerText,
+          ),
+          taxi ? /airport charges/ : /Google Maps/,
+        );
+      }
       await click(".fare-reference summary");
       assert.match(
         await page.eval(
@@ -817,176 +889,132 @@ try {
         /up to 20 km/,
       );
       await fill("#fare-distance", 5);
-      await shot("fare-reference");
-      await click(".fare-reference summary");
-      await click('[data-fare="meter"]');
-      assert.match(
-        await page.eval(() => document.querySelector("#fare-advice").innerText),
-        /looks faulty/,
-      );
-      await fill("#ride-destination", "City Palace");
-      await fill("#ride-fare", 250);
-      await click("#ride-plan button");
-      await wait(
-        "document.querySelector('#ride-note').innerText.includes('250')",
-      );
-      assert.match(
-        await page.eval(() => document.querySelector("#ride-note a").href),
-        /google.com\/maps\/dir/,
-      );
-      await shot("autos-note");
     },
   );
   await check(
-    "monument photos, categories and source disclosures work",
+    "monument stack reverses, keeps visitor selection and shows official sources",
     async () => {
       await page.goto(base + "/monuments");
-      await wait("document.querySelectorAll('.monument-card').length===3");
-      await shot(
-        "monuments",
-        ".monument-card .text-link",
-        phone
-          ? [".monument-card:nth-child(3) .text-link", "#visitor"]
-          : ["#visitor"],
+      await deckNumber("visits", 1);
+      const front = deckFace("visits");
+      const fee = () =>
+        page.eval(
+          (s) => document.querySelector(s + " .availability").textContent,
+          front,
+        );
+      assert.match(await fee(), /₹400 entry/);
+      await wait(
+        "[...document.querySelectorAll('.visits-deck img')].every(i=>i.naturalWidth>0)",
       );
-      assert.match(
-        await page.eval(
-          () =>
-            document.querySelector(".monument-card .availability").textContent,
-        ),
-        /₹400 entry/,
-      );
-      assert.match(
-        await page.eval(
-          () =>
-            document.querySelector(".monument-card:nth-child(3) .availability")
-              .textContent,
-        ),
-        /Free entry/,
-      );
+      await shot("monuments", `${front} .text-link`, [
+        "#visitor",
+        ".visits-deck [data-deck-step='1']",
+      ]);
+      await dragCard("visits", -92, "monuments-drag");
+      await deckNumber("visits", 2);
+      await dragCard("visits", 92);
+      await deckNumber("visits", 1);
+      await dragCard("visits", 92);
+      await deckNumber("visits", 3);
+      assert.match(await fee(), /Free entry/);
+      await shot("monuments-free", `${front} .text-link`);
+      await dragCard("visits", 0);
+      await deckNumber("visits", 1);
       await fill("#visitor", "foreign_student");
-      assert.match(
-        await page.eval(
-          () =>
-            document.querySelector(".monument-card .availability").textContent,
-        ),
-        /₹600 entry/,
+      assert.match(await fee(), /₹600 entry/);
+      await dragCard("visits", -92);
+      await deckNumber("visits", 2);
+      assert.equal(
+        await page.eval(() => document.querySelector("#visitor").value),
+        "foreign_student",
       );
-      await click(".monument-card details>summary");
+      await dragCard("visits", 92);
+      await deckNumber("visits", 1);
+      assert.match(await fee(), /₹600 entry/);
+      await click(".visit-detail summary");
       assert.match(
         await page.eval(
-          () => document.querySelector(".monument-card").innerText,
+          () => document.querySelector(".visit-detail").innerText,
         ),
         /student ID/,
-      );
-      await wait(
-        "[...document.querySelectorAll('.monument-photo')].every(i=>i.naturalWidth>0)",
       );
       await shot("monument-details");
     },
   );
   await check(
-    "ordered icon menu, policy dialogs and theme are usable",
+    "More links open full pages and keep both the active page and navigation highlighted",
     async () => {
-      {
-        await click("#menu-toggle");
-        assert.deepEqual(
-          await page.eval(() =>
-            [...document.querySelector("#mobile-menu").children].map((el) =>
-              el.textContent.trim(),
-            ),
+      const menu = phone ? ".mobile-more" : ".desktop-more";
+      await click(menu);
+      assert.deepEqual(
+        await page.eval(() =>
+          [...document.querySelector("#mobile-menu").children].map((el) =>
+            el.textContent.trim(),
           ),
-          [
-            "Your Contributions",
-            "App Installation Guide",
-            "Privacy Policy",
-            "About FairFare",
-            "Story Behind FairFare",
-          ],
-        );
-        assert.equal(
-          await page.eval(
-            () => document.querySelectorAll("#mobile-menu i").length,
-          ),
-          5,
-        );
-        await shot("menu");
-        await click('#mobile-menu [data-dialog="story"]');
-        await wait("document.querySelector('#info-dialog').open");
-        assert.match(
-          await page.eval(
-            () => document.querySelector("#dialog-body").innerText,
-          ),
-          /tourist/,
-        );
-        await click("#close-dialog");
-        await click('#mobile-menu [data-dialog="install"]');
-        await wait("document.querySelector('#info-dialog').open");
-        assert.equal(
-          await page.eval(
-            () => document.querySelector("#dialog-title").textContent,
-          ),
+        ),
+        [
           "App Installation Guide",
-        );
-        await click("#close-dialog");
+          "Privacy Policy",
+          "About FairFare",
+          "Story Behind FairFare",
+        ],
+      );
+      await shot("menu");
+      for (const [url, title, body] of [
+        ["/story", "Story Behind FairFare", /I went to Jaipur/],
+        ["/install", "App Installation Guide", /Add to Home Screen/],
+        ["/privacy", "Privacy Policy", /short contribution receipts/],
+        ["/about", "About FairFare", /demo travel guide/],
+      ]) {
+        await click(`#mobile-menu a[href="${url}"]`);
+        await wait(`location.pathname==='${url}'`);
         assert.equal(
-          await page.eval(() => document.querySelector("#mobile-menu").hidden),
+          await page.eval(() => document.querySelector("#main h1").textContent),
+          title,
+        );
+        assert.match(
+          await page.eval(() => document.querySelector(".info-copy").innerText),
+          body,
+        );
+        assert.equal(
+          await page.eval(
+            (s) => document.querySelector(s).getAttribute("aria-current"),
+            menu,
+          ),
+          "location",
+        );
+        assert.equal(
+          await page.eval(() => document.querySelector("#info-dialog").open),
           false,
         );
-        await page.send("Input.dispatchKeyEvent", {
-          type: "keyDown",
-          key: "Escape",
-          code: "Escape",
-        });
-        await page.send("Input.dispatchKeyEvent", {
-          type: "keyUp",
-          key: "Escape",
-          code: "Escape",
-        });
+        await click(menu);
         assert.equal(
-          await page.eval(() => document.querySelector("#mobile-menu").hidden),
-          true,
+          await page.eval(
+            () =>
+              document.querySelector("#mobile-menu [aria-current]").pathname,
+          ),
+          url,
         );
       }
+      await key("Escape", 27);
+      assert.ok(
+        await page.eval(() => document.querySelector("#mobile-menu").hidden),
+      );
       await click("#theme-toggle");
       assert.equal(
         await page.eval(() => document.documentElement.dataset.theme),
         "dark",
       );
-      await shot("monuments-dark");
-      if (phone) await click("#menu-toggle");
-      await click(
-        phone
-          ? '#mobile-menu [data-dialog="privacy"]'
-          : '.site-footer [data-dialog="privacy"]',
-      );
-      await wait("document.querySelector('#info-dialog').open");
-      assert.equal(
-        await page.eval(
-          () => document.querySelector("#dialog-title").textContent,
-        ),
-        "Privacy Policy",
-      );
-      assert.match(
-        await page.eval(() => document.querySelector("#dialog-body").innerText),
-        /short contribution receipts/,
-      );
-      await page.send("Input.dispatchKeyEvent", {
-        type: "keyDown",
-        key: "Escape",
-        code: "Escape",
-      });
-      await page.send("Input.dispatchKeyEvent", {
-        type: "keyUp",
-        key: "Escape",
-        code: "Escape",
-      });
-      assert.equal(
-        await page.eval(() => document.querySelector("#info-dialog").open),
-        false,
-      );
+      await shot("about-dark");
+      const nav = phone ? ".bottom-nav" : ".desktop-nav";
+      await click(`${nav} [href="/contribute"]`);
+      await wait("location.pathname==='/contribute'");
+      await shot("contributors", ".desk-intro .button");
+      await click(`${nav} [href="/"]`);
+      await wait("location.pathname==='/'");
     },
   );
+
   await check(
     "all direct routes fit this viewport in both themes",
     async () => {
@@ -1001,6 +1029,10 @@ try {
         "/contribute/new",
         "/report",
         "/submitted",
+        "/install",
+        "/privacy",
+        "/about",
+        "/story",
         "/not-a-page",
       ]) {
         await page.goto(base + route, { settleMs: 250 });
@@ -1038,6 +1070,7 @@ try {
       });
       assert.ok(cache.some((u) => u.endsWith("/js/contribution.js")));
       assert.ok(cache.some((u) => u.endsWith("/assets/monuments/hawa.webp")));
+      assert.ok(cache.some((u) => u.endsWith("/assets/brand/market.webp")));
       assert.ok(
         cache.every(
           (u) =>

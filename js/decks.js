@@ -1,26 +1,6 @@
 import { icon, escapeHTML as h } from "./ui.js";
 import { fareSources, routeTip, cardTip, meterTip } from "./travel-advice.js";
 
-const intro = [
-  {
-    icon: "tags",
-    tone: "lac",
-    title: "Check a price before you buy",
-    text: "Scan bangles or a wooden elephant to compare similar examples in the Jaipur demo.",
-  },
-  {
-    icon: "route",
-    tone: "indigo",
-    title: "Get around with a plan",
-    text: "Compare fare references, agree a total and keep a note of the ride.",
-  },
-  {
-    icon: "landmark",
-    tone: "turmeric",
-    title: "Check entry before you go",
-    text: "See official entry prices for selected Jaipur venues and the free stop.",
-  },
-];
 const tips = [
   {
     icon: "map-location-dot",
@@ -69,21 +49,40 @@ const tips = [
   },
 ];
 
+const intro = [
+  {
+    title: "Know what’s fair.",
+    caption: "Compare Jaipur craft prices",
+    image: "market",
+    tone: "lac",
+  },
+  {
+    title: "Ride with a plan.",
+    caption: "Know what to check before you go",
+    image: "ride",
+    tone: "sage",
+  },
+  {
+    title: "Step into Jaipur.",
+    caption: "Find entry prices before you arrive",
+    image: "visit",
+    tone: "turmeric",
+  },
+];
+let introAutoplay;
+
 export function deckMarkup(kind) {
   if (kind === "intro")
-    return `<section class="intro-deck" data-deck="intro" aria-label="What you can do with FairFare">
-      <div class="intro-track" tabindex="0" aria-label="FairFare features">
-        ${intro
-          .map(
-            (card) => `<article class="intro-card tone-${card.tone}">
-          <span class="deck-icon">${icon(card.icon)}</span>
-          <div><h2>${h(card.title)}</h2><p>${h(card.text)}</p></div>
-        </article>`,
-          )
-          .join("")}
-      </div>
-      <div class="intro-dots">${intro.map((card, i) => `<button type="button" data-slide="${i}" aria-label="${h(card.title)}"${i === 0 ? ' aria-current="true"' : ""}><span></span></button>`).join("")}</div>
-    </section>`;
+    return swipeDeck(
+      "intro",
+      "Explore FairFare",
+      intro.map((card) => ({
+        label: card.title,
+        tone: card.tone,
+        content: `<img class="swipe-photo" src="/assets/brand/${card.image}.webp" alt="" width="1000" height="560" ${card.image === "market" ? 'fetchpriority="high"' : 'loading="lazy"'}><div class="brand-slide-copy"><h2>${h(card.title)}</h2><p>${h(card.caption)}</p></div>`,
+      })),
+      { autoplay: true },
+    );
   const tones = [
     "indigo",
     "turmeric",
@@ -93,112 +92,129 @@ export function deckMarkup(kind) {
     "lac",
     "turmeric",
   ];
-  return `<section class="tips-deck" data-deck="tips" aria-label="Jaipur tip cards">
-    <div class="tip-progress">
-      <span data-tip-count aria-live="polite" aria-atomic="true">1 of ${tips.length}</span>
-      <div class="tip-segments" aria-hidden="true">${tips.map(() => "<span></span>").join("")}</div>
-    </div>
-    <div class="tip-stack">
-      ${tips
+  const cards = tips.map((card, i) => ({
+    label: card.title,
+    tone: tones[i],
+    content: `<div class="tip-copy">
+      <span class="deck-icon">${icon(card.icon)}</span>
+      <h3>${h(card.title)}</h3><p>${h(card.text)}</p>
+      ${card.href ? `<a class="text-link" href="${h(card.href)}"${card.href.startsWith("https:") ? ' target="_blank" rel="noopener noreferrer"' : ""}>${h(card.link)} ${icon("arrow-right")}</a>` : ""}
+    </div>`,
+  }));
+  cards.push({
+    tone: "sage",
+    label: "You’re ready for Jaipur",
+    content: `<div class="tip-copy"><span class="deck-icon">${icon("check")}</span><h3>You’re ready for Jaipur</h3><button class="button primary" type="button" data-deck-done>Done</button><button class="button secondary" type="button" data-deck-first>Read again</button></div>`,
+  });
+  return swipeDeck("tips", "Jaipur tip cards", cards, {
+    limited: true,
+    finale: true,
+  });
+}
+
+export function swipeDeck(
+  kind,
+  title,
+  cards,
+  { autoplay = false, limited = false, finale = false } = {},
+) {
+  return `<section class="swipe-deck ${kind}-deck" data-deck="${kind}" ${limited ? "data-limited" : ""} ${finale ? "data-finale" : ""} aria-label="${h(title)}">
+    <div class="swipe-stage">
+      ${cards
         .map(
-          (card, i) => `<article class="tip-card tone-${tones[i]}" hidden inert>
-        <button type="button" class="tip-dismiss" aria-labelledby="tip-title-${i}" aria-describedby="tip-copy-${i} tip-gesture">
-          <span class="deck-icon">${icon(card.icon)}</span>
-          <strong id="tip-title-${i}">${h(card.title)}</strong>
-          <span id="tip-copy-${i}">${h(card.text)}</span>
-        </button>
-        ${card.href ? `<a class="text-link tip-link" href="${h(card.href)}"${card.href.startsWith("https:") ? ' target="_blank" rel="noopener noreferrer"' : ""}>${h(card.link)} ${icon(card.href.startsWith("https:") ? "arrow-up-right-from-square" : "arrow-right")}</a>` : ""}
+          (
+            card,
+            i,
+          ) => `<article class="swipe-card tone-${card.tone || "sage"}" data-label="${h(card.label)}" ${i ? "hidden inert" : 'data-depth="0"'}>
+        <button class="swipe-target" type="button" aria-label="${h(card.label)}. Show next card"></button>
+        ${kind === "visits" ? `<span class="swipe-peek" aria-hidden="true">${h(card.label)}</span>` : ""}
+        ${card.content}
       </article>`,
         )
         .join("")}
-      <div class="tip-complete tone-sage" hidden>
-        <span class="deck-icon">${icon("check")}</span>
-        <h3>You’re ready for Jaipur</h3>
-        <button class="button primary" type="button" data-tip-done>Done</button>
-        <button class="button secondary" type="button" data-tip-replay>Read again</button>
-      </div>
     </div>
-    <div class="tip-footer">
-      <span id="tip-gesture">Swipe or tap the card for the next tip</span>
-      <button type="button" data-tip-back disabled>${icon("rotate-left")} Previous tip</button>
+    <div class="swipe-controls">
+      <button class="icon-button" data-deck-step="-1" type="button" aria-label="Previous card">${icon("chevron-left")}</button>
+      <span data-deck-count aria-live="${autoplay ? "off" : "polite"}"></span>
+      <button class="icon-button" data-deck-step="1" type="button" aria-label="Next card">${icon("chevron-right")}</button>
+      ${autoplay ? `<button class="icon-button deck-autoplay" type="button" data-deck-autoplay aria-label="Pause carousel">${icon("pause")}</button>` : ""}
     </div>
   </section>`;
 }
 
-export function bindDeck(root) {
-  if (root.dataset.deck === "intro") bindIntro(root);
-  else bindTips(root);
-}
-
-function bindIntro(root) {
-  const track = root.querySelector(".intro-track");
-  const dots = [...root.querySelectorAll("[data-slide]")];
-  track.addEventListener(
-    "scroll",
-    () => {
-      const current = Math.round(track.scrollLeft / track.clientWidth);
-      dots.forEach((dot, i) => {
-        if (i === current) dot.setAttribute("aria-current", "true");
-        else dot.removeAttribute("aria-current");
-      });
-    },
-    { passive: true },
-  );
-  dots.forEach((dot, i) => {
-    dot.onclick = () => track.scrollTo({ left: track.clientWidth * i });
-  });
-}
-
-function bindTips(root) {
-  const cards = [...root.querySelectorAll(".tip-card")];
-  const segments = [...root.querySelectorAll(".tip-segments span")];
-  const count = root.querySelector("[data-tip-count]");
-  const back = root.querySelector("[data-tip-back]");
-  const complete = root.querySelector(".tip-complete");
-  const done = root.querySelector("[data-tip-done]");
-  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
-  let current = 0;
+export function bindDeck(root, signal) {
+  const cards = [...root.querySelectorAll(".swipe-card")];
+  const count = root.querySelector("[data-deck-count]");
+  const arrows = [...root.querySelectorAll("[data-deck-step]")];
+  const auto = root.querySelector("[data-deck-autoplay]");
+  const limited = root.hasAttribute("data-limited");
+  const finale = root.hasAttribute("data-finale");
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const mouse = matchMedia("(hover: hover)");
+  let index = 0;
   let gesture;
   let busy = false;
+  let playing = Boolean(auto && !reduced.matches && (introAutoplay ?? true));
+  let lastMove = Date.now();
 
-  function show(focus = false) {
+  function destination(step) {
+    return limited
+      ? index + step
+      : (index + step + cards.length) % cards.length;
+  }
+
+  function stack(direction = 1) {
+    const neighbours = [
+      index,
+      destination(direction),
+      destination(direction * 2),
+    ];
     cards.forEach((card, i) => {
-      const depth = i - current;
-      card.hidden = depth < 0 || depth > 2;
+      const depth = neighbours.indexOf(i);
+      card.hidden = depth < 0;
       card.inert = depth !== 0;
       card.dataset.depth = depth;
-      segments[i].classList.toggle("is-read", i <= current);
     });
-    const finished = current === cards.length;
-    complete.hidden = !finished;
-    root.classList.toggle("is-complete", finished);
-    back.disabled = current === 0;
-    count.textContent = finished
-      ? `${cards.length} tips complete`
-      : `${current + 1} of ${cards.length}`;
+  }
+
+  function show(focus = false) {
+    root.classList.remove("is-swiping");
+    stack();
+    const atEnd = finale && index === cards.length - 1;
+    count.textContent = atEnd
+      ? `${cards.length - 1} tips complete`
+      : `${index + 1} / ${cards.length - Number(finale)}`;
+    arrows[0].disabled = limited && index === 0;
+    arrows[1].disabled = limited && index === cards.length - 1;
     if (focus)
-      (finished ? done : cards[current].querySelector("button")).focus({
-        preventScroll: true,
-      });
+      cards[index]
+        .querySelector(atEnd ? "[data-deck-done]" : ".swipe-target")
+        .focus({ preventScroll: true });
+    root.dispatchEvent(new CustomEvent("cardchange", { detail: index }));
   }
 
-  function transform(x) {
-    const angle = Math.max(-14, Math.min(14, x / 16));
-    return `translate3d(${x}px, -3px, 0) rotate(${angle}deg)`;
+  function transform(dx) {
+    const angle = Math.max(-10, Math.min(10, dx / 24));
+    return `translate3d(${dx}px, 0, 0) rotate(${angle}deg)`;
   }
 
-  async function dismiss(card, direction, focus) {
-    if (busy) return;
+  async function move(step, focus = false) {
+    const next = destination(step);
+    const card = cards[index];
+    if (busy || gesture || !cards[next] || next === index) return;
     busy = true;
-    if (!reducedMotion.matches) {
+    root.classList.add("is-swiping");
+    lastMove = Date.now();
+    stack(step);
+    if (!reduced.matches) {
       const flight = card.animate(
         [
-          { transform: card.style.transform || "none", opacity: 1 },
-          { transform: transform(direction * card.offsetWidth), opacity: 0 },
+          { transform: getComputedStyle(card).transform, opacity: 1 },
+          { transform: transform(-step * card.offsetWidth), opacity: 0 },
         ],
         {
-          duration: 245,
-          easing: "cubic-bezier(.2,.68,.35,1)",
+          duration: 265,
+          easing: "cubic-bezier(.18,.72,.3,1)",
           fill: "forwards",
         },
       );
@@ -206,18 +222,29 @@ function bindTips(root) {
       flight.cancel();
     }
     card.style.transform = "";
-    current++;
+    index = next;
     busy = false;
-    show(focus);
+    show(focus && root.isConnected);
   }
 
-  root.querySelectorAll(".tip-dismiss").forEach((button, i) => {
-    const card = cards[i];
-    let ignoreClick = false;
-    button.onpointerdown = (event) => {
-      if (current !== i || busy || !event.isPrimary || event.button !== 0)
+  cards.forEach((card, i) => {
+    const target = card.querySelector(".swipe-target");
+    let suppressClick = false;
+    const next = () => {
+      if (finale && i === cards.length - 1) restart();
+      else void move(1, true);
+    };
+    target.onpointerdown = (event) => {
+      if (
+        index !== i ||
+        gesture ||
+        busy ||
+        !event.isPrimary ||
+        event.button !== 0
+      )
         return;
-      ignoreClick = false;
+      suppressClick = false;
+      lastMove = Date.now();
       card.getAnimations().forEach((animation) => animation.cancel());
       gesture = {
         id: event.pointerId,
@@ -225,61 +252,135 @@ function bindTips(root) {
         y: event.clientY,
         time: event.timeStamp,
         dx: 0,
+        direction: 1,
         dragging: false,
       };
-      button.setPointerCapture(event.pointerId);
+      target.setPointerCapture(event.pointerId);
     };
-    button.onpointermove = (event) => {
+    target.onpointermove = (event) => {
       if (gesture?.id !== event.pointerId) return;
       const dx = event.clientX - gesture.x;
       const dy = event.clientY - gesture.y;
       if (!gesture.dragging && Math.abs(dx) > 9 && Math.abs(dx) > Math.abs(dy))
         gesture.dragging = true;
       if (!gesture.dragging) return;
+      root.classList.add("is-swiping");
       gesture.dx = dx;
-      if (!reducedMotion.matches) card.style.transform = transform(dx);
+      const direction = dx > 0 ? -1 : 1;
+      if (direction !== gesture.direction) stack(direction);
+      gesture.direction = direction;
+      if (!reduced.matches)
+        card.style.transform = transform(
+          cards[destination(direction)] ? dx : dx * 0.22,
+        );
     };
-    function finish(event) {
+    function release(event) {
       if (gesture?.id !== event.pointerId) return;
-      const { dx, time, dragging } = gesture;
+      const { x, y, dx, time, direction, dragging } = gesture;
       gesture = null;
-      if (!dragging) return;
-      ignoreClick = true;
+      if (!dragging) {
+        if (
+          event.type === "pointerup" &&
+          event.pointerType === "touch" &&
+          Math.hypot(event.clientX - x, event.clientY - y) < 10
+        ) {
+          suppressClick = true;
+          next();
+        }
+        return;
+      }
+      suppressClick = true;
       const distance = Math.abs(dx);
       const fling =
         distance > 32 && distance / Math.max(1, event.timeStamp - time) > 0.5;
-      if (event.type === "pointerup" && (distance >= 65 || fling)) {
-        void dismiss(
-          card,
-          Math.sign(dx),
-          card.contains(document.activeElement),
-        );
-      } else {
-        if (!reducedMotion.matches)
-          card.animate(
-            [{ transform: card.style.transform }, { transform: "none" }],
-            { duration: 190, easing: "cubic-bezier(.2,.8,.35,1)" },
-          );
-        card.style.transform = "";
+      if (
+        event.type === "pointerup" &&
+        (distance >= 65 || fling) &&
+        cards[destination(direction)]
+      ) {
+        void move(direction, card.contains(document.activeElement));
+        return;
       }
+      if (!reduced.matches)
+        card.animate(
+          [{ transform: card.style.transform }, { transform: "none" }],
+          { duration: 190, easing: "ease-out" },
+        );
+      card.style.transform = "";
+      stack();
+      root.classList.remove("is-swiping");
     }
-    button.onpointerup = finish;
-    button.onpointercancel = finish;
-    button.onlostpointercapture = finish;
-    button.onclick = (event) => {
-      if (current !== i || (ignoreClick && event.detail > 0)) return;
-      void dismiss(card, -1, true);
+    target.onpointerup = release;
+    target.onpointercancel = release;
+    target.onlostpointercapture = release;
+    target.onclick = (event) => {
+      if (index !== i || (suppressClick && event.detail)) return;
+      next();
     };
   });
-  back.onclick = () => {
-    if (busy || !current) return;
-    current--;
+  function restart() {
+    if (busy) return;
+    index = 0;
     show(true);
-  };
-  done.onclick = () => done.closest("dialog")?.close();
-  root.querySelector("[data-tip-replay]").onclick = () => {
-    current = 0;
-    show(true);
-  };
+  }
+  root.querySelector("[data-deck-first]")?.addEventListener("click", restart);
+  root
+    .querySelector("[data-deck-done]")
+    ?.addEventListener("click", () => root.closest("dialog")?.close());
+  arrows.forEach((button) => {
+    button.onclick = () => void move(Number(button.dataset.deckStep));
+  });
+  root.addEventListener("keydown", (event) => {
+    if (
+      !["ArrowLeft", "ArrowRight"].includes(event.key) ||
+      event.target.closest("a")
+    )
+      return;
+    event.preventDefault();
+    void move(event.key === "ArrowRight" ? 1 : -1, true);
+  });
+  if (auto) {
+    function updateAuto() {
+      auto.setAttribute(
+        "aria-label",
+        playing ? "Pause carousel" : "Play carousel",
+      );
+      auto.innerHTML = icon(playing ? "pause" : "play");
+      count.setAttribute("aria-live", playing ? "off" : "polite");
+    }
+    auto.onclick = () => {
+      playing = !playing;
+      introAutoplay = playing;
+      lastMove = Date.now();
+      updateAuto();
+    };
+    reduced.addEventListener(
+      "change",
+      (event) => {
+        if (event.matches) {
+          playing = false;
+          updateAuto();
+        }
+      },
+      { signal },
+    );
+    updateAuto();
+    const timer = setInterval(() => {
+      if (
+        !playing ||
+        document.hidden ||
+        (root.matches(":focus-within") && document.activeElement !== auto) ||
+        (mouse.matches &&
+          root.querySelector(".swipe-stage").matches(":hover")) ||
+        Date.now() - lastMove < 6000
+      )
+        return;
+      const rect = root.getBoundingClientRect();
+      if (rect.top >= 0 && rect.bottom <= innerHeight) void move(1);
+    }, 300);
+    signal?.addEventListener("abort", () => clearInterval(timer), {
+      once: true,
+    });
+  }
   show();
 }
