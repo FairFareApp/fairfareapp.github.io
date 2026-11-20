@@ -134,6 +134,7 @@ export function createContributionFlow({
     const d = draft(purchase),
       form = document.querySelector("#submission-form"),
       feedback = document.querySelector("#submission-feedback"),
+      submit = form.querySelector("#wizard-next"),
       step = d.step,
       evidenceStep = purchase ? 1 : 3,
       last = purchase ? 2 : 4;
@@ -281,7 +282,7 @@ export function createContributionFlow({
       };
     form.onsubmit = async (e) => {
       e.preventDefault();
-      if (form.getAttribute("aria-busy") === "true") return;
+      if (submit.getAttribute("aria-busy") === "true") return;
       save();
       feedback.innerHTML = "";
       if (pending) {
@@ -367,8 +368,7 @@ export function createContributionFlow({
         image_consent: v.image_consent === true,
         accurate: v.accurate === true,
       };
-      const submit = document.querySelector("#wizard-next");
-      form.setAttribute("aria-busy", "true");
+      submit.setAttribute("aria-busy", "true");
       submit.disabled = true;
       submit.innerHTML = `${icon("paper-plane")} Sending…`;
       feedback.innerHTML = loading("Sending for review…");
@@ -388,7 +388,7 @@ export function createContributionFlow({
       } catch (e) {
         if (!signal.aborted) {
           showError(e.message);
-          form.removeAttribute("aria-busy");
+          submit.removeAttribute("aria-busy");
           submit.disabled = false;
           submit.textContent = "Submit for review";
         }

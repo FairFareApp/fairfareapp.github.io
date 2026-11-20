@@ -608,7 +608,7 @@ try {
       );
       assert.equal(
         await page.eval(() =>
-          document.querySelector("#submission-form")?.getAttribute("aria-busy"),
+          document.querySelector("#wizard-next")?.getAttribute("aria-busy"),
         ),
         "true",
       );
