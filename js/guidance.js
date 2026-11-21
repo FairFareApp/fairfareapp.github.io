@@ -113,6 +113,7 @@ function ridePage(kind) {
     <section class="ride-check panel" aria-labelledby="ride-check-title">
       <div class="ride-check-head"><h2 id="ride-check-title">Before you get in</h2><output id="ride-progress" aria-live="polite"></output></div>
       <progress max="${r.checks.length}" value="0" aria-label="Ride checks completed"></progress>
+      <div class="ride-meter" aria-hidden="true"><span></span></div>
       <div class="ride-checks">${r.checks.map((label, i) => `<label class="ride-check-row"><input type="checkbox" data-ride-check="${i}"><span>${label}</span></label>`).join("")}</div>
       <div class="ride-reset"><button type="button" class="text-link" id="ride-reset" hidden>Reset checks</button></div>
     </section>
@@ -148,6 +149,7 @@ function bindRide(root, kind) {
   const checks = [...root.querySelectorAll("[data-ride-check]")];
   const progress = root.querySelector("#ride-progress");
   const bar = root.querySelector(".ride-check progress");
+  const meter = root.querySelector(".ride-meter");
   const reset = root.querySelector("#ride-reset");
   const complete = rideProgress[kind];
   function showChecks() {
@@ -157,6 +159,8 @@ function bindRide(root, kind) {
         ? `${icon("check")} Ready to ride`
         : `${size} / ${checks.length}`;
     bar.value = size;
+    meter.style.setProperty("--filled", size / checks.length);
+    progress.classList.toggle("is-ready", size === checks.length);
     reset.hidden = size === 0;
   }
   checks.forEach((input, i) => {
@@ -249,6 +253,27 @@ function fareReference() {
 }
 
 const photos = {
+  amber: {
+    author: "Slyronit",
+    source: "Panorama_of_Amber_Fort.jpg",
+    alt: "Amber Fort and the hillside above Amer",
+    license: "CC BY-SA 4.0",
+    licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+  },
+  hawa: {
+    author: "Wander-earth",
+    source: "Hawa_Mahal_in_Jaipur_India.jpg",
+    alt: "Hawa Mahal in Jaipur",
+    license: "CC BY-SA 4.0",
+    licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+  },
+  jantar: {
+    author: "Swapnil.Karambelkar",
+    source: "Full_view_of_jantar_mantar_,Jaipur.jpg",
+    alt: "The stone instruments at Jantar Mantar in Jaipur",
+    license: "CC BY-SA 4.0",
+    licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+  },
   "city-palace": {
     author: "Miniondo",
     source: "City_palace,_Jaipur.jpg",
@@ -271,6 +296,36 @@ const photos = {
     licenseUrl: "https://creativecommons.org/licenses/by/2.0/",
   },
 };
+const visitGuides = [
+  {
+    id: "hawa",
+    title: "Hawa Mahal",
+    source_url: "https://www.tourism.rajasthan.gov.in/hawa-mahal.html",
+    content: {
+      locality: "Badi Chaupar",
+      note: "Look for the latticed windows and jharokhas. Confirm the current admission price at the monument entrance.",
+    },
+  },
+  {
+    id: "jantar",
+    title: "Jantar Mantar",
+    source_url: "https://www.tourism.rajasthan.gov.in/jantar-mantar.html",
+    content: {
+      locality: "Old Jaipur",
+      note: "Leave time to look closely at the astronomical instruments. Confirm the current admission price at the monument entrance.",
+    },
+  },
+  {
+    id: "amber",
+    title: "Amber Palace",
+    source_url:
+      "https://www.tourism.rajasthan.gov.in/content/rajasthan-tourism/en/tourist-destinations/amber-palace.html",
+    content: {
+      locality: "Amer",
+      note: "Allow time for the courtyards and palace interiors. Confirm the current admission price at the monument entrance.",
+    },
+  },
+];
 export function monumentsPage() {
   return `<div class="visits-page">${heading("Monuments")}<div class="monuments-toolbar"><label class="inline-label" for="visitor">Visitor category<select id="visitor">${options(
     [
@@ -287,15 +342,14 @@ export async function bindMonuments(root, signal) {
   const target = root.querySelector("#monument-data");
   const select = root.querySelector("#visitor");
   try {
-    const rows = await getTicketPrices(signal);
+    const live = await getTicketPrices(signal);
     if (signal.aborted) return;
-    if (!rows.length) {
-      target.innerHTML = notice(
-        "No visitor records are published. Check the official counter.",
-      );
-      return;
-    }
-
+    const rows = [
+      ...live,
+      ...visitGuides.filter(
+        (guide) => !live.some((row) => row.id === guide.id),
+      ),
+    ];
     target.innerHTML =
       swipeDeck(
         "visits",
@@ -330,14 +384,16 @@ export async function bindMonuments(root, signal) {
           label + (row.verification === "snapshot" ? " · last verified" : "");
         cards[i].querySelector(".visit-link").innerHTML = external(
           row.source_url,
-          fee === 0 ? "Official visitor info" : "Official ticket info",
+          !Number.isFinite(fee) || fee === 0
+            ? "Official visitor info"
+            : "Official ticket info",
         );
       });
       const row = rows[current];
       const photo = photos[row.id];
       detailBody.innerHTML = `<p>${h(row.content.note)}</p>
-        ${cat.includes("student") && row.prices?.[cat] !== 0 ? "<p>Carry valid student ID and confirm eligibility.</p>" : ""}
-        <p>${row.verification === "official" ? "Official site checked" : "Live source unavailable. Last verified"} ${date(row.checked_at)}.</p>
+        ${cat.includes("student") && row.prices?.[cat] > 0 ? "<p>Carry valid student ID and confirm eligibility.</p>" : ""}
+        ${row.checked_at ? `<p>${row.verification === "official" ? "Official site checked" : "Live source unavailable. Last verified"} ${date(row.checked_at)}.</p>` : ""}
         ${photo ? `<p>Photo: ${h(photo.author)}. Cropped and resized. ${external("https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(photo.source), "Original photo")} · ${external(photo.licenseUrl, photo.license)}</p>` : ""}`;
     }
     deck.addEventListener("cardchange", (event) => {
@@ -346,7 +402,7 @@ export async function bindMonuments(root, signal) {
       update();
     });
     select.onchange = update;
-    bindDeck(deck, signal);
+    bindDeck(deck);
     target.querySelectorAll("img").forEach((img) => {
       img.onerror = () => img.remove();
     });

@@ -22,7 +22,7 @@ import {
 import { policies } from "./policies.js";
 import { comparable, bindReferenceImages } from "./references.js";
 import { createContributionFlow } from "./contribution.js";
-import { deckMarkup, bindDeck } from "./decks.js";
+import { campaignMarkup, bindCampaign, deckMarkup, bindDeck } from "./decks.js";
 import { bargainingFor } from "./travel-advice.js";
 import { contributionReceipts, clearContributionReceipts } from "./receipts.js";
 import {
@@ -106,7 +106,7 @@ function shell(content, path) {
     <div class="header-tools"><button class="icon-button" id="theme-toggle" aria-label="Switch colour theme" aria-pressed="${document.documentElement.dataset.theme === "dark"}">${icon(document.documentElement.dataset.theme === "dark" ? "sun" : "moon")}</button>${moreButton(false, more)}</div>
   </div></header>
   <main id="main" class="main-content ${path === "/" ? "home-content" : ""}" tabindex="-1">${content}</main>
-  <footer class="site-footer"><span>${icon("location-dot")} Jaipur pilot</span><div><a href="/about">About FairFare</a><a href="/privacy">Privacy Policy</a><a href="/install">App Installation Guide</a></div></footer>
+  <footer class="site-footer">${["/", "/scan"].includes(path) ? "<span>Photos are sent for identification.</span>" : ""}<a href="/privacy">Privacy Policy</a></footer>
   <nav class="bottom-nav" aria-label="Mobile main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}${url === "/contribute" ? ' aria-label="Your Contributions"' : ""}>${icon(i)}<span>${label}</span></a>`).join("")}${moreButton(true, more)}</nav>
   <nav id="mobile-menu" class="mobile-menu more-menu" aria-label="More pages" hidden>${Object.entries(
     infoRoutes,
@@ -120,11 +120,16 @@ function shell(content, path) {
 }
 function home() {
   return `<div class="home-start">
-    <h1 class="sr-only">FairFare Jaipur</h1>
-    ${deckMarkup("intro")}
+    <h1 class="sr-only">FairFare</h1>
+    ${campaignMarkup()}
     ${scan(true)}
-    <button type="button" class="ready-launch" data-dialog="ready"><span class="ready-copy">${icon("map-location-dot")}<strong>Get Ready<br>for Jaipur</strong></span><img src="/assets/monuments/hawa.webp" alt="Hawa Mahal, Jaipur" width="720" height="420" loading="lazy"></button>
+    <button type="button" class="ready-launch ${state.travelReady ? "is-ready" : ""}" data-dialog="ready" aria-haspopup="dialog"><span class="ready-copy">${readyCopy()}</span><img src="/assets/monuments/hawa.webp" alt="" width="720" height="420" loading="lazy"></button>
   </div>`;
+}
+function readyCopy() {
+  return state.travelReady
+    ? `<span class="ready-symbol">${icon("check")}</span><strong>You’re ready for Jaipur</strong><small>Review tips</small>`
+    : `<strong>Get Ready for Jaipur</strong><small>Open travel tips ${icon("arrow-right")}</small>`;
 }
 function infoPage(path) {
   const [type, glyph] = infoRoutes[path];
@@ -169,7 +174,7 @@ function scan(embedded = false) {
       <input id="camera-input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" tabindex="-1">
       <input id="gallery-input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1">
       <div id="photo-feedback" aria-live="polite"></div>
-      ${state.image ? '<button class="text-link" id="clear-scan">Remove photo</button>' : `<p class="privacy-note">Photos are sent for identification. <a class="text-link" href="/privacy">Privacy Policy</a></p>`}
+      ${state.image ? '<button class="text-link" id="clear-scan">Remove photo</button>' : ""}
     </section>
     <section class="confirm-card" aria-label="Product details">
       <div id="analysis-feedback" aria-live="polite">${
@@ -210,7 +215,7 @@ function comparison() {
       ${r.alternatives.map(({ label, value, result }) => `<div class="range-option"><div><strong>${h(label)}</strong><span>${money(result.low)}–${money(result.high)}</span><small>${result.matches.length} comparisons${result.synthetic ? ` · ${result.synthetic} synthetic` : ""}</small></div><button type="button" class="button secondary" data-range-choice="${h(value)}" aria-label="Use ${h(label)}">Use</button></div>`).join("")}
     </div>`
       : "";
-  return `<div class="result-layout"><div class="page-heading"><a class="back-link" data-up data-scan href="${state.scanReturn || "/"}">${icon("arrow-left")}Edit details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${h(productName(a.category_id))}</h1><p>${a.size_cm ? `${h(a.size_cm)} cm${bangles ? " inside" : " high"}` : ""}${unit ? ` · ${h(unit)}` : ""}${finish ? ` · ${h(finish)}` : ""} · ${h(a.segment)}</p></div></div></div><section class="price-panel panel">${r.status === "ready" ? `<p class="eyebrow">${r.synthetic ? "Illustrative price range" : "Typical comparison range"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${unit ? `${h(unit)} · ` : ""}${r.matches.length} comparable observations${r.synthetic ? ` · ${r.synthetic} synthetic` : ""}</p>` : alternativePanel || `<div class="empty-result">${icon("scale-balanced")}<h2>Not enough similar observations</h2><p>${h(r.reason)}</p><a href="${state.scanReturn || "/"}" data-up data-scan class="button secondary">Review details</a></div>`}</section>${["ready", "alternatives"].includes(r.status) ? bargainingMarkup(a.segment, product?.tip) : ""}${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button primary full" id="report-purchase">Bought it? Share the price</button></div>` : ""}<div class="result-disclosures"><details><summary>Compare ${r.matches.length} similar ${r.synthetic ? "demo records" : "observations"}</summary><p class="small muted">Images illustrate material and design across examples. They do not show an actual purchase or exact size.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "No matching approved records."}</div></details><details><summary>Product details & matching</summary><dl class="attribute-list"><div><dt>Material</dt><dd>${h(product?.materials[a.material] || "Unconfirmed")}</dd></div>${bangles ? `<div><dt>Quantity</dt><dd>${h(unit)}</dd></div>` : `<div><dt>Carving</dt><dd>${h(a.carving_detail || "Either")}</dd></div>`}<div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>Same product, material, finish and selling setting. ${bangles ? "Inner diameter within 0.3 cm and the same number of bangles. Metal means fashion metal, not precious metal." : "Height within 2 cm or 20%, whichever is larger. Carving detail matches exactly when selected."} Records are no older than a year. Material cannot be verified from a photo.</p></details><details><summary>Sources, uncertainty & calculation</summary><p>${h(r.method || "Each range requires at least three compatible records. Different possible materials or designs are shown separately.")}</p><p>${r.excluded || 0} extreme prices excluded. Asking, observed and paid prices may differ; each listing names its type.</p><p>Synthetic records are separately modelled examples, not independent real-world transactions. Reference illustrations do not establish species, workmanship, origin or authenticity. This is a demonstration, not an appraisal or a verdict on a seller.</p><a href="/about" class="text-link">About FairFare</a></details>${r.status === "ready" ? `<details><summary>Have a seller’s quote?</summary><form id="quote-form"><label for="quoted-price">Quoted price (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare quote</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
+  return `<div class="result-layout"><div class="page-heading"><a class="back-link" data-up data-scan href="${state.scanReturn || "/"}">${icon("arrow-left")}Edit details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${h(productName(a.category_id))}</h1><p>${a.size_cm ? `${h(a.size_cm)} cm${bangles ? " inside" : " high"}` : ""}${unit ? ` · ${h(unit)}` : ""}${finish ? ` · ${h(finish)}` : ""} · ${h(a.segment)}</p></div></div></div><section class="price-panel panel${r.status === "ready" ? " price-found" : ""}">${r.status === "ready" ? `<p class="eyebrow">${icon("tag")} ${r.synthetic ? "Illustrative price range" : "Typical comparison range"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${unit ? `${h(unit)} · ` : ""}${r.matches.length} comparable observations${r.synthetic ? ` · ${r.synthetic} synthetic` : ""}</p>` : alternativePanel || `<div class="empty-result">${icon("scale-balanced")}<h2>Not enough similar observations</h2><p>${h(r.reason)}</p><a href="${state.scanReturn || "/"}" data-up data-scan class="button secondary">Review details</a></div>`}</section>${["ready", "alternatives"].includes(r.status) ? bargainingMarkup(a.segment, product?.tip) : ""}${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button primary full" id="report-purchase">Bought it? Share the price</button></div>` : ""}<div class="result-disclosures"><details><summary>Compare ${r.matches.length} similar ${r.synthetic ? "demo records" : "observations"}</summary><p class="small muted">Images illustrate material and design across examples. They do not show an actual purchase or exact size.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "No matching approved records."}</div></details><details><summary>Product details & matching</summary><dl class="attribute-list"><div><dt>Material</dt><dd>${h(product?.materials[a.material] || "Unconfirmed")}</dd></div>${bangles ? `<div><dt>Quantity</dt><dd>${h(unit)}</dd></div>` : `<div><dt>Carving</dt><dd>${h(a.carving_detail || "Either")}</dd></div>`}<div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>Same product, material, finish and selling setting. ${bangles ? "Inner diameter within 0.3 cm and the same number of bangles. Metal means fashion metal, not precious metal." : "Height within 2 cm or 20%, whichever is larger. Carving detail matches exactly when selected."} Records are no older than a year. Material cannot be verified from a photo.</p></details><details><summary>Sources, uncertainty & calculation</summary><p>${h(r.method || "Each range requires at least three compatible records. Different possible materials or designs are shown separately.")}</p><p>${r.excluded || 0} extreme prices excluded. Asking, observed and paid prices may differ; each listing names its type.</p><p>Synthetic records are separately modelled examples, not independent real-world transactions. Reference illustrations do not establish species, workmanship, origin or authenticity. This is a demonstration, not an appraisal or a verdict on a seller.</p><a href="/about" class="text-link">About FairFare</a></details>${r.status === "ready" ? `<details><summary>Have a seller’s quote?</summary><form id="quote-form"><label for="quoted-price">Quoted price (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare quote</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
 }
 function bargainingMarkup(setting, productTip) {
   const advice = bargainingFor(setting);
@@ -333,7 +338,8 @@ function render() {
   window.scrollTo(0, 0);
   document.querySelector("#main").focus({ preventScroll: true });
   bindShell();
-  app.querySelectorAll("[data-deck]").forEach((deck) => bindDeck(deck, signal));
+  const campaign = app.querySelector("[data-campaign]");
+  if (campaign) bindCampaign(campaign, signal);
   bindReferenceImages(app);
   if (path === "/" || path === "/scan") bindScan(signal);
   if (path === "/install") bindInstall();
@@ -424,9 +430,23 @@ function showInfo(type) {
   const dialog = document.querySelector("#info-dialog");
   dialog.classList.toggle("tips-dialog", type === "ready");
   document.querySelector("#dialog-title").textContent = title;
-  body.innerHTML = type === "ready" ? deckMarkup("tips") : content;
-  if (type === "ready")
-    bindDeck(body.querySelector("[data-deck]"), controller.signal);
+  body.innerHTML = type === "ready" ? deckMarkup() : content;
+  if (type === "ready") {
+    const deck = body.querySelector("[data-deck]");
+    bindDeck(deck);
+    deck.addEventListener(
+      "readycomplete",
+      () => {
+        state.travelReady = true;
+        const trigger = app.querySelector(".ready-launch");
+        trigger.classList.add("is-ready");
+        trigger.querySelector(".ready-copy").innerHTML = readyCopy();
+        document.querySelector("#announcer").textContent =
+          "You’re ready for Jaipur. Enjoy the trip!";
+      },
+      { once: true },
+    );
+  }
   if (type === "clear-history") {
     body.querySelector("#clear-device-history").onclick = () => {
       if (clearContributionReceipts()) {

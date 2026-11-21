@@ -212,13 +212,19 @@ function deckFace(kind) {
   return `.${kind}-deck .swipe-card[data-depth="0"]`;
 }
 async function deckNumber(kind, number) {
+  const selector = kind === "intro" ? ".campaign" : `.${kind}-deck`;
   await wait(
-    `document.querySelector('.${kind}-deck [data-deck-count]')?.textContent.startsWith('${number} /')`,
+    `document.querySelector('${selector}')?.dataset.index === '${number - 1}'`,
   );
 }
 async function dragCard(kind, dx, capture) {
-  const card = deckFace(kind);
-  const target = `${card} .swipe-target`;
+  const intro = kind === "intro";
+  const card = intro ? ".campaign-track" : deckFace(kind);
+  const target = intro ? ".campaign .swipe-target" : `${card} .swipe-target`;
+  const resting = await page.eval(
+    (s) => document.querySelector(s).style.transform,
+    card,
+  );
   const start = await page.eval((selector) => {
     const { x, y, width, height } = document
       .querySelector(selector)
@@ -256,7 +262,9 @@ async function dragCard(kind, dx, capture) {
   await sendPointer("down", 0);
   if (dx) {
     await sendPointer("move", dx);
-    await wait(`document.querySelector('${card}').style.transform !== ''`);
+    await wait(
+      `document.querySelector('${card}').style.transform !== ${JSON.stringify(resting)}`,
+    );
     if (capture) await shot(capture);
   }
   await sendPointer("up", dx);
@@ -284,7 +292,7 @@ try {
     async () => {
       await deckNumber("intro", 1);
       await shot("home", "#take-photo", [
-        ".intro-deck [data-deck-autoplay]",
+        ".campaign .swipe-target",
         "#choose-photo",
         ".ready-launch",
       ]);
@@ -303,22 +311,30 @@ try {
           );
         }),
       );
-      await deckNumber("intro", 2);
-      await click(".intro-deck [data-deck-autoplay]");
-      assert.equal(
-        await page.eval(() =>
-          document
-            .querySelector("[data-deck-autoplay]")
-            .getAttribute("aria-label"),
-        ),
-        "Play carousel",
+      assert.ok(
+        await page.eval(() => {
+          const photo = document
+            .querySelector("#take-photo")
+            .getBoundingClientRect();
+          return (
+            Math.abs(photo.width - photo.height) < 1 &&
+            photo.width >= 112 &&
+            document.querySelectorAll(".campaign-slide").length === 7 &&
+            document
+              .querySelector(".campaign-slide:not([inert]) h2")
+              .textContent.includes("FairFare") &&
+            !document.querySelector('#main a[href="/privacy"]') &&
+            Boolean(document.querySelector('footer a[href="/privacy"]'))
+          );
+        }),
       );
-      await dragCard("intro", -92);
-      await deckNumber("intro", 3);
-      await dragCard("intro", -92);
-      await deckNumber("intro", 1);
+      await deckNumber("intro", 2);
+      for (const index of [3, 4, 5, 1]) {
+        await dragCard("intro", -92);
+        await deckNumber("intro", index);
+      }
       await dragCard("intro", 92);
-      await deckNumber("intro", 3);
+      await deckNumber("intro", 5);
       await dragCard("intro", 0);
       await deckNumber("intro", 1);
     },
@@ -336,7 +352,9 @@ try {
       assert.match(await text(), /Google Maps/);
       await shot("jaipur-flashcards", face);
       await dragCard("tips", -23);
-      await deckNumber("tips", 1);
+      await wait(
+        "document.querySelector('.tips-deck').getAnimations({subtree:true}).length === 0",
+      );
       await dragCard("tips", -92, "jaipur-flashcards-drag");
       await deckNumber("tips", 2);
       await dragCard("tips", 92);
@@ -351,7 +369,7 @@ try {
       await deckNumber("tips", 5);
       assert.match(await text(), /authorised bank/);
       await shot("jaipur-flashcards-money", face, [`${front} .text-link`]);
-      await click('.tips-deck [data-deck-step="-1"]');
+      await dragCard("tips", 92);
       await deckNumber("tips", 4);
       await page.send("Emulation.setEmulatedMedia", {
         features: [{ name: "prefers-reduced-motion", value: "reduce" }],
@@ -360,17 +378,21 @@ try {
         await deckNumber("tips", i);
         await click(face);
       }
-      await wait(
-        "document.querySelector('.tips-deck [data-deck-count]').textContent === '7 tips complete'",
-      );
+      await deckNumber("tips", 8);
       await click("[data-deck-first]");
       await deckNumber("tips", 1);
       await page.eval(() => (document.documentElement.dataset.theme = "dark"));
       await shot("jaipur-flashcards-dark", face);
       await page.eval(() => (document.documentElement.dataset.theme = "light"));
+      for (let i = 1; i <= 7; i++) {
+        await deckNumber("tips", i);
+        await click(face);
+      }
+      await deckNumber("tips", 8);
       await page.send("Emulation.setEmulatedMedia", { features: [] });
-      await key("Escape", 27);
+      await click("[data-deck-done]");
       await wait("!document.querySelector('#info-dialog').open");
+      await shot("jaipur-ready", ".ready-launch.is-ready");
       assert.equal(
         await page.eval(
           () => document.querySelector(".confirmation-details").open,
@@ -417,6 +439,15 @@ try {
       await click('#attributes-form button[type="submit"]');
       await wait("location.pathname==='/compare'");
       assert.ok(await page.eval(() => document.querySelector(".price-range")));
+      assert.equal(
+        await page.eval(
+          () =>
+            getComputedStyle(
+              document.querySelector(".price-found .price-range"),
+            ).animationName,
+        ),
+        "price-unfold",
+      );
       assert.match(
         await page.eval(() => document.querySelector(".price-panel").innerText),
         /synthetic/,
@@ -827,7 +858,18 @@ try {
         );
         if (taxi) activeFill = fill;
         else assert.equal(fill, activeFill);
-        for (let i = 0; i < 4; i++) await click(`[data-ride-check="${i}"]`);
+        await click('[data-ride-check="0"]');
+        assert.deepEqual(
+          await page.eval(() => {
+            const meter = document.querySelector(".ride-meter");
+            return [
+              meter.style.getPropertyValue("--filled"),
+              getComputedStyle(meter.firstElementChild).transitionDuration,
+            ];
+          }),
+          ["0.25", "0.4s"],
+        );
+        for (let i = 1; i < 4; i++) await click(`[data-ride-check="${i}"]`);
         assert.match(
           await page.eval(
             () => document.querySelector("#ride-progress").innerText,
@@ -906,19 +948,38 @@ try {
       await wait(
         "[...document.querySelectorAll('.visits-deck img')].every(i=>i.naturalWidth>0)",
       );
-      await shot("monuments", `${front} .text-link`, [
-        "#visitor",
-        ".visits-deck [data-deck-step='1']",
-      ]);
+      await shot("monuments", `${front} .text-link`, ["#visitor"]);
+      assert.equal(
+        await page.eval(
+          () => document.querySelectorAll(".visits-deck .swipe-card").length,
+        ),
+        6,
+      );
       await dragCard("visits", -92, "monuments-drag");
       await deckNumber("visits", 2);
       await dragCard("visits", 92);
       await deckNumber("visits", 1);
       await dragCard("visits", 92);
+      await deckNumber("visits", 6);
+      assert.match(await fee(), /Check entry fee/);
+      await dragCard("visits", 92);
+      await deckNumber("visits", 5);
+      assert.match(await fee(), /Check entry fee/);
+      await shot("monuments-jantar", `${front} .text-link`);
+      await dragCard("visits", 92);
+      await deckNumber("visits", 4);
+      assert.match(await fee(), /Check entry fee/);
+      await dragCard("visits", 92);
       await deckNumber("visits", 3);
       assert.match(await fee(), /Free entry/);
       await shot("monuments-free", `${front} .text-link`);
       await dragCard("visits", 0);
+      await deckNumber("visits", 4);
+      await dragCard("visits", -92);
+      await deckNumber("visits", 5);
+      await dragCard("visits", -92);
+      await deckNumber("visits", 6);
+      await dragCard("visits", -92);
       await deckNumber("visits", 1);
       await fill("#visitor", "foreign_student");
       assert.match(await fee(), /₹600 entry/);
@@ -1070,7 +1131,7 @@ try {
       });
       assert.ok(cache.some((u) => u.endsWith("/js/contribution.js")));
       assert.ok(cache.some((u) => u.endsWith("/assets/monuments/hawa.webp")));
-      assert.ok(cache.some((u) => u.endsWith("/assets/brand/market.webp")));
+      assert.ok(cache.some((u) => u.endsWith("/assets/brand/fairfare.webp")));
       assert.ok(
         cache.every(
           (u) =>

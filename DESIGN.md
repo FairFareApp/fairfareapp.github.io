@@ -52,3 +52,11 @@ A Jaipur pocket guide with a larger photographic opening and shared horizontal c
 - Monument photographs carry the current visitor category and ticket link. Labelled card edges show what is behind the current place. A details disclosure keeps source dates and image attribution within reach.
 - Give the ride pages different feature colours and the same mode control. A ride checklist shows checked items, and a short scenario gives feedback on a travel choice. Keep the local fare calculator and sources within reach.
 - The primary navigation carries the five destinations and More. The information pages use regular routes and keep the active navigation visible.
+
+## FairFare first
+
+The home campaign leads with the FairFare tag and the value of comparing, preparing and contributing. Five generated paper still lifes share clay, ivory and leaf green. A continuous horizontal rail loops using matching end slides. It yields to touch, focus, hover and reduced motion. There is no visible carousel toolbar.
+
+The compass for visual hierarchy is the action contrast. The square camera button is the largest tool on the home scan panel. The Jaipur card has a visible Open travel tips action and earns a check stamp on completion. All active tabs use the same sage treatment under the diagonal saffron, ivory and green header. The shade and type scale remain consistent across guides and actions.
+
+The venue stack promotes the next photograph while the front photograph travels out and tucks behind the other cards. The active photo and ticket data share a constant overlay. The ride progress fill, Jaipur check and successful price reveal respond to completed actions. All retain their final state with reduced motion.

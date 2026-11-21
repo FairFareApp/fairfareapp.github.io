@@ -49,40 +49,204 @@ const tips = [
   },
 ];
 
-const intro = [
-  {
-    title: "Know what’s fair.",
-    caption: "Compare Jaipur craft prices",
-    image: "market",
-    tone: "lac",
-  },
-  {
-    title: "Ride with a plan.",
-    caption: "Know what to check before you go",
-    image: "ride",
-    tone: "sage",
-  },
-  {
-    title: "Step into Jaipur.",
-    caption: "Find entry prices before you arrive",
-    image: "visit",
-    tone: "turmeric",
-  },
+const campaign = [
+  [
+    "Travel with FairFare.",
+    "A little local know-how for your next trip.",
+    "fairfare",
+  ],
+  ["Know before you buy.", "Check what similar finds cost.", "price-check"],
+  ["Feel ready to ride.", "Know what to ask before you get in.", "ride-ready"],
+  ["Plan your next stop.", "Check entry prices before you go.", "entry"],
+  ["Pass it on.", "Share a price to help the next traveller.", "pass-it-on"],
 ];
-let introAutoplay;
 
-export function deckMarkup(kind) {
-  if (kind === "intro")
-    return swipeDeck(
-      "intro",
-      "Explore FairFare",
-      intro.map((card) => ({
-        label: card.title,
-        tone: card.tone,
-        content: `<img class="swipe-photo" src="/assets/brand/${card.image}.webp" alt="" width="1000" height="560" ${card.image === "market" ? 'fetchpriority="high"' : 'loading="lazy"'}><div class="brand-slide-copy"><h2>${h(card.title)}</h2><p>${h(card.caption)}</p></div>`,
-      })),
-      { autoplay: true },
+export function campaignMarkup() {
+  const last = campaign.at(-1);
+  return `<section class="campaign" data-campaign aria-label="Explore FairFare">
+    <div class="campaign-viewport">
+      <div class="campaign-track">
+        ${[last, ...campaign, campaign[0]]
+          .map(
+            (
+              [title, caption, image],
+              slot,
+            ) => `<article class="campaign-slide" ${slot === 1 ? "" : "inert"}>
+          <img src="/assets/brand/${image}.webp" width="1100" height="620" alt="" ${slot === 1 ? 'fetchpriority="high"' : 'decoding="async"'}>
+          <div class="campaign-copy"><h2>${h(title)}</h2><p>${h(caption)}</p></div>
+        </article>`,
+          )
+          .join("")}
+      </div>
+      <button class="swipe-target" type="button" aria-label="Show next FairFare story"></button>
+    </div>
+  </section>`;
+}
+
+const wrap = (index, size) => (index + size) % size;
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const horizontal = ["ArrowLeft", "ArrowRight"];
+
+function bindSwipe(target, { pressed, drag, settle, tap }) {
+  let pointer;
+  let suppressClick = false;
+  target.onpointerdown = (event) => {
+    if (pointer || !event.isPrimary || event.button !== 0 || !pressed()) return;
+    suppressClick = false;
+    pointer = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      time: event.timeStamp,
+      dx: 0,
+      dragging: false,
+    };
+    target.setPointerCapture(event.pointerId);
+  };
+  target.onpointermove = (event) => {
+    if (pointer?.id !== event.pointerId) return;
+    const dx = event.clientX - pointer.x;
+    const dy = event.clientY - pointer.y;
+    if (Math.abs(dx) > 9 && Math.abs(dx) > Math.abs(dy))
+      pointer.dragging = true;
+    if (!pointer.dragging) return;
+    pointer.dx = dx;
+    drag(dx);
+  };
+  function release(event) {
+    if (pointer?.id !== event.pointerId) return;
+    const { x, y, dx, time, dragging } = pointer;
+    pointer = null;
+    if (!dragging) {
+      if (
+        event.type === "pointerup" &&
+        event.pointerType === "touch" &&
+        Math.hypot(event.clientX - x, event.clientY - y) < 10
+      ) {
+        suppressClick = true;
+        tap();
+      }
+      return;
+    }
+    suppressClick = true;
+    const distance = Math.abs(dx);
+    const fling =
+      distance > 30 && distance / Math.max(1, event.timeStamp - time) > 0.48;
+    settle(
+      event.type === "pointerup" && (distance > 62 || fling)
+        ? dx < 0
+          ? 1
+          : -1
+        : 0,
     );
+  }
+  target.onpointerup = release;
+  target.onpointercancel = release;
+  target.onlostpointercapture = release;
+  target.onclick = (event) => {
+    if (!suppressClick || event.detail === 0) tap();
+  };
+}
+
+const ease = "cubic-bezier(.2,.78,.26,1)";
+
+async function animate(element, frames, duration) {
+  if (reducedMotion.matches) return;
+  const motion = element.animate(frames, {
+    duration,
+    easing: ease,
+    fill: "forwards",
+  });
+  await motion.finished.catch(() => {});
+  return motion;
+}
+
+export function bindCampaign(root, signal) {
+  const viewport = root.querySelector(".campaign-viewport");
+  const track = root.querySelector(".campaign-track");
+  const target = root.querySelector("button");
+  const slides = [...track.children];
+  let index = 0;
+  let busy = false;
+  let held = false;
+  let autoplay = true;
+  let lastMove = Date.now();
+  const translate = (slot, dx = 0) =>
+    `translate3d(calc(${slot * -100}% + ${dx}px),0,0)`;
+
+  function show() {
+    track.style.transform = translate(index + 1);
+    root.dataset.index = index;
+    slides.forEach((slide, i) => {
+      slide.inert = i !== index + 1;
+    });
+    target.setAttribute(
+      "aria-label",
+      `${campaign[index][0]} ${campaign[index][1]} Show next FairFare story`,
+    );
+  }
+  async function move(step, manual = true) {
+    if (busy || held) return;
+    if (manual) autoplay = false;
+    busy = true;
+    lastMove = Date.now();
+    const dest = translate(index + 1 + step);
+    const motion = await animate(
+      track,
+      [{ transform: getComputedStyle(track).transform }, { transform: dest }],
+      step ? 465 : 240,
+    );
+    index = wrap(index + step, campaign.length);
+    show();
+    motion?.cancel();
+    busy = false;
+  }
+  bindSwipe(target, {
+    pressed() {
+      if (busy) return false;
+      autoplay = false;
+      return true;
+    },
+    drag(dx) {
+      held = true;
+      if (!reducedMotion.matches)
+        track.style.transform = translate(
+          index + 1,
+          Math.max(-viewport.clientWidth, Math.min(dx, viewport.clientWidth)),
+        );
+    },
+    settle(step) {
+      held = false;
+      void move(step);
+    },
+    tap: () => void move(1),
+  });
+  root.onkeydown = (event) => {
+    if (!horizontal.includes(event.key)) return;
+    event.preventDefault();
+    void move(event.key === "ArrowRight" ? 1 : -1);
+  };
+  const mouse = matchMedia("(hover: hover)");
+  const timer = setInterval(() => {
+    const rect = viewport.getBoundingClientRect();
+    if (
+      autoplay &&
+      !reducedMotion.matches &&
+      !document.hidden &&
+      !root.matches(":focus-within") &&
+      !(mouse.matches && root.matches(":hover")) &&
+      Date.now() - lastMove >= 5700 &&
+      rect.top >= 0 &&
+      rect.bottom <= innerHeight &&
+      !document.querySelector("dialog[open]")
+    )
+      void move(1, false);
+  }, 250);
+  signal.addEventListener("abort", () => clearInterval(timer), { once: true });
+  show();
+}
+
+export function deckMarkup() {
   const tones = [
     "indigo",
     "turmeric",
@@ -104,21 +268,14 @@ export function deckMarkup(kind) {
   cards.push({
     tone: "sage",
     label: "You’re ready for Jaipur",
-    content: `<div class="tip-copy"><span class="deck-icon">${icon("check")}</span><h3>You’re ready for Jaipur</h3><button class="button primary" type="button" data-deck-done>Done</button><button class="button secondary" type="button" data-deck-first>Read again</button></div>`,
+    content: `<div class="tip-copy"><span class="deck-icon finish-stamp">${icon("check")}</span><h3>You’re ready for Jaipur</h3><p>Enjoy the trip. FairFare is here when you need a price check.</p><button class="button primary" type="button" data-deck-done>Done</button><button class="button secondary" type="button" data-deck-first>Read again</button></div>`,
   });
-  return swipeDeck("tips", "Jaipur tip cards", cards, {
-    limited: true,
-    finale: true,
-  });
+  return swipeDeck("tips", "Jaipur tip cards", cards, true);
 }
 
-export function swipeDeck(
-  kind,
-  title,
-  cards,
-  { autoplay = false, limited = false, finale = false } = {},
-) {
-  return `<section class="swipe-deck ${kind}-deck" data-deck="${kind}" ${limited ? "data-limited" : ""} ${finale ? "data-finale" : ""} aria-label="${h(title)}">
+export function swipeDeck(kind, title, cards, limited = false) {
+  return `<section class="swipe-deck ${kind}-deck" data-deck="${kind}" ${limited ? "data-limited" : ""} aria-label="${h(title)}">
+    <p class="deck-instruction">${icon("hand-pointer")} Swipe or tap to ${limited ? "turn the cards" : "explore"}</p>
     <div class="swipe-stage">
       ${cards
         .map(
@@ -126,197 +283,173 @@ export function swipeDeck(
             card,
             i,
           ) => `<article class="swipe-card tone-${card.tone || "sage"}" data-label="${h(card.label)}" ${i ? "hidden inert" : 'data-depth="0"'}>
-        <button class="swipe-target" type="button" aria-label="${h(card.label)}. Show next card"></button>
+        <button class="swipe-target" type="button" aria-label="${h(card.label)}. ${limited && i === cards.length - 1 ? "Start again" : "Show next card"}"></button>
         ${kind === "visits" ? `<span class="swipe-peek" aria-hidden="true">${h(card.label)}</span>` : ""}
         ${card.content}
       </article>`,
         )
         .join("")}
     </div>
-    <div class="swipe-controls">
-      <button class="icon-button" data-deck-step="-1" type="button" aria-label="Previous card">${icon("chevron-left")}</button>
-      <span data-deck-count aria-live="${autoplay ? "off" : "polite"}"></span>
-      <button class="icon-button" data-deck-step="1" type="button" aria-label="Next card">${icon("chevron-right")}</button>
-      ${autoplay ? `<button class="icon-button deck-autoplay" type="button" data-deck-autoplay aria-label="Pause carousel">${icon("pause")}</button>` : ""}
-    </div>
+    <span class="sr-only" data-deck-status aria-live="polite"></span>
   </section>`;
 }
 
-export function bindDeck(root, signal) {
+export function bindDeck(root) {
   const cards = [...root.querySelectorAll(".swipe-card")];
-  const count = root.querySelector("[data-deck-count]");
-  const arrows = [...root.querySelectorAll("[data-deck-step]")];
-  const auto = root.querySelector("[data-deck-autoplay]");
+  const status = root.querySelector("[data-deck-status]");
   const limited = root.hasAttribute("data-limited");
-  const finale = root.hasAttribute("data-finale");
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-  const mouse = matchMedia("(hover: hover)");
+  const spacing = root.classList.contains("visits-deck") ? -30 : 9;
   let index = 0;
-  let gesture;
+  let direction = 1;
   let busy = false;
-  let playing = Boolean(auto && !reduced.matches && (introAutoplay ?? true));
-  let lastMove = Date.now();
 
-  function destination(step) {
-    return limited
-      ? index + step
-      : (index + step + cards.length) % cards.length;
-  }
+  const next = (step) =>
+    limited ? index + step : wrap(index + step, cards.length);
+  const pose = (depth) => ({
+    x: 0,
+    y: spacing * depth,
+    scale: 1 - 0.036 * depth,
+    turn: 0,
+  });
+  const transform = ({ x, y, scale, turn }) =>
+    `translate3d(${x}px,${y}px,0) rotate(${turn}deg) scale(${scale})`;
+  const displaced = (dx) => ({
+    ...pose(0),
+    x: dx,
+    y: -Math.min(12, Math.abs(dx) * 0.06),
+    turn: Math.max(-13, Math.min(13, dx / 16)),
+  });
 
-  function stack(direction = 1) {
-    const neighbours = [
-      index,
-      destination(direction),
-      destination(direction * 2),
-    ];
+  function layer(order) {
     cards.forEach((card, i) => {
-      const depth = neighbours.indexOf(i);
+      const depth = order.indexOf(i);
       card.hidden = depth < 0;
       card.inert = depth !== 0;
       card.dataset.depth = depth;
+      if (depth >= 0) card.style.transform = transform(pose(depth));
     });
   }
-
   function show(focus = false) {
-    root.classList.remove("is-swiping");
-    stack();
-    const atEnd = finale && index === cards.length - 1;
-    count.textContent = atEnd
-      ? `${cards.length - 1} tips complete`
-      : `${index + 1} / ${cards.length - Number(finale)}`;
-    arrows[0].disabled = limited && index === 0;
-    arrows[1].disabled = limited && index === cards.length - 1;
-    if (focus)
-      cards[index]
-        .querySelector(atEnd ? "[data-deck-done]" : ".swipe-target")
-        .focus({ preventScroll: true });
+    direction = 1;
+    layer([index, next(1), next(2)]);
+    root.dataset.index = index;
+    status.textContent = cards[index].dataset.label;
     root.dispatchEvent(new CustomEvent("cardchange", { detail: index }));
+    if (focus)
+      (
+        cards[index].querySelector("[data-deck-done]") ??
+        cards[index].querySelector("button")
+      ).focus({ preventScroll: true });
+  }
+  function prepare(step) {
+    if (direction === step) return;
+    direction = step;
+    layer([index, next(step), next(step * 2)]);
   }
 
-  function transform(dx) {
-    const angle = Math.max(-10, Math.min(10, dx / 24));
-    return `translate3d(${dx}px, 0, 0) rotate(${angle}deg)`;
-  }
-
-  async function move(step, focus = false) {
-    const next = destination(step);
-    const card = cards[index];
-    if (busy || gesture || !cards[next] || next === index) return;
-    busy = true;
-    root.classList.add("is-swiping");
-    lastMove = Date.now();
-    stack(step);
-    if (!reduced.matches) {
-      const flight = card.animate(
-        [
-          { transform: getComputedStyle(card).transform, opacity: 1 },
-          { transform: transform(-step * card.offsetWidth), opacity: 0 },
-        ],
-        {
-          duration: 265,
-          easing: "cubic-bezier(.18,.72,.3,1)",
-          fill: "forwards",
-        },
-      );
-      await flight.finished.catch(() => {});
-      flight.cancel();
+  async function settle(step, focus) {
+    if (busy) return;
+    const active = cards[index];
+    const incoming = cards[next(step)];
+    if (!step || !incoming || active === incoming) {
+      busy = true;
+      const settling = cards
+        .filter((card) => !card.hidden)
+        .map(async (card) => {
+          const final = transform(pose(Number(card.dataset.depth)));
+          const motion = await animate(
+            card,
+            [{ transform: card.style.transform }, { transform: final }],
+            240,
+          );
+          card.style.transform = final;
+          motion?.cancel();
+        });
+      await Promise.all(settling);
+      busy = false;
+      return;
     }
-    card.style.transform = "";
-    index = next;
-    busy = false;
+
+    busy = true;
+    prepare(step);
+    const width = active.offsetWidth;
+    const side = transform(displaced(-step * (width + 45)));
+    const order = [next(step), next(step + 1), next(step + 2)];
+    const moving = new Set([
+      active,
+      incoming,
+      ...order.map((i) => cards[i]).filter(Boolean),
+      ...cards.filter((card) => !card.hidden),
+    ]);
+    const motions = await Promise.all(
+      [...moving].map(async (card) => {
+        const depth = order.indexOf(cards.indexOf(card));
+        if (card === active) {
+          const from = card.style.transform;
+          if (limited && depth < 0)
+            return animate(
+              card,
+              [{ transform: from }, { transform: side }],
+              450,
+            );
+          const rear = transform(pose(depth >= 0 ? depth : 2));
+          return animate(
+            card,
+            [
+              { transform: from, zIndex: 5, offset: 0 },
+              { transform: side, zIndex: 5, offset: 0.48 },
+              { transform: side, zIndex: 0, offset: 0.49 },
+              { transform: rear, zIndex: 0, offset: 1 },
+            ],
+            560,
+          );
+        }
+        if (card.hidden && depth >= 0) {
+          card.hidden = false;
+          card.inert = true;
+          card.dataset.depth = 3;
+          card.style.transform = transform(pose(3));
+        }
+        return animate(
+          card,
+          [
+            { transform: card.style.transform },
+            { transform: transform(pose(depth < 0 ? 3 : depth)) },
+          ],
+          450,
+        );
+      }),
+    );
+    index = next(step);
     show(focus && root.isConnected);
+    motions.forEach((motion) => motion?.cancel());
+    busy = false;
   }
 
   cards.forEach((card, i) => {
     const target = card.querySelector(".swipe-target");
-    let suppressClick = false;
-    const next = () => {
-      if (finale && i === cards.length - 1) restart();
-      else void move(1, true);
-    };
-    target.onpointerdown = (event) => {
-      if (
-        index !== i ||
-        gesture ||
-        busy ||
-        !event.isPrimary ||
-        event.button !== 0
-      )
-        return;
-      suppressClick = false;
-      lastMove = Date.now();
-      card.getAnimations().forEach((animation) => animation.cancel());
-      gesture = {
-        id: event.pointerId,
-        x: event.clientX,
-        y: event.clientY,
-        time: event.timeStamp,
-        dx: 0,
-        direction: 1,
-        dragging: false,
-      };
-      target.setPointerCapture(event.pointerId);
-    };
-    target.onpointermove = (event) => {
-      if (gesture?.id !== event.pointerId) return;
-      const dx = event.clientX - gesture.x;
-      const dy = event.clientY - gesture.y;
-      if (!gesture.dragging && Math.abs(dx) > 9 && Math.abs(dx) > Math.abs(dy))
-        gesture.dragging = true;
-      if (!gesture.dragging) return;
-      root.classList.add("is-swiping");
-      gesture.dx = dx;
-      const direction = dx > 0 ? -1 : 1;
-      if (direction !== gesture.direction) stack(direction);
-      gesture.direction = direction;
-      if (!reduced.matches)
-        card.style.transform = transform(
-          cards[destination(direction)] ? dx : dx * 0.22,
-        );
-    };
-    function release(event) {
-      if (gesture?.id !== event.pointerId) return;
-      const { x, y, dx, time, direction, dragging } = gesture;
-      gesture = null;
-      if (!dragging) {
-        if (
-          event.type === "pointerup" &&
-          event.pointerType === "touch" &&
-          Math.hypot(event.clientX - x, event.clientY - y) < 10
-        ) {
-          suppressClick = true;
-          next();
+    bindSwipe(target, {
+      pressed: () => !busy && i === index,
+      drag(dx) {
+        const step = dx < 0 ? 1 : -1;
+        prepare(step);
+        const incoming = cards[next(step)];
+        if (reducedMotion.matches) return;
+        card.style.transform = transform(displaced(incoming ? dx : dx * 0.2));
+        if (incoming && incoming !== card) {
+          const depth =
+            1 - Math.min(0.88, Math.abs(dx) / (card.offsetWidth * 0.75));
+          incoming.style.transform = transform(pose(depth));
         }
-        return;
-      }
-      suppressClick = true;
-      const distance = Math.abs(dx);
-      const fling =
-        distance > 32 && distance / Math.max(1, event.timeStamp - time) > 0.5;
-      if (
-        event.type === "pointerup" &&
-        (distance >= 65 || fling) &&
-        cards[destination(direction)]
-      ) {
-        void move(direction, card.contains(document.activeElement));
-        return;
-      }
-      if (!reduced.matches)
-        card.animate(
-          [{ transform: card.style.transform }, { transform: "none" }],
-          { duration: 190, easing: "ease-out" },
-        );
-      card.style.transform = "";
-      stack();
-      root.classList.remove("is-swiping");
-    }
-    target.onpointerup = release;
-    target.onpointercancel = release;
-    target.onlostpointercapture = release;
-    target.onclick = (event) => {
-      if (index !== i || (suppressClick && event.detail)) return;
-      next();
-    };
+      },
+      settle: (step) =>
+        void settle(step, card.contains(document.activeElement)),
+      tap() {
+        if (index !== i || busy) return;
+        if (limited && i === cards.length - 1) restart();
+        else void settle(1, true);
+      },
+    });
   });
   function restart() {
     if (busy) return;
@@ -324,63 +457,14 @@ export function bindDeck(root, signal) {
     show(true);
   }
   root.querySelector("[data-deck-first]")?.addEventListener("click", restart);
-  root
-    .querySelector("[data-deck-done]")
-    ?.addEventListener("click", () => root.closest("dialog")?.close());
-  arrows.forEach((button) => {
-    button.onclick = () => void move(Number(button.dataset.deckStep));
+  root.querySelector("[data-deck-done]")?.addEventListener("click", () => {
+    root.dispatchEvent(new CustomEvent("readycomplete", { bubbles: true }));
+    root.closest("dialog")?.close();
   });
-  root.addEventListener("keydown", (event) => {
-    if (
-      !["ArrowLeft", "ArrowRight"].includes(event.key) ||
-      event.target.closest("a")
-    )
-      return;
+  root.onkeydown = (event) => {
+    if (!horizontal.includes(event.key) || event.target.closest("a")) return;
     event.preventDefault();
-    void move(event.key === "ArrowRight" ? 1 : -1, true);
-  });
-  if (auto) {
-    function updateAuto() {
-      auto.setAttribute(
-        "aria-label",
-        playing ? "Pause carousel" : "Play carousel",
-      );
-      auto.innerHTML = icon(playing ? "pause" : "play");
-      count.setAttribute("aria-live", playing ? "off" : "polite");
-    }
-    auto.onclick = () => {
-      playing = !playing;
-      introAutoplay = playing;
-      lastMove = Date.now();
-      updateAuto();
-    };
-    reduced.addEventListener(
-      "change",
-      (event) => {
-        if (event.matches) {
-          playing = false;
-          updateAuto();
-        }
-      },
-      { signal },
-    );
-    updateAuto();
-    const timer = setInterval(() => {
-      if (
-        !playing ||
-        document.hidden ||
-        (root.matches(":focus-within") && document.activeElement !== auto) ||
-        (mouse.matches &&
-          root.querySelector(".swipe-stage").matches(":hover")) ||
-        Date.now() - lastMove < 6000
-      )
-        return;
-      const rect = root.getBoundingClientRect();
-      if (rect.top >= 0 && rect.bottom <= innerHeight) void move(1);
-    }, 300);
-    signal?.addEventListener("abort", () => clearInterval(timer), {
-      once: true,
-    });
-  }
+    void settle(event.key === "ArrowRight" ? 1 : -1, true);
+  };
   show();
 }

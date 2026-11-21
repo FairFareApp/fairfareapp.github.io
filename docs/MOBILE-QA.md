@@ -1,5 +1,13 @@
 # Mobile workflow review
 
+## FairFare campaign and warmer feedback
+
+The home rail now loops five campaign images across both ends and accepts swipes, taps and keyboard input without visible pagination controls. The phone first view includes the square camera, gallery and Jaipur card. Privacy is at the page footer and is still reachable from More. The site header is diagonal saffron, ivory and green, with one active-tab colour.
+
+The visit stack includes five monuments and Jawahar Kala Kendra. Three destinations use the existing ticket endpoint. The cards for [Hawa Mahal](https://www.tourism.rajasthan.gov.in/hawa-mahal.html), [Jantar Mantar](https://www.tourism.rajasthan.gov.in/jantar-mantar.html) and [Amber Palace](https://www.tourism.rajasthan.gov.in/content/rajasthan-tourism/en/tourist-destinations/amber-palace.html) link to Rajasthan Tourism and direct visitors to confirm current rates at the entrance. Verify the stack in both directions and check that the existing rates retain their visitor-category selection.
+
+The browser checks also exercise the Jaipur completion stamp, animated checklist fill and price reveal. Reports and screenshots are under `.local/warm-<width>x<height>/` and `.local/warm-live-<width>x<height>/`. Photo identification and contribution writes use intercepted responses. Native camera and installed PWA checks require a phone.
+
 ## Shared swipe, home scan and trip guides
 
 Home leads with a loop of three logo-inspired images, followed by the camera and gallery controls, the Jaipur pilot and product scope, and the Hawa Mahal tips card. At 375 × 812 the two photo controls end at y=520, and the tips card ends at y=741 above the bottom bar. Confirming a photo or returning from a comparison brings the product form into view on Home. Existing direct scan links continue to work.
