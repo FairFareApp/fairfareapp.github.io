@@ -265,6 +265,16 @@ async function dragCard(kind, dx, capture) {
     await wait(
       `document.querySelector('${card}').style.transform !== ${JSON.stringify(resting)}`,
     );
+    if (kind === "visits") {
+      assert.ok(
+        await page.eval(() =>
+          [...document.querySelectorAll(".visits-deck .swipe-peek")].some(
+            (peek) =>
+              Number(peek.style.opacity) > 0 && Number(peek.style.opacity) < 1,
+          ),
+        ),
+      );
+    }
     if (capture) await shot(capture);
   }
   await sendPointer("up", dx);
@@ -287,6 +297,56 @@ async function key(name, code) {
 }
 try {
   await page.goto(base);
+  await check(
+    "launch animation appears only in app mode and dismisses automatically",
+    async () => {
+      assert.equal(
+        await page.eval(
+          () =>
+            getComputedStyle(document.querySelector("#launch-splash")).display,
+        ),
+        "none",
+      );
+      const { identifier } = await page.send(
+        "Page.addScriptToEvaluateOnNewDocument",
+        {
+          source: `
+        Object.defineProperty(navigator, "standalone", { value: true });
+        const launchObserver = new MutationObserver(() => {
+          const splash = document.querySelector("#launch-splash");
+          if (splash && getComputedStyle(splash).display === "grid") {
+            window.fairfareLaunchMotion = getComputedStyle(splash.querySelector(".launch-mark")).animationName;
+            launchObserver.disconnect();
+          }
+        });
+        launchObserver.observe(document, { subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });`,
+        },
+      );
+      await page.goto(base, { settleMs: 0 });
+      await wait("window.fairfareLaunchMotion === 'launch-mark'");
+      if (
+        await page.eval(() => !document.querySelector("#launch-splash").hidden)
+      )
+        await shot("app-launch");
+      await wait(
+        "document.querySelector('#launch-splash').hidden && document.querySelector('#take-photo')",
+      );
+      await page.send("Emulation.setEmulatedMedia", {
+        features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+      });
+      await page.goto(base, { settleMs: 0 });
+      await wait("document.querySelector('#launch-splash').hidden");
+      assert.equal(
+        await page.eval(() => window.fairfareLaunchMotion ?? null),
+        null,
+      );
+      await page.send("Emulation.setEmulatedMedia", { features: [] });
+      await page.send("Page.removeScriptToEvaluateOnNewDocument", {
+        identifier,
+      });
+      await page.goto(base);
+    },
+  );
   await check(
     "Home has an autoplaying brand carousel, embedded scan and Jaipur tips",
     async () => {
@@ -316,9 +376,16 @@ try {
           const photo = document
             .querySelector("#take-photo")
             .getBoundingClientRect();
+          const picker = document.querySelector("#scan .photo-card");
+          const gallery = document
+            .querySelector("#choose-photo")
+            .getBoundingClientRect();
           return (
-            Math.abs(photo.width - photo.height) < 1 &&
-            photo.width >= 112 &&
+            Math.abs(photo.width - picker.clientWidth) < 1 &&
+            photo.height >= 80 &&
+            gallery.top >= photo.bottom &&
+            document.querySelector(".ready-launch").getBoundingClientRect()
+              .height >= 136 &&
             document.querySelectorAll(".campaign-slide").length === 7 &&
             document
               .querySelector(".campaign-slide:not([inert]) h2")
@@ -944,16 +1011,38 @@ try {
           (s) => document.querySelector(s + " .availability").textContent,
           front,
         );
+      const checkTiers = async (amounts) => {
+        const categories = ["indian", "foreign", "student", "foreign_student"];
+        for (const [i, value] of categories.entries()) {
+          await fill("#visitor", value);
+          assert.equal(
+            await fee(),
+            `₹${amounts[i].toLocaleString("en-IN")} entry`,
+          );
+        }
+        await fill("#visitor", "indian");
+      };
       assert.match(await fee(), /₹400 entry/);
       await wait(
         "[...document.querySelectorAll('.visits-deck img')].every(i=>i.naturalWidth>0)",
       );
       await shot("monuments", `${front} .text-link`, ["#visitor"]);
-      assert.equal(
-        await page.eval(
-          () => document.querySelectorAll(".visits-deck .swipe-card").length,
-        ),
-        6,
+      assert.deepEqual(
+        await page.eval(() => {
+          const stack = [
+            ...document.querySelectorAll(
+              ".visits-deck .swipe-card:not([hidden])",
+            ),
+          ];
+          const tops = new Set(
+            stack.map((card) => Math.round(card.getBoundingClientRect().top)),
+          );
+          const titles = stack.filter(
+            (card) => card.querySelector(".swipe-peek").style.opacity === "1",
+          );
+          return [stack.length, tops.size, titles.length];
+        }),
+        [6, 6, 2],
       );
       await dragCard("visits", -92, "monuments-drag");
       await deckNumber("visits", 2);
@@ -961,14 +1050,14 @@ try {
       await deckNumber("visits", 1);
       await dragCard("visits", 92);
       await deckNumber("visits", 6);
-      assert.match(await fee(), /Check entry fee/);
+      await checkTiers([200, 1000, 100, 500]);
       await dragCard("visits", 92);
       await deckNumber("visits", 5);
-      assert.match(await fee(), /Check entry fee/);
+      await checkTiers([100, 600, 50, 300]);
       await shot("monuments-jantar", `${front} .text-link`);
       await dragCard("visits", 92);
       await deckNumber("visits", 4);
-      assert.match(await fee(), /Check entry fee/);
+      await checkTiers([100, 600, 50, 300]);
       await dragCard("visits", 92);
       await deckNumber("visits", 3);
       assert.match(await fee(), /Free entry/);
@@ -1098,6 +1187,12 @@ try {
       ]) {
         await page.goto(base + route, { settleMs: 250 });
         await wait("document.querySelector('#main h1')");
+        assert.equal(
+          await page.eval(() =>
+            Boolean(document.querySelector('.site-footer a[href="/privacy"]')),
+          ),
+          route === "/",
+        );
         for (const theme of ["light", "dark"]) {
           await page.eval(
             (t) => (document.documentElement.dataset.theme = t),

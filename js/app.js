@@ -106,7 +106,7 @@ function shell(content, path) {
     <div class="header-tools"><button class="icon-button" id="theme-toggle" aria-label="Switch colour theme" aria-pressed="${document.documentElement.dataset.theme === "dark"}">${icon(document.documentElement.dataset.theme === "dark" ? "sun" : "moon")}</button>${moreButton(false, more)}</div>
   </div></header>
   <main id="main" class="main-content ${path === "/" ? "home-content" : ""}" tabindex="-1">${content}</main>
-  <footer class="site-footer">${["/", "/scan"].includes(path) ? "<span>Photos are sent for identification.</span>" : ""}<a href="/privacy">Privacy Policy</a></footer>
+  ${path === "/" ? '<footer class="site-footer"><span>Photos are sent for identification.</span><a href="/privacy">Privacy Policy</a></footer>' : ""}
   <nav class="bottom-nav" aria-label="Mobile main navigation">${nav.map(([url, i, label]) => `<a href="${url}" ${url === active ? 'aria-current="page"' : ""}${url === "/contribute" ? ' aria-label="Your Contributions"' : ""}>${icon(i)}<span>${label}</span></a>`).join("")}${moreButton(true, more)}</nav>
   <nav id="mobile-menu" class="mobile-menu more-menu" aria-label="More pages" hidden>${Object.entries(
     infoRoutes,
@@ -726,4 +726,41 @@ if (window.visualViewport) {
 }
 if ("serviceWorker" in navigator)
   navigator.serviceWorker.register("/sw.js").catch(() => {});
+if (navigator.standalone)
+  document.documentElement.classList.add("installed-ios");
 render();
+finishLaunch();
+
+function finishLaunch() {
+  const splash = document.querySelector("#launch-splash");
+  if (!splash) return;
+  const mark = splash.querySelector(".launch-mark");
+  const style = getComputedStyle(splash);
+  if (
+    style.display === "none" ||
+    style.visibility === "hidden" ||
+    matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    splash.hidden = true;
+    return;
+  }
+  const logoMotion = mark
+    .getAnimations?.()
+    .find((motion) => motion.animationName === "launch-mark");
+  const dismiss = () => {
+    if (splash.hidden || splash.classList.contains("launch-exit")) return;
+    splash.classList.add("launch-exit");
+    const exit = splash
+      .getAnimations?.()
+      .find((motion) => motion.animationName === "launch-exit");
+    if (exit)
+      void exit.finished
+        .catch(() => {})
+        .then(() => {
+          splash.hidden = true;
+        });
+    else splash.hidden = true;
+  };
+  if (logoMotion) void logoMotion.finished.catch(() => {}).then(dismiss);
+  else dismiss();
+}

@@ -300,32 +300,36 @@ const visitGuides = [
   {
     id: "hawa",
     title: "Hawa Mahal",
-    source_url: "https://www.tourism.rajasthan.gov.in/hawa-mahal.html",
+    prices: { indian: 100, foreign: 600, student: 50, foreign_student: 300 },
     content: {
       locality: "Badi Chaupar",
-      note: "Look for the latticed windows and jharokhas. Confirm the current admission price at the monument entrance.",
+      note: "Look for the latticed windows and jharokhas. These are general admission rates.",
     },
   },
   {
     id: "jantar",
     title: "Jantar Mantar",
-    source_url: "https://www.tourism.rajasthan.gov.in/jantar-mantar.html",
+    prices: { indian: 100, foreign: 600, student: 50, foreign_student: 300 },
     content: {
       locality: "Old Jaipur",
-      note: "Leave time to look closely at the astronomical instruments. Confirm the current admission price at the monument entrance.",
+      note: "Leave time to look closely at the astronomical instruments. Guides may cost extra.",
     },
   },
   {
     id: "amber",
     title: "Amber Palace",
-    source_url:
-      "https://www.tourism.rajasthan.gov.in/content/rajasthan-tourism/en/tourist-destinations/amber-palace.html",
+    prices: { indian: 200, foreign: 1000, student: 100, foreign_student: 500 },
     content: {
       locality: "Amer",
-      note: "Allow time for the courtyards and palace interiors. Confirm the current admission price at the monument entrance.",
+      note: "Allow time for the courtyards and palace interiors. Composite tickets are separate.",
     },
   },
-];
+].map((venue) => ({
+  ...venue,
+  source_url: "https://obms-tourist.rajasthan.gov.in/",
+  verification: "published",
+  checked_at: "2026-11-22",
+}));
 export function monumentsPage() {
   return `<div class="visits-page">${heading("Monuments")}<div class="monuments-toolbar"><label class="inline-label" for="visitor">Visitor category<select id="visitor">${options(
     [
@@ -393,7 +397,7 @@ export async function bindMonuments(root, signal) {
       const photo = photos[row.id];
       detailBody.innerHTML = `<p>${h(row.content.note)}</p>
         ${cat.includes("student") && row.prices?.[cat] > 0 ? "<p>Carry valid student ID and confirm eligibility.</p>" : ""}
-        ${row.checked_at ? `<p>${row.verification === "official" ? "Official site checked" : "Live source unavailable. Last verified"} ${date(row.checked_at)}.</p>` : ""}
+        ${row.checked_at ? `<p>${row.verification === "official" ? "Official site checked" : row.verification === "published" ? "Rajasthan ticket portal checked" : "Live source unavailable. Last verified"} ${date(row.checked_at)}.</p>` : ""}
         ${photo ? `<p>Photo: ${h(photo.author)}. Cropped and resized. ${external("https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(photo.source), "Original photo")} · ${external(photo.licenseUrl, photo.license)}</p>` : ""}`;
     }
     deck.addEventListener("cardchange", (event) => {

@@ -60,3 +60,11 @@ The home campaign leads with the FairFare tag and the value of comparing, prepar
 The compass for visual hierarchy is the action contrast. The square camera button is the largest tool on the home scan panel. The Jaipur card has a visible Open travel tips action and earns a check stamp on completion. All active tabs use the same sage treatment under the diagonal saffron, ivory and green header. The shade and type scale remain consistent across guides and actions.
 
 The venue stack promotes the next photograph while the front photograph travels out and tucks behind the other cards. The active photo and ticket data share a constant overlay. The ride progress fill, Jaipur check and successful price reveal respond to completed actions. All retain their final state with reduced motion.
+
+## Installed launch and visit stack
+
+The installed app introduces the tag with a short swing and a moving saffron, cream and leaf wash. Browser tabs go straight to content. The launch dismisses automatically and skips motion when the device requests it.
+
+The home photo action spans the panel, with Gallery underneath and a taller Jaipur invitation. The privacy footer belongs to Home. More still provides a route to the policy.
+
+All six monument cards occupy visible layers. The closest two backing titles fade as their cards move between depths. The same physical path plays in reverse for a backward swipe. The visit order changes after the motion settles, while vertical scrolling remains available.

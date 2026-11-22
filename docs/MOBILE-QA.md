@@ -1,5 +1,15 @@
 # Mobile workflow review
 
+## Installed launch, stacked visits and official rates
+
+The suite exercises installed-mode startup, logo animation and automatic dismissal, and checks that the same splash stays hidden in a browser tab. The installed mode is simulated in Chromium. Native device launch is a separate check.
+
+The phone first view contains the full-width camera button, Gallery directly below it and the taller Jaipur card. Route checks confirm that the privacy footer appears on Home only.
+
+The monument checks measure six distinct visible card edges and two nearest backing titles. They verify intermediate title opacity during a drag, reverse motion, and all four visitor rates for Hawa Mahal, Jantar Mantar and Amber Palace. Rates are snapshots of General Tickets verified on 22 November 2026 from the [official Rajasthan ticket portal](https://obms-tourist.rajasthan.gov.in/). Amber Palace lists ₹100 for Indian students. Existing venues retain their live pricing behaviour.
+
+Reports and screenshots are in `.local/launch-<width>x<height>/` and `.local/launch-live-<width>x<height>/`.
+
 ## FairFare campaign and warmer feedback
 
 The home rail now loops five campaign images across both ends and accepts swipes, taps and keyboard input without visible pagination controls. The phone first view includes the square camera, gallery and Jaipur card. Privacy is at the page footer and is still reachable from More. The site header is diagonal saffron, ivory and green, with one active-tab colour.

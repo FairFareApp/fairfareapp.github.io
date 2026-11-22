@@ -294,11 +294,135 @@ export function swipeDeck(kind, title, cards, limited = false) {
   </section>`;
 }
 
+function bindVisits(root) {
+  const cards = [...root.querySelectorAll(".swipe-card")];
+  const peeks = cards.map((card) => card.querySelector(".swipe-peek"));
+  const status = root.querySelector("[data-deck-status]");
+  const count = cards.length;
+  const turnPoint = 0.48;
+  const mix = (from, to, t) => from + (to - from) * t;
+  const depthY = (depth) => -(depth <= 2 ? depth * 26 : 52 + (depth - 2) * 11);
+  const label = (depth) => (depth === 1 || depth === 2 ? 1 : 0);
+  let index = 0;
+  let progress = 0;
+  let direction = 1;
+  let width = 0;
+  let busy = false;
+
+  // Travelling backwards plays the same card paths in reverse.
+  function draw(step, amount) {
+    const t = step === 1 ? amount : 1 - amount;
+    const front = step === 1 ? index : wrap(index - 1, count);
+    cards.forEach((card, i) => {
+      const from = wrap(i - front, count);
+      const to = wrap(from - 1, count);
+      let x = 0;
+      let y = mix(depthY(from), depthY(to), t);
+      let tilt = 0;
+      let scale = mix(1 - from * 0.024, 1 - to * 0.024, t);
+      let layer = count - from + 1;
+      if (from === 0) {
+        const outbound = t <= turnPoint;
+        const part = outbound
+          ? t / turnPoint
+          : (t - turnPoint) / (1 - turnPoint);
+        const offset = width + 46;
+        x = outbound ? -offset * part : -offset * (1 - part);
+        y = outbound ? -10 * part : mix(-10, depthY(to), part);
+        tilt = -12 * (outbound ? part : 1 - part);
+        scale = outbound ? 1 : mix(1, 1 - to * 0.024, part);
+        layer = outbound ? count + 2 : 1;
+      }
+      card.style.transform = `translate3d(${x}px,${y}px,0) rotate(${tilt}deg) scaleX(${scale})`;
+      card.style.zIndex = layer;
+      peeks[i].style.opacity = mix(label(from), label(to), t);
+    });
+  }
+
+  function show(focus = false) {
+    cards.forEach((card, i) => {
+      const depth = wrap(i - index, count);
+      card.hidden = false;
+      card.inert = depth !== 0;
+      card.dataset.depth = depth;
+    });
+    draw(1, 0);
+    root.dataset.index = index;
+    status.textContent = cards[index].dataset.label;
+    root.dispatchEvent(new CustomEvent("cardchange", { detail: index }));
+    if (focus)
+      cards[index].querySelector("button").focus({ preventScroll: true });
+  }
+
+  function settle(step, focus = false) {
+    if (busy || count < 2) return;
+    busy = true;
+    width = cards[index].offsetWidth;
+    const start = progress;
+    const end = step ? 1 : 0;
+    const travel = step || direction;
+    const duration = step ? 560 - start * 200 : 220;
+    function finish() {
+      progress = 0;
+      busy = false;
+      if (step) {
+        index = wrap(index + step, count);
+        show(focus);
+      } else draw(1, 0);
+    }
+    if (reducedMotion.matches) {
+      finish();
+      return;
+    }
+    const started = performance.now();
+    function frame(now) {
+      if (!root.isConnected) return;
+      const elapsed = Math.min(1, Math.max(0, (now - started) / duration));
+      const eased = elapsed * elapsed * (3 - 2 * elapsed);
+      draw(travel, mix(start, end, eased));
+      if (elapsed < 1) requestAnimationFrame(frame);
+      else finish();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  cards.forEach((card, i) => {
+    bindSwipe(card.querySelector(".swipe-target"), {
+      pressed() {
+        if (i !== index || busy) return false;
+        width = card.offsetWidth;
+        return true;
+      },
+      drag(dx) {
+        direction = dx < 0 ? 1 : -1;
+        progress = Math.min(0.9, (Math.abs(dx) * turnPoint) / (width + 46));
+        if (!reducedMotion.matches) draw(direction, progress);
+      },
+      settle: (step) => settle(step, card.contains(document.activeElement)),
+      tap() {
+        if (i === index && !progress) settle(1, true);
+      },
+    });
+  });
+  root.onkeydown = (event) => {
+    if (
+      !horizontal.includes(event.key) ||
+      event.target.closest("a") ||
+      progress
+    )
+      return;
+    event.preventDefault();
+    settle(event.key === "ArrowRight" ? 1 : -1, true);
+  };
+  show();
+}
+
 export function bindDeck(root) {
+  if (root.classList.contains("visits-deck")) return bindVisits(root);
   const cards = [...root.querySelectorAll(".swipe-card")];
   const status = root.querySelector("[data-deck-status]");
   const limited = root.hasAttribute("data-limited");
-  const spacing = root.classList.contains("visits-deck") ? -30 : 9;
+  const spacing = 9;
   let index = 0;
   let direction = 1;
   let busy = false;
