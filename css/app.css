@@ -188,7 +188,7 @@ summary {
   position: fixed;
   inset: 0;
   z-index: 99;
-  display: none;
+  display: grid;
   overflow: hidden;
   isolation: isolate;
   place-items: center;
@@ -196,14 +196,6 @@ summary {
   color: #283c2c;
   pointer-events: none;
   animation: launch-failsafe 0s 3s forwards;
-}
-@media (display-mode: standalone) {
-  #launch-splash:not([hidden]) {
-    display: grid;
-  }
-}
-.installed-ios #launch-splash:not([hidden]) {
-  display: grid;
 }
 .launch-colours {
   position: absolute;
@@ -236,8 +228,13 @@ summary {
 }
 @keyframes launch-colours {
   from {
-    opacity: 0;
     transform: translate3d(-9%, 9%, 0) scale(1.16);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .launch-colours,
+  .launch-mark {
+    animation-name: none;
   }
 }
 @keyframes launch-mark {

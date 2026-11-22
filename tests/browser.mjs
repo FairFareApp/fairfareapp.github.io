@@ -306,7 +306,7 @@ async function key(name, code) {
 try {
   await page.goto(base);
   await check(
-    "launch animation appears only in app mode and dismisses automatically",
+    "one gradient splash plays in both browser and installed mode",
     async () => {
       assert.deepEqual(
         await page.eval(async () => {
@@ -321,52 +321,51 @@ try {
         }),
         ["#f4dfc6", "#f4dfc6", "#f4dfc6"],
       );
-      assert.equal(
-        await page.eval(
-          () =>
-            getComputedStyle(document.querySelector("#launch-splash")).display,
-        ),
-        "none",
-      );
       const { identifier } = await page.send(
         "Page.addScriptToEvaluateOnNewDocument",
         {
           source: `
-        Object.defineProperty(navigator, "standalone", { value: true });
-        const launchObserver = new MutationObserver(() => {
+        document.addEventListener("animationstart", event => {
+          if (event.animationName !== "launch-mark") return;
           const splash = document.querySelector("#launch-splash");
-          if (splash && getComputedStyle(splash).display === "grid") {
-            const mark = getComputedStyle(splash.querySelector(".launch-mark"));
-            window.fairfareLaunchMotion = [mark.animationName, mark.opacity, getComputedStyle(splash).backgroundColor];
-            launchObserver.disconnect();
-          }
-        });
-        launchObserver.observe(document, { subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });`,
+          const colours = getComputedStyle(splash.querySelector(".launch-colours"));
+          window.fairfareLaunchCount = (window.fairfareLaunchCount || 0) + 1;
+          window.fairfareLaunchFrame = [
+            getComputedStyle(splash).display,
+            colours.backgroundImage.startsWith("linear-gradient"),
+            colours.opacity,
+          ];
+        }, true);`,
         },
       );
-      await page.goto(base, { settleMs: 0 });
-      await wait("window.fairfareLaunchMotion?.[0] === 'launch-mark'");
-      assert.deepEqual(await page.eval(() => window.fairfareLaunchMotion), [
-        "launch-mark",
-        "1",
-        "rgb(244, 223, 198)",
-      ]);
-      if (
-        await page.eval(() => !document.querySelector("#launch-splash").hidden)
-      )
-        await shot("app-launch");
-      await wait(
-        "document.querySelector('#launch-splash').hidden && document.querySelector('#take-photo')",
-      );
+      for (const mode of ["browser", "standalone"]) {
+        await page.send("Emulation.setEmulatedMedia", {
+          features: [{ name: "display-mode", value: mode }],
+        });
+        await page.goto(base, { settleMs: 0 });
+        await wait("window.fairfareLaunchCount === 1");
+        assert.deepEqual(await page.eval(() => window.fairfareLaunchFrame), [
+          "grid",
+          true,
+          "1",
+        ]);
+        if (
+          await page.eval(
+            () => !document.querySelector("#launch-splash").hidden,
+          )
+        )
+          await shot(`${mode}-launch`);
+        await wait(
+          "document.querySelector('#launch-splash').hidden && document.querySelector('#take-photo')",
+        );
+        assert.equal(await page.eval(() => window.fairfareLaunchCount), 1);
+      }
       await page.send("Emulation.setEmulatedMedia", {
         features: [{ name: "prefers-reduced-motion", value: "reduce" }],
       });
       await page.goto(base, { settleMs: 0 });
       await wait("document.querySelector('#launch-splash').hidden");
-      assert.equal(
-        await page.eval(() => window.fairfareLaunchMotion ?? null),
-        null,
-      );
+      assert.equal(await page.eval(() => window.fairfareLaunchCount ?? 0), 0);
       await page.send("Emulation.setEmulatedMedia", { features: [] });
       await page.send("Page.removeScriptToEvaluateOnNewDocument", {
         identifier,

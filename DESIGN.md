@@ -74,3 +74,7 @@ All six monument cards occupy visible layers. The closest two backing titles fad
 All six photo edges remain visible on the monument stack. The active card carries the title and fare. A shorter travel path and a small settle motion give taps and swipes a quicker response.
 
 Android draws a static launch frame from installed metadata. The manifest, page theme and first frame of the FairFare animation use the same warm cream. The logo begins visible and moves once as the colour arrives. External fonts load without holding back the launch. [Chrome manifest guidance](https://web.dev/learn/pwa/web-app-manifest)
+
+## Shared web launch
+
+Fresh page loads use the same FairFare splash in tabs and installed sessions. The gradient and logo are visible in the first FairFare frame. In-app navigation stays in the current document. Startup frames before the page paints remain platform-managed.

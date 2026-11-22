@@ -726,8 +726,6 @@ if (window.visualViewport) {
 }
 if ("serviceWorker" in navigator)
   navigator.serviceWorker.register("/sw.js").catch(() => {});
-if (navigator.standalone)
-  document.documentElement.classList.add("installed-ios");
 render();
 finishLaunch();
 for (const stylesheet of document.querySelectorAll("[data-screen-style]"))

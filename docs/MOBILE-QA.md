@@ -1,5 +1,9 @@
 # Mobile workflow review
 
+## Shared web splash
+
+The browser suite measures one launch animation per fresh document in browser and simulated standalone mode. It checks that the gradient has full opacity at the start, the splash dismisses automatically and reduced motion skips the animation. The GitHub Pages route fallback redirects before rendering any launch content. Reports are under `.local/shared-launch-<width>x<height>/` and `.local/shared-launch-live-<width>x<height>/`.
+
 ## Clean visit cards and the Android handoff
 
 The six exposed photo edges stay visible at rest. Tests confirm that backing labels are absent, the incoming card moves during a drag and the deck can reverse. The viewport suite exercises the existing fare categories.
