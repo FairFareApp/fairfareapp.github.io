@@ -78,3 +78,5 @@ Android draws a static launch frame from installed metadata. The manifest, page 
 ## Shared web launch
 
 Fresh page loads use the same FairFare splash in tabs and installed sessions. The gradient and logo are visible in the first FairFare frame. In-app navigation stays in the current document. Startup frames before the page paints remain platform-managed.
+
+The installed web app moves the splash logo directly into the live header as the gradient recedes. It uses the header mark’s actual position and size. Browser tabs retain the short logo swing. Routes with a hidden header fade out the splash in place.

@@ -223,6 +223,25 @@ summary {
   transform-origin: 78% 18%;
   animation: launch-mark 460ms cubic-bezier(0.22, 0.74, 0.27, 1) both;
 }
+@media (display-mode: standalone) {
+  .launch-mark,
+  .launch-colours {
+    animation-name: none;
+  }
+}
+#launch-splash.launch-handoff {
+  background: transparent;
+}
+.launch-handoff .launch-colours,
+.launch-handoff .launch-mark {
+  animation: none;
+}
+.launch-handoff .launch-mark {
+  transform-origin: top left;
+}
+.brand img[data-launch-target] {
+  visibility: hidden;
+}
 #launch-splash.launch-exit {
   animation: launch-exit 145ms ease-in both;
 }

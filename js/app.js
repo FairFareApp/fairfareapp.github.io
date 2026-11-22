@@ -744,6 +744,12 @@ function finishLaunch() {
     splash.hidden = true;
     return;
   }
+  if (
+    (matchMedia("(display-mode: standalone)").matches ||
+      navigator.standalone) &&
+    startLaunchHandoff(splash, mark)
+  )
+    return;
   const logoMotion = mark
     .getAnimations?.()
     .find((motion) => motion.animationName === "launch-mark");
@@ -763,4 +769,40 @@ function finishLaunch() {
   };
   if (logoMotion) void logoMotion.finished.catch(() => {}).then(dismiss);
   else dismiss();
+}
+
+function startLaunchHandoff(splash, mark) {
+  const headerMark = document.querySelector(".brand img");
+  const destination = headerMark?.getBoundingClientRect();
+  if (!destination?.width || !mark.animate) return false;
+
+  splash.classList.add("launch-handoff");
+  const origin = mark.getBoundingClientRect();
+  headerMark.setAttribute("data-launch-target", "");
+  const timing = {
+    duration: 320,
+    easing: "cubic-bezier(.24,.78,.24,1)",
+    fill: "both",
+  };
+  const flight = mark.animate(
+    [
+      { transform: "none" },
+      {
+        transform: `translate3d(${destination.left - origin.left}px,${destination.top - origin.top}px,0) scale(${destination.width / origin.width})`,
+      },
+    ],
+    { ...timing, id: "fairfare-launch-handoff" },
+  );
+  const curtain = splash
+    .querySelector(".launch-colours")
+    .animate([{ opacity: 1 }, { opacity: 0 }], timing);
+  void flight.finished
+    .catch(() => {})
+    .then(() => {
+      headerMark.removeAttribute("data-launch-target");
+      splash.hidden = true;
+      flight.cancel();
+      curtain.cancel();
+    });
+  return true;
 }

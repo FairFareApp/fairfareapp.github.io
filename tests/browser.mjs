@@ -306,7 +306,7 @@ async function key(name, code) {
 try {
   await page.goto(base);
   await check(
-    "one gradient splash plays in both browser and installed mode",
+    "browser launch animates and installed launch hands the logo to the header",
     async () => {
       assert.deepEqual(
         await page.eval(async () => {
@@ -335,41 +335,65 @@ try {
             colours.backgroundImage.startsWith("linear-gradient"),
             colours.opacity,
           ];
-        }, true);`,
+        }, true);
+        const observer = new MutationObserver(() => {
+          const splash = document.querySelector(".launch-handoff");
+          const flight = splash?.querySelector(".launch-mark").getAnimations()
+            .find(animation => animation.id === "fairfare-launch-handoff");
+          if (!flight) return;
+          window.fairfareHandoff = [
+            flight.effect.getTiming().duration,
+            Boolean(document.querySelector(".brand img[data-launch-target]")),
+            getComputedStyle(splash.querySelector(".launch-colours")).backgroundImage.startsWith("linear-gradient"),
+          ];
+          observer.disconnect();
+        });
+        observer.observe(document, { subtree: true, attributes: true, attributeFilter: ["class", "data-launch-target"] });`,
         },
       );
-      for (const mode of ["browser", "standalone"]) {
-        await page.send("Emulation.setEmulatedMedia", {
-          features: [{ name: "display-mode", value: mode }],
-        });
-        await page.goto(base, { settleMs: 0 });
-        await wait("window.fairfareLaunchCount === 1");
-        assert.deepEqual(await page.eval(() => window.fairfareLaunchFrame), [
-          "grid",
-          true,
-          "1",
-        ]);
-        if (
-          await page.eval(
-            () => !document.querySelector("#launch-splash").hidden,
-          )
-        )
-          await shot(`${mode}-launch`);
-        await wait(
-          "document.querySelector('#launch-splash').hidden && document.querySelector('#take-photo')",
-        );
-        assert.equal(await page.eval(() => window.fairfareLaunchCount), 1);
-      }
+      await page.goto(base, { settleMs: 0 });
+      await wait("window.fairfareLaunchCount === 1");
+      assert.deepEqual(await page.eval(() => window.fairfareLaunchFrame), [
+        "grid",
+        true,
+        "1",
+      ]);
+      const installed = await page.send(
+        "Page.addScriptToEvaluateOnNewDocument",
+        {
+          source:
+            'Object.defineProperty(navigator, "standalone", { value: true });',
+        },
+      );
+      await page.send("Emulation.setEmulatedMedia", {
+        features: [{ name: "display-mode", value: "standalone" }],
+      });
+      await page.goto(base, { settleMs: 0 });
+      await wait("window.fairfareHandoff");
+      assert.deepEqual(await page.eval(() => window.fairfareHandoff), [
+        320,
+        true,
+        true,
+      ]);
+      if (
+        await page.eval(() => !document.querySelector("#launch-splash").hidden)
+      )
+        await shot("installed-handoff");
+      await wait(
+        "document.querySelector('#launch-splash').hidden && !document.querySelector('[data-launch-target]') && document.querySelector('#take-photo')",
+      );
       await page.send("Emulation.setEmulatedMedia", {
         features: [{ name: "prefers-reduced-motion", value: "reduce" }],
       });
       await page.goto(base, { settleMs: 0 });
       await wait("document.querySelector('#launch-splash').hidden");
       assert.equal(await page.eval(() => window.fairfareLaunchCount ?? 0), 0);
+      assert.equal(await page.eval(() => window.fairfareHandoff ?? null), null);
       await page.send("Emulation.setEmulatedMedia", { features: [] });
       await page.send("Page.removeScriptToEvaluateOnNewDocument", {
         identifier,
       });
+      await page.send("Page.removeScriptToEvaluateOnNewDocument", installed);
       await page.goto(base);
     },
   );

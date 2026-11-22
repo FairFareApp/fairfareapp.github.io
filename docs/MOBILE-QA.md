@@ -1,5 +1,9 @@
 # Mobile workflow review
 
+## Installed logo handoff
+
+The startup tests cover the regular browser animation, the 320 ms installed-mode handoff, the visible header mark at completion and reduced motion. The installed web mode is simulated in Chromium. Screenshots and reports are under `.local/handoff-<width>x<height>/` and `.local/handoff-live-<width>x<height>/`.
+
 ## Shared web splash
 
 The browser suite measures one launch animation per fresh document in browser and simulated standalone mode. It checks that the gradient has full opacity at the start, the splash dismisses automatically and reduced motion skips the animation. The GitHub Pages route fallback redirects before rendering any launch content. Reports are under `.local/shared-launch-<width>x<height>/` and `.local/shared-launch-live-<width>x<height>/`.
