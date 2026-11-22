@@ -68,3 +68,9 @@ The installed app introduces the tag with a short swing and a moving saffron, cr
 The home photo action spans the panel, with Gallery underneath and a taller Jaipur invitation. The privacy footer belongs to Home. More still provides a route to the policy.
 
 All six monument cards occupy visible layers. The closest two backing titles fade as their cards move between depths. The same physical path plays in reverse for a backward swipe. The visit order changes after the motion settles, while vertical scrolling remains available.
+
+## Quicker visit cards and launch handoff
+
+All six photo edges remain visible on the monument stack. The active card carries the title and fare. A shorter travel path and a small settle motion give taps and swipes a quicker response.
+
+Android draws a static launch frame from installed metadata. The manifest, page theme and first frame of the FairFare animation use the same warm cream. The logo begins visible and moves once as the colour arrives. External fonts load without holding back the launch. [Chrome manifest guidance](https://web.dev/learn/pwa/web-app-manifest)

@@ -225,6 +225,14 @@ async function dragCard(kind, dx, capture) {
     (s) => document.querySelector(s).style.transform,
     card,
   );
+  const nextResting =
+    kind === "visits"
+      ? await page.eval(
+          () =>
+            document.querySelector('.visits-deck [data-depth="1"]').style
+              .transform,
+        )
+      : null;
   const start = await page.eval((selector) => {
     const { x, y, width, height } = document
       .querySelector(selector)
@@ -266,13 +274,13 @@ async function dragCard(kind, dx, capture) {
       `document.querySelector('${card}').style.transform !== ${JSON.stringify(resting)}`,
     );
     if (kind === "visits") {
-      assert.ok(
-        await page.eval(() =>
-          [...document.querySelectorAll(".visits-deck .swipe-peek")].some(
-            (peek) =>
-              Number(peek.style.opacity) > 0 && Number(peek.style.opacity) < 1,
-          ),
+      assert.notEqual(
+        await page.eval(
+          () =>
+            document.querySelector('.visits-deck [data-depth="1"]').style
+              .transform,
         ),
+        nextResting,
       );
     }
     if (capture) await shot(capture);
@@ -300,6 +308,19 @@ try {
   await check(
     "launch animation appears only in app mode and dismisses automatically",
     async () => {
+      assert.deepEqual(
+        await page.eval(async () => {
+          const manifest = await fetch("/manifest.webmanifest").then(
+            (response) => response.json(),
+          );
+          return [
+            manifest.background_color,
+            manifest.theme_color,
+            document.querySelector('meta[name="theme-color"]').content,
+          ];
+        }),
+        ["#f4dfc6", "#f4dfc6", "#f4dfc6"],
+      );
       assert.equal(
         await page.eval(
           () =>
@@ -315,7 +336,8 @@ try {
         const launchObserver = new MutationObserver(() => {
           const splash = document.querySelector("#launch-splash");
           if (splash && getComputedStyle(splash).display === "grid") {
-            window.fairfareLaunchMotion = getComputedStyle(splash.querySelector(".launch-mark")).animationName;
+            const mark = getComputedStyle(splash.querySelector(".launch-mark"));
+            window.fairfareLaunchMotion = [mark.animationName, mark.opacity, getComputedStyle(splash).backgroundColor];
             launchObserver.disconnect();
           }
         });
@@ -323,7 +345,12 @@ try {
         },
       );
       await page.goto(base, { settleMs: 0 });
-      await wait("window.fairfareLaunchMotion === 'launch-mark'");
+      await wait("window.fairfareLaunchMotion?.[0] === 'launch-mark'");
+      assert.deepEqual(await page.eval(() => window.fairfareLaunchMotion), [
+        "launch-mark",
+        "1",
+        "rgb(244, 223, 198)",
+      ]);
       if (
         await page.eval(() => !document.querySelector("#launch-splash").hidden)
       )
@@ -1037,12 +1064,12 @@ try {
           const tops = new Set(
             stack.map((card) => Math.round(card.getBoundingClientRect().top)),
           );
-          const titles = stack.filter(
-            (card) => card.querySelector(".swipe-peek").style.opacity === "1",
+          const labels = document.querySelectorAll(
+            ".visits-deck :is(.swipe-peek, .deck-instruction)",
           );
-          return [stack.length, tops.size, titles.length];
+          return [stack.length, tops.size, labels.length];
         }),
-        [6, 6, 2],
+        [6, 6, 0],
       );
       await dragCard("visits", -92, "monuments-drag");
       await deckNumber("visits", 2);

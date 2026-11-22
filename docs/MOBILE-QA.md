@@ -1,5 +1,13 @@
 # Mobile workflow review
 
+## Clean visit cards and the Android handoff
+
+The six exposed photo edges stay visible at rest. Tests confirm that backing labels are absent, the incoming card moves during a drag and the deck can reverse. The viewport suite exercises the existing fare categories.
+
+Installed-mode simulation checks that the first painted FairFare frame shows the full logo against the same cream colour as the manifest and page theme. It also checks automatic dismissal and reduced motion. Chrome produces its Android launch frame before page code runs. An already installed copy may take a day or two to refresh its manifest. [Chrome's manifest update guidance](https://web.dev/articles/manifest-updates#updates-on-chrome-for-android)
+
+Screenshots and reports are under `.local/snappy-<width>x<height>/` and `.local/snappy-live-<width>x<height>/`.
+
 ## Installed launch, stacked visits and official rates
 
 The suite exercises installed-mode startup, logo animation and automatic dismissal, and checks that the same splash stays hidden in a browser tab. The installed mode is simulated in Chromium. Native device launch is a separate check.

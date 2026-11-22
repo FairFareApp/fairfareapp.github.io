@@ -274,8 +274,8 @@ export function deckMarkup() {
 }
 
 export function swipeDeck(kind, title, cards, limited = false) {
-  return `<section class="swipe-deck ${kind}-deck" data-deck="${kind}" ${limited ? "data-limited" : ""} aria-label="${h(title)}">
-    <p class="deck-instruction">${icon("hand-pointer")} Swipe or tap to ${limited ? "turn the cards" : "explore"}</p>
+  return `<section class="swipe-deck ${kind}-deck" data-deck="${kind}" ${limited ? "data-limited" : ""} aria-label="${h(limited ? title : title + ". Swipe or tap to explore")}">
+    ${limited ? `<p class="deck-instruction">${icon("hand-pointer")} Swipe or tap to turn the cards</p>` : ""}
     <div class="swipe-stage">
       ${cards
         .map(
@@ -284,7 +284,6 @@ export function swipeDeck(kind, title, cards, limited = false) {
             i,
           ) => `<article class="swipe-card tone-${card.tone || "sage"}" data-label="${h(card.label)}" ${i ? "hidden inert" : 'data-depth="0"'}>
         <button class="swipe-target" type="button" aria-label="${h(card.label)}. ${limited && i === cards.length - 1 ? "Start again" : "Show next card"}"></button>
-        ${kind === "visits" ? `<span class="swipe-peek" aria-hidden="true">${h(card.label)}</span>` : ""}
         ${card.content}
       </article>`,
         )
@@ -296,13 +295,11 @@ export function swipeDeck(kind, title, cards, limited = false) {
 
 function bindVisits(root) {
   const cards = [...root.querySelectorAll(".swipe-card")];
-  const peeks = cards.map((card) => card.querySelector(".swipe-peek"));
   const status = root.querySelector("[data-deck-status]");
   const count = cards.length;
   const turnPoint = 0.48;
   const mix = (from, to, t) => from + (to - from) * t;
-  const depthY = (depth) => -(depth <= 2 ? depth * 26 : 52 + (depth - 2) * 11);
-  const label = (depth) => (depth === 1 || depth === 2 ? 1 : 0);
+  const depthY = (depth) => -depth * 11;
   let index = 0;
   let progress = 0;
   let direction = 1;
@@ -319,7 +316,7 @@ function bindVisits(root) {
       let x = 0;
       let y = mix(depthY(from), depthY(to), t);
       let tilt = 0;
-      let scale = mix(1 - from * 0.024, 1 - to * 0.024, t);
+      let scale = mix(1 - from * 0.026, 1 - to * 0.026, t);
       let layer = count - from + 1;
       if (from === 0) {
         const outbound = t <= turnPoint;
@@ -328,14 +325,18 @@ function bindVisits(root) {
           : (t - turnPoint) / (1 - turnPoint);
         const offset = width + 46;
         x = outbound ? -offset * part : -offset * (1 - part);
-        y = outbound ? -10 * part : mix(-10, depthY(to), part);
-        tilt = -12 * (outbound ? part : 1 - part);
-        scale = outbound ? 1 : mix(1, 1 - to * 0.024, part);
+        y = outbound ? -15 * part : mix(-15, depthY(to), part);
+        tilt = -14 * (outbound ? part : 1 - part);
+        scale = outbound ? 1 : mix(1, 1 - to * 0.026, part);
         layer = outbound ? count + 2 : 1;
+      }
+      if (from === 1 && t > 0.76) {
+        const settle = Math.sin((Math.PI * (t - 0.76)) / 0.24);
+        y += 2 * settle;
+        tilt = settle * 0.8;
       }
       card.style.transform = `translate3d(${x}px,${y}px,0) rotate(${tilt}deg) scaleX(${scale})`;
       card.style.zIndex = layer;
-      peeks[i].style.opacity = mix(label(from), label(to), t);
     });
   }
 
@@ -361,7 +362,7 @@ function bindVisits(root) {
     const start = progress;
     const end = step ? 1 : 0;
     const travel = step || direction;
-    const duration = step ? 560 - start * 200 : 220;
+    const duration = step ? 360 - start * 140 : 155;
     function finish() {
       progress = 0;
       busy = false;
@@ -378,7 +379,7 @@ function bindVisits(root) {
     function frame(now) {
       if (!root.isConnected) return;
       const elapsed = Math.min(1, Math.max(0, (now - started) / duration));
-      const eased = elapsed * elapsed * (3 - 2 * elapsed);
+      const eased = 1 - (1 - elapsed) ** 2.35;
       draw(travel, mix(start, end, eased));
       if (elapsed < 1) requestAnimationFrame(frame);
       else finish();
