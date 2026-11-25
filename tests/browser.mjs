@@ -398,14 +398,10 @@ try {
     },
   );
   await check(
-    "Home has an autoplaying brand carousel, embedded scan and Jaipur tips",
+    "Home explains FairFare before the photo tools and resets the carousel on return",
     async () => {
       await deckNumber("intro", 1);
-      await shot("home", "#take-photo", [
-        ".campaign .swipe-target",
-        "#choose-photo",
-        ".ready-launch",
-      ]);
+      await shot("home", "#take-photo", ["#choose-photo", ".city-trigger"]);
       assert.ok(
         await page.eval(() => {
           const scan = document.querySelector("#scan").getBoundingClientRect();
@@ -415,8 +411,9 @@ try {
           return (
             scan.bottom <= tips.top &&
             document
-              .querySelector("#scan")
-              .innerText.includes("Jaipur pilot") &&
+              .querySelector("#main section")
+              .classList.contains("home-intro") &&
+            document.querySelectorAll(".bottom-nav a").length === 4 &&
             !document.querySelector('.bottom-nav a[href="/scan"]')
           );
         }),
@@ -445,6 +442,9 @@ try {
           );
         }),
       );
+      await page.eval(() =>
+        document.querySelector(".campaign").scrollIntoView({ block: "center" }),
+      );
       await deckNumber("intro", 2);
       for (const index of [3, 4, 5, 1]) {
         await dragCard("intro", -92);
@@ -454,6 +454,38 @@ try {
       await deckNumber("intro", 5);
       await dragCard("intro", 0);
       await deckNumber("intro", 1);
+      await click(".campaign .swipe-target");
+      await deckNumber("intro", 2);
+      await click('.intro-links a[href="/fares"]');
+      await wait("location.pathname === '/fares'");
+      await page.eval(() => history.back());
+      await deckNumber("intro", 1);
+    },
+  );
+  await check(
+    "the city selector shows Jaipur and disables every other city",
+    async () => {
+      await click(".city-trigger");
+      await wait("document.querySelector('#info-dialog').open");
+      assert.match(
+        await page.eval(() => document.querySelector("#dialog-body").innerText),
+        /Jaipur is the only city available in this demo/,
+      );
+      assert.ok(
+        await page.eval(() => {
+          const otherCities = [...document.querySelectorAll(".city-list button")];
+          return (
+            otherCities.length >= 2 &&
+            otherCities.every((button) => button.disabled) &&
+            document.querySelector(".city-current").innerText.includes("Selected")
+          );
+        }),
+      );
+      await shot("choose-city", "#close-dialog");
+      await key("Escape", 27);
+      await wait(
+        "!document.querySelector('#info-dialog').open && document.activeElement.classList.contains('city-trigger')",
+      );
     },
   );
   await check(
@@ -509,7 +541,7 @@ try {
       await page.send("Emulation.setEmulatedMedia", { features: [] });
       await click("[data-deck-done]");
       await wait("!document.querySelector('#info-dialog').open");
-      await shot("jaipur-ready", ".ready-launch.is-ready");
+      await wait("document.querySelector('.ready-launch.is-ready')");
       assert.equal(
         await page.eval(
           () => document.querySelector(".confirmation-details").open,
@@ -520,7 +552,12 @@ try {
         "#choose-photo",
         ".confirmation-details > summary",
       ]);
+      const disclosureAction = () => page.eval(() =>
+        document.querySelector(".confirmation-details .disclosure-action").innerText,
+      );
+      assert.equal(await disclosureAction(), "Show");
       await click(".confirmation-details > summary");
+      assert.equal(await disclosureAction(), "Hide");
       await shot("scan-manual", '#attributes-form button[type="submit"]');
       await click(".confirmation-details > summary");
     },
@@ -567,7 +604,7 @@ try {
       );
       assert.match(
         await page.eval(() => document.querySelector(".price-panel").innerText),
-        /synthetic/,
+        /demo examples/,
       );
       assert.ok(
         requests.every(
@@ -578,7 +615,7 @@ try {
         await page.eval(
           () => document.querySelector(".bargaining-card").innerText,
         ),
-        /Local craft shop · Some room to ask[\s\S]*5–10% below asking/,
+        /Local craft shop[\s\S]*5–10% below the price the seller asks for/,
       );
       await shot("result", "#report-purchase");
     },
@@ -610,7 +647,7 @@ try {
       await click(".comparable details>summary");
       assert.match(
         await page.eval(() => document.querySelector(".comparable").innerText),
-        /illustration/,
+        /This picture shows an example of the style/,
       );
       if (phone) {
         assert.equal(
@@ -697,7 +734,7 @@ try {
         await page.eval(
           () => document.querySelector(".confirmation").innerText,
         ),
-        /Pending review/,
+        /FairFare will check your report/,
       );
     },
   );
@@ -890,6 +927,16 @@ try {
       await page.eval(() => history.back());
       await wait("document.activeElement.id==='scan-title'");
       await wait("location.pathname==='/'");
+      assert.ok(
+        await page.eval(() => document.querySelector("#photo-area img")),
+      );
+      const nav = phone ? ".bottom-nav" : ".desktop-nav";
+      await click(`${nav} a[href="/fares"]`);
+      await wait("location.pathname === '/fares'");
+      await click(`${nav} a[href="/"]`);
+      await wait(
+        "location.pathname === '/' && !document.querySelector('#photo-area img')",
+      );
       photoMode = "success";
     },
   );
@@ -902,7 +949,7 @@ try {
         await page.eval(
           () => document.querySelector(".receipt-history").innerText,
         ),
-        /Bought it\?/,
+        /Price you paid/,
       );
       assert.match(
         await page.eval(
@@ -937,12 +984,20 @@ try {
   );
 
   await check(
-    "ride pages share selectors and provide checklists, scenarios and fare references",
+    "one ride page offers both ride types, checklists, scenarios and fare references",
     async () => {
       let activeFill;
-      for (const route of ["/taxis", "/autos"]) {
-        const taxi = route === "/taxis";
-        await page.goto(base + route);
+      await page.goto(base + "/taxis");
+      await wait("location.pathname === '/fares' && !location.search");
+      for (const taxi of [true, false]) {
+        if (!taxi) {
+          await click('.fare-choices a[href="/fares?type=auto"]');
+          await wait("location.pathname === '/fares' && location.search === '?type=auto'");
+        }
+        assert.match(
+          await page.eval(() => document.querySelector(".fare-choices [aria-current]").innerText),
+          taxi ? /Book in an app/ : /Speak to a driver/,
+        );
         if (taxi)
           assert.match(
             await page.eval(
@@ -964,7 +1019,7 @@ try {
           await page.eval(
             () => document.querySelector("#ride-advice").innerText,
           ),
-          taxi ? /UPI recipient/ : /looks faulty/,
+          taxi ? /name on the UPI screen/ : /looks faulty/,
         );
         await wait(
           `document.querySelector('${sw}').getAnimations().every(a => a.playState !== 'running')`,
@@ -991,28 +1046,28 @@ try {
           await page.eval(
             () => document.querySelector("#ride-progress").innerText,
           ),
-          /Ready to ride/,
+          /All checks done/,
         );
         await click("#ride-reset");
         assert.match(
           await page.eval(
             () => document.querySelector("#ride-progress").innerText,
           ),
-          /0 \/ 4/,
+          /0 of 4 done/,
         );
         await click('[data-ride-answer="1"]');
         assert.match(
           await page.eval(
             () => document.querySelector("#ride-answer").innerText,
           ),
-          /Pause and check/,
+          /more important to check first/,
         );
         await click('[data-ride-answer="0"]');
         assert.match(
           await page.eval(
             () => document.querySelector("#ride-answer").innerText,
           ),
-          /Good call/,
+          /That is what to check before you ride/,
         );
         await page.screenshot({
           path: join(out, taxi ? "taxis-scenario.jpg" : "autos-scenario.jpg"),
@@ -1031,14 +1086,14 @@ try {
         await page.eval(
           () => document.querySelector("#fare-estimate").innerText,
         ),
-        /₹51 · 2013/,
+        /₹51 based on 2013 rates/,
       );
       await fill("#fare-vehicle", "taxi-small");
       assert.match(
         await page.eval(
           () => document.querySelector("#fare-estimate").innerText,
         ),
-        /₹160 · 2013/,
+        /₹160 based on 2013 rates/,
       );
       await fill("#fare-distance", 22);
       assert.match(
@@ -1224,6 +1279,8 @@ try {
         "/compare",
         "/taxis",
         "/autos",
+        "/fares",
+        "/fares?type=auto",
         "/monuments",
         "/contribute",
         "/contribute/new",

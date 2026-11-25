@@ -2,7 +2,7 @@
   "id": "/",
   "name": "FairFare",
   "short_name": "FairFare",
-  "description": "A little local knowledge for Jaipur.",
+  "description": "Compare souvenir prices, ride fares and monument ticket prices in Jaipur.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -29,7 +29,7 @@
     }
   ],
   "shortcuts": [
-    { "name": "Scan a product", "url": "/scan" },
-    { "name": "Contribute a price", "url": "/contribute/new" }
+    { "name": "Compare a souvenir price", "url": "/scan" },
+    { "name": "Share a price you saw", "url": "/contribute/new" }
   ]
 }

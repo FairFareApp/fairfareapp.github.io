@@ -4,6 +4,7 @@ import {
   notice,
   loading,
   field,
+  disclosure,
   options,
   attributesForm,
   today,
@@ -17,6 +18,7 @@ import {
   productName,
   changeProduct,
   packLabel,
+  sellingPlaces,
 } from "./products.js";
 
 export function createContributionFlow({
@@ -67,9 +69,9 @@ export function createContributionFlow({
     const v = d.values;
     return `<div class="price-entry">${field("Price (₹)", "price", input("price", "price_inr", "number", v.price_inr, 'min="1" max="100000" step="0.01" inputmode="decimal" placeholder="0" required'))}</div><div class="wizard-fields">${
       purchase
-        ? '<p class="purchase-kind">Your own purchase · price paid</p>'
+        ? '<p class="purchase-kind">Enter what you paid for the item.</p>'
         : field(
-            "Price type",
+            "What kind of price was it?",
             "price-type",
             `<select id="price-type" name="price_type">${options(
               [
@@ -80,32 +82,32 @@ export function createContributionFlow({
               v.price_type,
             )}</select>`,
           )
-    }${field("Market / locality in Jaipur", "locality", input("locality", "locality", "text", v.locality, 'minlength="2" maxlength="120" placeholder="e.g. Bapu Bazaar" list="jaipur-markets" required') + '<datalist id="jaipur-markets"><option value="Bapu Bazaar"><option value="Johari Bazaar"><option value="Nehru Bazaar"></datalist>')}</div><details class="wizard-extra"><summary>Date${purchase ? "" : " & price source"}</summary><div class="form-grid">${field("Date", "observed", input("observed", "observed_at", "date", v.observed_at, `min="2020-01-01" max="${today()}" required`))}${
+    }${field("Market or area in Jaipur", "locality", input("locality", "locality", "text", v.locality, 'minlength="2" maxlength="120" placeholder="e.g. Bapu Bazaar" list="jaipur-markets" required') + '<datalist id="jaipur-markets"><option value="Bapu Bazaar"><option value="Johari Bazaar"><option value="Nehru Bazaar"></datalist>')}</div><details class="wizard-extra">${disclosure(purchase ? "Change the purchase date" : "Change the date or how you got the price")}<div class="form-grid">${field("Date", "observed", input("observed", "observed_at", "date", v.observed_at, `min="2020-01-01" max="${today()}" required`))}${
       purchase
         ? ""
         : field(
-            "Source",
+            "How did you get the price?",
             "source-type",
             `<select id="source-type" name="source_type">${options(
               [
-                ["seller_quote", "Seller quote"],
+                ["seller_quote", "A seller told me"],
                 ["own_purchase", "My own purchase"],
-                ["field_observation", "Field observation"],
+                ["field_observation", "I saw it on a tag or sign"],
                 ["receipt", "Receipt"],
               ],
               v.source_type,
             )}</select>`,
           )
-    }</div></details>${purchase ? `<details><summary>Product details · ${h(v.size_cm)} cm, ${h(v.finish)}</summary>${attributesForm(v, "p-")}</details>` : ""}`;
+    }</div></details>${purchase ? `<details>${disclosure("Check or change the product details")}${attributesForm(v, "p-")}</details>` : ""}`;
   }
   function evidenceFields(d, purchase) {
     const v = d.values;
-    return `${purchase && state.image ? `<label class="check"><input id="attach-scan" type="checkbox" name="attach_scan" ${v.attach_scan ? "checked" : ""}><span>Attach my scan photo for private review.</span></label>` : ""}<div class="field"><label for="evidence-file">Receipt or evidence photo <span class="muted">(optional)</span></label><input id="evidence-file" type="file" accept="image/jpeg,image/png,image/webp"><small>Crop names, receipt identifiers and payment details.</small></div><div id="evidence-preview">${d.evidence ? `<img class="evidence-preview" src="${d.evidence.url}" alt="Your evidence photo"><button class="text-link" type="button" id="remove-evidence">Remove evidence</button>` : ""}</div><div id="evidence-feedback" aria-live="polite"></div><label class="check" id="photo-consent" ${d.product || d.evidence || v.attach_scan ? "" : "hidden"}><input id="image-consent" type="checkbox" name="image_consent" ${v.image_consent ? "checked" : ""}><span>I consent to storing the attached photos privately for review.</span></label><details class="wizard-extra" ${v.notes ? "open" : ""}><summary>Notes (optional)</summary>${field("Notes", "notes", `<textarea id="notes" name="notes" maxlength="2000" rows="3" placeholder="Anything else the reviewer should know?">${h(v.notes)}</textarea>`)}</details>`;
+    return `${purchase && state.image ? `<label class="check"><input id="attach-scan" type="checkbox" name="attach_scan" ${v.attach_scan ? "checked" : ""}><span>Attach my scan photo for private review.</span></label>` : ""}<div class="field"><label for="evidence-file">Photo of a receipt or other proof <span class="muted">(optional)</span></label><input id="evidence-file" type="file" accept="image/jpeg,image/png,image/webp"><small>Crop out names, receipt numbers and payment details.</small></div><div id="evidence-preview">${d.evidence ? `<img class="evidence-preview" src="${d.evidence.url}" alt="Your evidence photo"><button class="text-link" type="button" id="remove-evidence">Remove evidence</button>` : ""}</div><div id="evidence-feedback" aria-live="polite"></div><label class="check" id="photo-consent" ${d.product || d.evidence || v.attach_scan ? "" : "hidden"}><input id="image-consent" type="checkbox" name="image_consent" ${v.image_consent ? "checked" : ""}><span>I consent to storing the attached photos privately for review.</span></label><details class="wizard-extra" ${v.notes ? "open" : ""}>${disclosure("Add an optional note")}${field("Notes", "notes", `<textarea id="notes" name="notes" maxlength="2000" rows="3" placeholder="Anything else the reviewer should know?">${h(v.notes)}</textarea>`)}</details>`;
   }
   function review(d, purchase) {
     const v = d.values,
       product = purchase ? (v.attach_scan ? state.image : null) : d.product;
-    return `<div class="review-product">${product ? `<img src="${product.url}" width="76" height="76" alt="Product attached for review">` : icon("tag")}<div><strong>${h(productName(v.category_id))}</strong><p>${h(v.size_cm)} cm · ${h(productFor(v.category_id)?.finishes[v.finish] || v.finish)} · ${v.category_id === "bangles" ? h(packLabel(Number(v.pack_count))) + " · " : ""}${h(v.segment)}</p></div><button class="text-link" type="button" data-edit="${purchase ? 0 : 1}">Edit</button></div><dl class="review-list"><div><dt>${purchase ? "You paid" : h(v.price_type) + " price"}</dt><dd>${money(v.price_inr)}</dd></div><div><dt>Locality</dt><dd>${h(v.locality)}, Jaipur</dd></div><div><dt>Photos</dt><dd>${Number(Boolean(product)) + Number(Boolean(d.evidence))} attached</dd></div></dl><details class="wizard-extra review-extra"><summary>Date, source & other details</summary><dl class="review-list"><div><dt>Date</dt><dd>${h(v.observed_at)}</dd></div><div><dt>Source</dt><dd>${h(v.source_type.replaceAll("_", " "))}</dd></div><div><dt>Material</dt><dd>${h(v.material)}</dd></div>${v.category_id === "wooden_elephant" ? `<div><dt>Carving</dt><dd>${h(v.carving_detail || "unknown")}</dd></div>` : ""}${v.notes ? `<div><dt>Notes</dt><dd>${h(v.notes)}</dd></div>` : ""}</dl><button type="button" class="text-link" data-edit="${purchase ? 0 : 2}">Edit price & location</button><button type="button" class="text-link" data-edit="${purchase ? 1 : 3}">Edit evidence</button></details><label class="check honest-check"><input id="honest-observation" name="accurate" type="checkbox" required ${v.accurate ? "checked" : ""}><span>I confirm this is accurate and my photos contain no personal details.</span></label><p class="review-note">${icon("clock")}Submissions go to review.</p><p class="small muted">By submitting, you agree to the <button type="button" class="text-link" data-dialog="terms">contribution terms</button>.</p>`;
+    return `<div class="review-product">${product ? `<img src="${product.url}" width="76" height="76" alt="Product attached for review">` : icon("tag")}<div><strong>${h(productName(v.category_id))}</strong><p>${h(v.size_cm)} cm · ${h(productFor(v.category_id)?.finishes[v.finish] || v.finish)} · ${v.category_id === "bangles" ? h(packLabel(Number(v.pack_count))) + " · " : ""}${h(sellingPlaces[v.segment] || v.segment)}</p></div><button class="text-link" type="button" data-edit="${purchase ? 0 : 1}">Edit</button></div><dl class="review-list"><div><dt>${purchase ? "You paid" : h(v.price_type) + " price"}</dt><dd>${money(v.price_inr)}</dd></div><div><dt>Area or market</dt><dd>${h(v.locality)}, Jaipur</dd></div><div><dt>Photos</dt><dd>${Number(Boolean(product)) + Number(Boolean(d.evidence))} attached</dd></div></dl><details class="wizard-extra review-extra">${disclosure("Check the date and other details")}<dl class="review-list"><div><dt>Date</dt><dd>${h(v.observed_at)}</dd></div><div><dt>Source</dt><dd>${h(v.source_type.replaceAll("_", " "))}</dd></div><div><dt>Material</dt><dd>${h(v.material)}</dd></div>${v.category_id === "wooden_elephant" ? `<div><dt>Carving</dt><dd>${h(v.carving_detail || "unknown")}</dd></div>` : ""}${v.notes ? `<div><dt>Notes</dt><dd>${h(v.notes)}</dd></div>` : ""}</dl><button type="button" class="text-link" data-edit="${purchase ? 0 : 2}">Edit the price and location</button><button type="button" class="text-link" data-edit="${purchase ? 1 : 3}">Edit evidence</button></details><label class="check honest-check"><input id="honest-observation" name="accurate" type="checkbox" required ${v.accurate ? "checked" : ""}><span>I confirm this is accurate and my photos contain no personal details.</span></label><p class="review-note">${icon("clock")}FairFare checks your report before using it in price comparisons.</p><p class="small muted">By submitting, you agree to the <button type="button" class="text-link" data-dialog="terms">contribution terms</button>.</p>`;
   }
   function page(purchase) {
     const d = draft(purchase),
@@ -114,21 +116,21 @@ export function createContributionFlow({
         : ["Photo", "Details", "Price", "Evidence", "Review"],
       step = steps[d.step];
     const titles = {
-      Photo: "Product photo",
-      Details: "Product details",
-      Price: purchase ? "What did you pay?" : "Record the price.",
-      Evidence: "Evidence",
-      Review: "Review observation",
+      Photo: "Add a photo of the item",
+      Details: "Describe the item",
+      Price: purchase ? "What did you pay?" : "Enter the price you saw",
+      Evidence: "Add proof if you have it",
+      Review: "Check your price report",
     };
     let content = "";
     if (step === "Photo")
-      content = `<div class="wizard-photo">${d.product ? `<img class="product-preview" src="${d.product.url}" alt="Your contribution product photo">` : `<button type="button" id="contributor-camera" class="capture-tile"><span class="viewfinder">${icon("camera")}</span><strong>Take a photo</strong></button>`}</div><div class="photo-actions">${d.product ? `<button type="button" class="button secondary" id="contributor-camera">${icon("camera")}Retake</button>` : ""}<button type="button" class="button secondary" id="contributor-gallery">${icon("image")}${d.product ? "Replace" : "Gallery"}</button></div><input id="contributor-photo" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" tabindex="-1"><input id="contributor-file" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1"><div id="photo-feedback" aria-live="polite"></div>`;
+      content = `<div class="wizard-photo">${d.product ? `<img class="product-preview" src="${d.product.url}" alt="Your contribution product photo">` : `<button type="button" id="contributor-camera" class="capture-tile"><span class="viewfinder">${icon("camera")}</span><strong>Take a photo</strong></button>`}</div><div class="photo-actions">${d.product ? `<button type="button" class="button secondary" id="contributor-camera">${icon("camera")}Take another photo</button>` : ""}<button type="button" class="button secondary" id="contributor-gallery">${icon("image")}${d.product ? "Choose a different photo" : "Choose a photo"}</button></div><input id="contributor-photo" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" tabindex="-1"><input id="contributor-file" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1"><div id="photo-feedback" aria-live="polite"></div>`;
     if (step === "Details")
       content = `${attributesForm(d.values, "s-", { detected: d.detected })}<button class="text-link" type="button" id="contributor-identify">${icon("magnifying-glass")}Suggest details from photo${devMock ? " (mock)" : ""}</button><div id="contributor-ai" aria-live="polite"></div>`;
     if (step === "Price") content = priceFields(d, purchase);
     if (step === "Evidence") content = evidenceFields(d, purchase);
     if (step === "Review") content = review(d, purchase);
-    return `<div class="wizard-layout"><a class="back-link" href="${purchase ? "/compare" : "/contribute"}">${icon("arrow-left")}${purchase ? "Your comparison" : "Your Contributions"}</a><div class="wizard-progress"><span>Step ${d.step + 1} of ${steps.length} · ${step}</span><progress value="${d.step + 1}" max="${steps.length}" aria-label="Observation progress"></progress></div><div class="page-heading"><h1>${titles[step]}</h1></div>${devMock ? notice("Development mock · nothing will be stored.") : ""}<form id="submission-form" class="wizard-card panel" novalidate><div id="submission-feedback" tabindex="-1" aria-live="polite"></div>${content}<div class="wizard-actions task-actions" ${step === "Photo" && !d.product ? "hidden" : ""}>${d.step ? '<button class="button secondary" type="button" id="wizard-back">Back</button>' : ""}<button class="button primary" type="submit" id="wizard-next">${step === "Review" ? "Submit for review" : step === "Evidence" ? "Review observation" : "Continue"}${step === "Review" ? "" : icon("chevron-right")}</button></div></form></div>`;
+    return `<div class="wizard-layout"><a class="back-link" href="${purchase ? "/compare" : "/contribute"}">${icon("arrow-left")}${purchase ? "Back to your comparison" : "Back to sharing prices"}</a><div class="wizard-progress"><span>Step ${d.step + 1} of ${steps.length} · ${step}</span><progress value="${d.step + 1}" max="${steps.length}" aria-label="Observation progress"></progress></div><div class="page-heading"><h1>${titles[step]}</h1></div>${devMock ? notice("Development mock · nothing will be stored.") : ""}<form id="submission-form" class="wizard-card panel" novalidate><div id="submission-feedback" tabindex="-1" aria-live="polite"></div>${content}<div class="wizard-actions task-actions" ${step === "Photo" && !d.product ? "hidden" : ""}>${d.step ? '<button class="button secondary" type="button" id="wizard-back">Back</button>' : ""}<button class="button primary" type="submit" id="wizard-next">${step === "Review" ? "Submit for review" : step === "Evidence" ? "Review your report" : "Continue"}${step === "Review" ? "" : icon("chevron-right")}</button></div></form></div>`;
   }
   function bind(purchase, signal) {
     const d = draft(purchase),
@@ -233,7 +235,7 @@ export function createContributionFlow({
         const target = document.querySelector("#contributor-ai");
         ai.disabled = true;
         document.querySelector("#wizard-next").disabled = true;
-        target.innerHTML = loading("Taking a closer look…");
+        target.innerHTML = loading("Checking what is in your photo…");
         try {
           const a = await identify(d.product, signal);
           if (signal.aborted) return;
@@ -297,17 +299,17 @@ export function createContributionFlow({
         form.elements.locality.setCustomValidity(
           d.values.locality.trim().length >= 2
             ? ""
-            : "Enter a market or locality.",
+            : "Enter the name of a market or area in Jaipur.",
         );
       if ((!purchase && step === 1) || (purchase && step === 0)) {
         const product = productFor(d.values.category_id);
         form.elements.category_id.setCustomValidity(
-          product ? "" : "Choose wooden elephant or bangles.",
+          product ? "" : "Choose a wooden elephant or bangles.",
         );
         form.elements.finish?.setCustomValidity(
           product?.finishes[d.values.finish]
             ? ""
-            : "Confirm the visible finish or design.",
+            : "Choose the finish or design you see on the item.",
         );
       }
       if (

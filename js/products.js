@@ -6,14 +6,14 @@ export const products = {
     min: 2,
     max: 30,
     materials: {
-      wood: "Wood (species unverified)",
+      wood: "Wood (type unknown)",
       sandalwood: "Sandalwood (if verified)",
     },
     finishes: {
       plain: "Plain carved wood",
       painted: "Painted",
       inlay: "Inlaid",
-      openwork: "Openwork / elephant inside",
+      openwork: "Carved openings with an elephant inside",
     },
     finishLabel: "Finish",
     tip: "Check the carving and condition before you make an offer.",
@@ -36,10 +36,15 @@ export const products = {
   },
 };
 export const packCounts = [1, 2, 4, 6, 12];
+export const sellingPlaces = {
+  shop: "Local craft shop",
+  street: "Street or market stall",
+  boutique: "Boutique or gallery",
+};
 export const productFor = (category) =>
   Object.hasOwn(products, category) ? products[category] : null;
 export const productName = (category) =>
-  productFor(category)?.name || "Outside the pilot";
+  productFor(category)?.name || "This item is outside the demo";
 export const sizeTolerance = (category, size) =>
   category === "bangles" ? 0.3 : Math.max(2, size * 0.2);
 export const packLabel = (count) =>

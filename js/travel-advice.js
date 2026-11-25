@@ -1,21 +1,15 @@
 const bargaining = {
   street: {
-    setting: "Market stall",
-    scope: "More room to ask",
     low: 10,
     high: 20,
     tip: "Ask two stalls about the same item. Make one polite counteroffer for the whole purchase.",
   },
   shop: {
-    setting: "Local craft shop",
-    scope: "Some room to ask",
     low: 5,
     high: 10,
     tip: "Ask if the tag is fixed. If buying several pieces, ask for a total that includes any extras.",
   },
   boutique: {
-    setting: "Boutique or gallery",
-    scope: "Limited room to ask",
     low: 0,
     high: 5,
     tip: "Respect fixed prices. Ask about bundle offers or what the price includes.",

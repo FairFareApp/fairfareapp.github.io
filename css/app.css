@@ -319,6 +319,61 @@ summary {
   align-items: center;
   gap: 8px;
 }
+.city-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding-inline: 10px;
+  border-radius: 8px;
+  background: var(--surface-green);
+  color: var(--sage-ink);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+.city-trigger:hover strong {
+  text-decoration: underline;
+}
+.city-list {
+  display: grid;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.city-current,
+.city-unavailable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.city-current {
+  background: var(--surface-green);
+  color: var(--sage-ink);
+}
+.city-unavailable:disabled {
+  position: relative;
+  isolation: isolate;
+  background: var(--surface-soft);
+  color: var(--muted);
+  opacity: 1;
+}
+.city-unavailable::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+}
+.city-list span {
+  margin-inline-start: auto;
+  font-size: 0.8125rem;
+}
 .quiet-link {
   font-size: 13px;
   font-weight: 700;
@@ -818,15 +873,21 @@ summary {
   align-items: center;
   gap: 12px;
 }
-summary::after {
-  content: "+";
-  font-size: 20px;
-  font-weight: 400;
+.disclosure-action {
+  flex-shrink: 0;
   margin-left: auto;
-  line-height: 1;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: var(--surface-green);
+  color: var(--sage-ink);
+  font-size: 0.8125rem;
 }
-details[open] > summary::after {
-  content: "−";
+summary:hover .disclosure-action {
+  text-decoration: underline;
+}
+details[open] > summary .disclosure-action > :first-child,
+details:not([open]) > summary .disclosure-action > :last-child {
+  display: none;
 }
 summary::-webkit-details-marker {
   display: none;
@@ -2148,11 +2209,6 @@ summary {
 .photo-actions > .button:only-child {
   grid-column: 1 / -1;
 }
-.confirmation-details:not([open]) .manual-open-label,
-.confirmation-details[open] .manual-closed-label {
-  display: none;
-}
-
 @media (max-width: 760px) {
   :root {
     --phone-bar: calc(64px + env(safe-area-inset-bottom));
@@ -2544,6 +2600,16 @@ summary {
 .campaign .swipe-target {
   color: #fff8ef;
 }
+.campaign .swipe-target span {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: #2c211b;
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
 .visit-copy,
 .tip-copy {
   position: relative;
@@ -2555,13 +2621,13 @@ summary {
   pointer-events: auto;
 }
 .campaign-copy {
-  max-width: 66%;
-  padding: 20px;
+  max-width: 78%;
+  padding: 18px 20px 54px;
 }
 .campaign-copy h2 {
   margin: 0 0 6px;
-  font-size: clamp(29px, 8vw, 52px);
-  line-height: 0.99;
+  font-size: clamp(23px, 5.5vw, 36px);
+  line-height: 1.08;
   letter-spacing: -0.052em;
 }
 .campaign-copy p {
@@ -2633,6 +2699,40 @@ summary {
   gap: 16px;
   text-align: left;
 }
+.home-intro {
+  padding: 18px 18px 8px;
+  border-radius: 24px 8px 24px 24px;
+  background: var(--leaf);
+  color: var(--leaf-ink);
+}
+.home-intro h1 {
+  margin: 0 0 7px;
+  font-size: clamp(1.5rem, 4.2vw, 2rem);
+  line-height: 1.14;
+  text-wrap: balance;
+}
+.home-intro p {
+  max-width: 52ch;
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.intro-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 20px;
+  margin-top: 3px;
+}
+.intro-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: inherit;
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-underline-offset: 3px;
+}
 .home-scan {
   min-width: 0;
   scroll-margin-top: 12px;
@@ -2647,15 +2747,7 @@ summary {
 .home-scan .scan-heading p {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
-}
-.pilot-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--sage-ink);
-  font-size: 12px;
-  font-weight: 750;
+  font-size: 0.875rem;
 }
 .home-scan .scan-layout:has(.confirmation-details:not([open])) {
   display: block;
@@ -2871,12 +2963,7 @@ summary {
   gap: 16px;
 }
 .ride-hero {
-  position: relative;
-  display: grid;
-  min-height: 142px;
-  align-content: center;
-  padding: 18px min(26%, 108px) 18px 18px;
-  overflow: hidden;
+  padding: 18px;
   border-radius: 25px 8px 25px 25px;
   background: var(--card-face);
   color: var(--card-ink);
@@ -2891,20 +2978,39 @@ summary {
   margin: 0;
   font-size: 14px;
 }
-.ride-hero-icon {
-  position: absolute;
-  right: -7px;
-  bottom: 14px;
+.fare-choices {
   display: grid;
-  align-items: center;
-  justify-items: center;
-  width: 82px;
-  height: 78px;
-  border-radius: 22px 7px 22px 22px;
-  transform: rotate(-11deg);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.fare-choices a {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  line-height: 1.35;
+}
+.fare-choices a[aria-current] {
   background: var(--card-ink);
   color: var(--card-face);
-  font-size: 32px;
+}
+.fare-choices a:hover strong {
+  text-decoration: underline;
+}
+.fare-choices a span {
+  font-size: 0.8125rem;
+}
+.ride-intro {
+  margin: 0 0 12px;
+}
+.ticket-intro {
+  margin: -6px 0 16px;
 }
 .ride-switch {
   display: grid;
@@ -3199,8 +3305,10 @@ summary {
     gap: 2px;
   }
   .bottom-nav :is(a, .mobile-more) {
-    font-size: 11px;
-    letter-spacing: -0.035em;
+    font-size: 0.75rem;
+    padding-inline: 2px;
+    text-align: center;
+    line-height: 1.15;
   }
   .mobile-more {
     flex: 1;

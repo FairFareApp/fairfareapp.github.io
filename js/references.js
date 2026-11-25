@@ -1,6 +1,6 @@
 import { SUPABASE_URL } from "./config.js";
-import { escapeHTML as h, money, date, icon } from "./ui.js";
-import { productFor, packLabel } from "./products.js";
+import { escapeHTML as h, money, date, icon, disclosure } from "./ui.js";
+import { productFor, packLabel, sellingPlaces } from "./products.js";
 export function referenceImage(o, cls = "reference-image") {
   if (
     !o.image_path ||
@@ -34,5 +34,5 @@ export function comparable(o) {
     o.material === "sandalwood" && o.provenance === "synthetic"
       ? "Assumed sandalwood"
       : product?.materials[o.material];
-  return `<article class="comparable"><div class="comparable-overview">${referenceImage(o)}<div><strong>${money(o.price_inr)}</strong><p>${h(measure)} · ${h(product?.finishes[o.finish])}</p><small>${h(material)} · ${h(o.segment)}<br>${h(o.ff_markets.locality)}</small></div></div><details><summary>Listing details</summary><p class="demo-label">${o.provenance === "synthetic" ? "Synthetic demonstration record" : h(o.provenance + " observation")}</p><p>${h(o.source_note)}</p><p>${detail ? `${h(detail)} · ` : ""}${h(o.price_type)} price · ${date(o.observed_at)}</p><ul>${o.reasons.map((x) => `<li>${h(x)}</li>`).join("")}</ul><p class="small muted">${h(o.image_credit)}. ${h(o.image_license)}. Shared illustration of the style.</p>${o.source_url?.startsWith("https://") ? `<a href="${h(o.source_url)}" target="_blank" rel="noopener noreferrer">Source information</a>` : ""}<small>Record ${h(o.id.slice(0, 8))}</small></details></article>`;
+  return `<article class="comparable"><div class="comparable-overview">${referenceImage(o)}<div><strong>${money(o.price_inr)}</strong><p>${h(measure)} · ${h(product?.finishes[o.finish])}</p><small>${h(material)} · ${h(sellingPlaces[o.segment] || o.segment)}<br>${h(o.ff_markets.locality)}</small></div></div><details>${disclosure("See where this price came from")}<p class="demo-label">${o.provenance === "synthetic" ? "Made-up price for this demo" : o.provenance === "community" ? "Price shared by a visitor" : "Price checked by FairFare"}</p>${o.provenance !== "synthetic" && o.source_note ? `<p>${h(o.source_note)}</p>` : ""}<p>${detail ? `${h(detail)} · ` : ""}${h(o.price_type)} price · ${date(o.observed_at)}</p><ul>${o.reasons.map((x) => `<li>${h(x)}</li>`).join("")}</ul><p class="small muted">This picture shows an example of the style. ${h(o.image_credit)}. ${h(o.image_license)}</p>${o.source_url?.startsWith("https://") ? `<a href="${h(o.source_url)}" target="_blank" rel="noopener noreferrer">Read the source</a>` : ""}<small>Record ${h(o.id.slice(0, 8))}</small></details></article>`;
 }

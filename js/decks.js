@@ -4,26 +4,26 @@ import { fareSources, routeTip, cardTip, meterTip } from "./travel-advice.js";
 const tips = [
   {
     icon: "map-location-dot",
-    title: "Follow your ride",
+    title: "Follow your route on a map",
     text: routeTip,
-    href: "/autos",
-    link: "Auto & local taxi fares",
+    href: "/fares?type=auto",
+    link: "Check auto and local taxi fares",
   },
   {
     icon: "gauge",
     title: "Check the meter first",
     text: meterTip,
-    href: "/autos",
-    link: "See fare references",
+    href: "/fares?type=auto",
+    link: "See how local fares are set",
   },
   {
     icon: "handshake",
-    title: "Ask for the whole price",
+    title: "Ask what the full price covers",
     text: "Compare the same material and quantity. Check whether the price is fixed before making a polite offer.",
   },
   {
     icon: "bag-shopping",
-    title: "Keep valuables discreet",
+    title: "Keep valuables out of sight",
     text: "Leave expensive jewellery somewhere secure before visiting crowded markets. Keep your phone and bag close.",
   },
   {
@@ -35,14 +35,14 @@ const tips = [
   },
   {
     icon: "credit-card",
-    title: "Get your travel card ready",
+    title: "Check if your card works in India",
     text: cardTip,
-    href: "/taxis",
-    link: "Ride-hailing fares",
+    href: "/fares",
+    link: "Check fares in ride apps",
   },
   {
     icon: "ticket",
-    title: "Check entry and extras",
+    title: "Ask what your entry ticket covers",
     text: "Confirm your ticket category at the official venue. Guide fees, cameras and special events can be separate.",
     href: "/monuments",
     link: "See monument prices",
@@ -51,14 +51,14 @@ const tips = [
 
 const campaign = [
   [
-    "Travel with FairFare.",
-    "A little local know-how for your next trip.",
+    "Travel with FairFare",
+    "Check prices on your trip to Jaipur.",
     "fairfare",
   ],
-  ["Know before you buy.", "Check what similar finds cost.", "price-check"],
-  ["Feel ready to ride.", "Know what to ask before you get in.", "ride-ready"],
-  ["Plan your next stop.", "Check entry prices before you go.", "entry"],
-  ["Pass it on.", "Share a price to help the next traveller.", "pass-it-on"],
+  ["Compare souvenir prices", "Check what similar wooden elephants and bangles cost.", "price-check"],
+  ["Check your ride fare", "Know what to ask before you get in.", "ride-ready"],
+  ["Check monument tickets", "See the entry fee before you go.", "entry"],
+  ["Share a price you saw", "Help other travellers compare prices.", "pass-it-on"],
 ];
 
 export function campaignMarkup() {
@@ -78,7 +78,7 @@ export function campaignMarkup() {
           )
           .join("")}
       </div>
-      <button class="swipe-target" type="button" aria-label="Show next FairFare story"></button>
+      <button class="swipe-target" type="button"><span>Show next image</span></button>
     </div>
   </section>`;
 }
@@ -180,10 +180,6 @@ export function bindCampaign(root, signal) {
     slides.forEach((slide, i) => {
       slide.inert = i !== index + 1;
     });
-    target.setAttribute(
-      "aria-label",
-      `${campaign[index][0]} ${campaign[index][1]} Show next FairFare story`,
-    );
   }
   async function move(step, manual = true) {
     if (busy || held) return;
@@ -196,6 +192,7 @@ export function bindCampaign(root, signal) {
       [{ transform: getComputedStyle(track).transform }, { transform: dest }],
       step ? 465 : 240,
     );
+    if (signal.aborted) return;
     index = wrap(index + step, campaign.length);
     show();
     motion?.cancel();
@@ -242,7 +239,10 @@ export function bindCampaign(root, signal) {
     )
       void move(1, false);
   }, 250);
-  signal.addEventListener("abort", () => clearInterval(timer), { once: true });
+  signal.addEventListener("abort", () => {
+    clearInterval(timer);
+    track.getAnimations().forEach((motion) => motion.cancel());
+  }, { once: true });
   show();
 }
 
@@ -267,15 +267,15 @@ export function deckMarkup() {
   }));
   cards.push({
     tone: "sage",
-    label: "You’re ready for Jaipur",
-    content: `<div class="tip-copy"><span class="deck-icon finish-stamp">${icon("check")}</span><h3>You’re ready for Jaipur</h3><p>Enjoy the trip. FairFare is here when you need a price check.</p><button class="button primary" type="button" data-deck-done>Done</button><button class="button secondary" type="button" data-deck-first>Read again</button></div>`,
+    label: "You’ve read all the travel tips",
+    content: `<div class="tip-copy"><span class="deck-icon finish-stamp">${icon("check")}</span><h3>You’ve read all the travel tips</h3><button class="button primary" type="button" data-deck-done>Close travel tips</button><button class="button secondary" type="button" data-deck-first>Read from the start</button></div>`,
   });
   return swipeDeck("tips", "Jaipur tip cards", cards, true);
 }
 
 export function swipeDeck(kind, title, cards, limited = false) {
   return `<section class="swipe-deck ${kind}-deck" data-deck="${kind}" ${limited ? "data-limited" : ""} aria-label="${h(limited ? title : title + ". Swipe or tap to explore")}">
-    ${limited ? `<p class="deck-instruction">${icon("hand-pointer")} Swipe or tap to turn the cards</p>` : ""}
+    ${limited ? `<p class="deck-instruction">${icon("hand-pointer")} Swipe or tap a card to read the next tip.</p>` : ""}
     <div class="swipe-stage">
       ${cards
         .map(

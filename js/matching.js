@@ -1,4 +1,4 @@
-import { productFor, sizeTolerance, packCounts } from "./products.js";
+import { productFor, sizeTolerance, packCounts, sellingPlaces } from "./products.js";
 export function quantile(sorted, q) {
   const pos = (sorted.length - 1) * q,
     low = Math.floor(pos);
@@ -27,7 +27,7 @@ export function compareObservations(
       status: "insufficient",
       matches: [],
       reason:
-        "Confirm a supported product, its size and, for bangles, how many are sold together.",
+        "FairFare compares wooden elephants and fashion bangles. Enter the size and, for bangles, how many are sold together.",
     };
   const unknownMaterial = !a.material || a.material === "unknown";
   const unknownFinish = !a.finish || a.finish === "unknown";
@@ -55,7 +55,7 @@ export function compareObservations(
       return {
         status: "insufficient",
         matches: [],
-        reason: "No possible option has enough comparable observations.",
+        reason: "We couldn’t find enough prices for items with these details.",
       };
     return {
       status: "alternatives",
@@ -107,9 +107,9 @@ export function compareObservations(
       ...o,
       reasons: [
         `Same product and material`,
-        `${o.size_cm} cm ${isBangles ? "inner diameter" : "height"}, within the size tolerance`,
-        `${o.finish} finish, ${o.segment} setting`,
-        `Jaipur, observed within the last year`,
+        `${o.size_cm} cm ${isBangles ? "across the opening" : "high"}, close to the size you entered`,
+        `${product.finishes[o.finish] || o.finish} at a ${sellingPlaces[o.segment]?.toLowerCase() || o.segment}`,
+        `Price from Jaipur in the past year`,
       ],
     }))
     .sort(
@@ -122,7 +122,7 @@ export function compareObservations(
       status: "insufficient",
       matches,
       reason:
-        "Fewer than three compatible approved observations. We won’t widen the match to a different product.",
+        "We need at least three prices for similar items to calculate a range.",
     };
   // Remove extreme tails using Tukey's fences before reporting the middle half.
   const prices = matches.map((m) => Number(m.price_inr)).sort((x, y) => x - y);
@@ -139,7 +139,7 @@ export function compareObservations(
       status: "insufficient",
       matches: kept,
       reason:
-        "Too few comparable observations remain after removing extreme prices.",
+        "We found too few similar prices after leaving out unusually high or low prices.",
     };
   const p = kept.map((m) => Number(m.price_inr)).sort((x, y) => x - y);
   const synthetic = kept.filter((m) => m.provenance === "synthetic").length;
@@ -152,6 +152,6 @@ export function compareObservations(
     synthetic,
     excluded: matches.length - kept.length,
     method:
-      "The middle 50% of compatible prices, rounded outward to ₹10, after excluding extreme outliers. This is context, not a correct or guaranteed price.",
+      "We leave out unusually high or low prices, then take the middle half of the remaining prices. We round the lower end down and the upper end up to the nearest ₹10.",
   };
 }
