@@ -23,23 +23,23 @@ const rides = {
     title: "Book in an app",
     description: "Use Uber or Ola",
     tone: "indigo",
-    intro: "For a cab or auto booked through an app, check the price in the app before you book. It can change by route and time.",
+    intro: "Check the app’s price for your pickup and drop-off points before you book. The price can change depending on the route and time.",
     group: "How will you pay?",
     modes: [
       [
-        "In the app",
+        "Pay in the app",
         "Check what the app will charge",
-        `Check whether your card, wallet or UPI will be charged before paying again. ${cardTip}`,
+        `Check the app to see if you already paid by card, wallet or UPI. If the app shows that you paid, show the driver the receipt if they ask for payment. ${cardTip}`,
       ],
       [
-        "Cash / UPI to driver",
+        "Pay the driver",
         "Check how much to pay the driver",
-        "Check that cash or UPI is selected in the booking. Before you pay, check the amount and the name on the UPI screen.",
+        "Check that your booking says to pay the driver. Before you send money by UPI, check the fare and the name on the UPI screen.",
       ],
     ],
     checks: [
-      "Number plate and driver match my booking",
-      "Pickup and destination are correct",
+      "The number plate and driver match the booking in the app",
+      "The app shows the right pickup and drop-off points",
       "I know the fare and how I will pay",
       "I can follow the route in my map app",
     ],
@@ -50,53 +50,53 @@ const rides = {
       "Only whether the driver accepts cash",
     ],
     explanation:
-      "If you cancel, you may lose ride tracking and help from the app. Decide before you get in and share your trip details with someone you trust.",
+      "If you cancel, you may lose ride tracking and help from the app. You can keep the booking or book another ride. You can also share your trip details with someone you trust.",
     tips: [
       [
         "Check what is included in the fare",
-        "Review tolls, parking, waiting and airport charges before you confirm.",
+        "Before you book, check whether the app’s price includes tolls, parking, waiting time and airport charges.",
       ],
-      ["Follow the route on your phone", routeTip],
+      ["If your driver changes route", routeTip],
       [
         "What to do if you are charged twice",
-        "Check the booking receipt and payment method. Use the ride app’s support if the receipt and payment do not match.",
+        "Compare the trip receipt with your bank, wallet or UPI payments. If you paid twice for the same trip, open that trip in the ride app and contact Help or Support.",
       ],
     ],
   },
   auto: {
-    title: "Speak to a driver",
-    description: "Auto or taxi without an app",
+    title: "Hire an auto or taxi",
+    description: "Speak to the driver directly",
     tone: "turmeric",
-    intro: "For an auto-rickshaw or local taxi you take without an app, agree on the full price or ask the driver to use the meter before you get in.",
+    intro: "If you are taking an auto-rickshaw or local taxi without an app, agree on a total with the driver or ask the driver to use the meter before the ride starts.",
     group: "How will the driver set the fare?",
     modes: [
       [
         "Agree on a price",
         "Ask for the full price before you get in",
-        "Say the destination and ask what the whole vehicle costs, including stops, tolls, parking and waiting.",
+        "Tell the driver where you want to go and where you want to stop. Ask for one price for everyone in your group, including any tolls, parking fees and waiting time.",
       ],
-      ["Use the meter", "Check the meter before moving", meterTip],
+      ["Use the meter", "Ask the driver to start the meter", meterTip],
     ],
     checks: [
       "The driver knows where I am going and where I need to stop",
-      "I know whether the price covers the whole vehicle",
+      "I know whether the fare covers everyone in my group or is per person",
       "I know the cost of waiting, parking and any return trip",
       "I have the route open on my phone",
     ],
     question:
       "The meter is off when you get in. What can you do before leaving?",
-    answers: ["Agree a total first", "Wait until arrival to ask the cost"],
+    answers: ["Agree on a fare with the driver before the ride starts", "Ask what it costs when I get there"],
     explanation:
-      "Ask for the total before the ride starts. Check whether it covers everyone, including any agreed stops or return travel.",
+      "Before the ride starts, ask the driver for the full fare. Check whether it covers everyone in your group, any stops and a return trip if you need one.",
     tips: [
-      ["Check the route as you go", routeTip],
+      ["If your driver changes route", routeTip],
       [
         "Check the amount before paying",
-        "For UPI, check the name and amount. If paying cash, count the change before leaving.",
+        "If you pay by UPI, check the name of the person you are paying and the amount you are sending. If you pay in cash, count your change before you leave.",
       ],
       [
-        "Going to the airport or station?",
-        "Compare a prepaid counter or ride app quote. Ask about the total, including any pickup or parking fees.",
+        "Compare fares at the airport or station",
+        "Ask for a price at the prepaid taxi counter and compare it with the price in a ride app. Check whether each price includes pickup and parking fees.",
       ],
     ],
   },
@@ -105,7 +105,7 @@ const rides = {
 export function faresPage(kind) {
   const r = rides[kind];
   return `<div class="ride-page tone-${r.tone}">
-    <header class="ride-hero"><h1>Ride fares</h1><p>Choose how you plan to get a ride.</p>
+    <header class="ride-hero"><h1>Ride fares</h1><p>Choose how you’ll get your ride to see what to check before you pay.</p>
       <nav class="fare-choices" aria-label="How to get a ride">${Object.entries(rides).map(([key, ride]) => `<a href="${key === "auto" ? "/fares?type=auto" : "/fares"}" ${key === kind ? 'aria-current="page"' : ""}><strong>${ride.title}</strong><span>${ride.description}</span></a>`).join("")}</nav>
     </header>
     <section class="ride-mode" aria-labelledby="ride-mode-title">
@@ -121,9 +121,9 @@ export function faresPage(kind) {
       <div class="ride-checks">${r.checks.map((label, i) => `<label class="ride-check-row"><input type="checkbox" data-ride-check="${i}"><span>${label}</span></label>`).join("")}</div>
       <div class="ride-reset"><button type="button" class="text-link" id="ride-reset" hidden>Reset checks</button></div>
     </section>
-    ${kind === "auto" ? fareReference() : `<div class="ride-providers">${external("https://www.uber.com/in/en/ride/", "Open Uber")}${external("https://www.olacabs.com/", "Open Ola")}<p class="small muted">Open a provider to see its fare and book.</p></div>`}
+    ${kind === "auto" ? fareReference() : `<div class="ride-providers">${external("https://www.uber.com/in/en/ride/", "Open Uber")}${external("https://www.olacabs.com/", "Open Ola")}<p class="small muted">Check the current fare and book on Uber or Ola.</p></div>`}
     <section class="ride-quiz tone-lac" aria-labelledby="ride-quiz-title">
-      <h2 id="ride-quiz-title">${icon("comment-dots")} Try an example before you ride</h2>
+      <h2 id="ride-quiz-title">${icon("comment-dots")} What would you do on this ride?</h2>
       <p>${r.question}</p>
       <div>${r.answers.map((answer, i) => `<button type="button" data-ride-answer="${i}" aria-pressed="false">${answer}</button>`).join("")}</div>
       <p id="ride-answer" aria-live="polite" hidden></p>
@@ -193,7 +193,7 @@ function bindRide(root, kind) {
         choice.setAttribute("aria-pressed", String(choice === button)),
       );
       answer.hidden = false;
-      answer.textContent = `${i === 0 ? "That is what to check before you ride." : "There is something more important to check first."} ${r.explanation}`;
+      answer.textContent = `${i === 0 ? "You picked the better option." : "Here is what to check before the ride."} ${r.explanation}`;
     };
   });
 }
@@ -212,7 +212,7 @@ export function bindFares(root, kind) {
       fare === null
         ? vehicle.value === "auto" || !validDistance
           ? "Enter a distance from 0.1 to 50 km."
-          : "The prepaid taxi schedule only lists distance bands up to 20 km."
+          : "The 2013 rates cover prepaid taxi trips up to 20 km. Ask the taxi counter what a longer trip costs."
         : `${ticketMoney.format(fare)} based on 2013 rates. Ask the driver for today’s price.`;
   };
   vehicle.addEventListener("change", update);
@@ -222,16 +222,16 @@ export function bindFares(root, kind) {
 
 function fareReference() {
   return `<details class="fare-reference">
-    ${disclosure('<strong>Calculate a fare using 2013 rates</strong><small>These figures are a guide. Ask for today’s price.</small>')}
+    ${disclosure('<strong>Calculate a fare using 2013 rates</strong><small>Use these old rates for comparison. Ask the driver for today’s fare.</small>')}
     <div class="fare-reference-body">
-      <h2>Distance calculator</h2>
-      <p class="small muted" id="fare-date-hint">Uses the published 2013 schedules. Check today’s total before boarding.</p>
+      <h2>Enter your trip distance</h2>
+      <p class="small muted" id="fare-date-hint">This calculator uses the rates Rajasthan published in 2013.</p>
       <div class="form-grid">
         <div class="field"><label for="fare-vehicle">Vehicle</label><select id="fare-vehicle">${options(
           [
             ["auto", "Auto rickshaw"],
-            ["taxi-small", "Prepaid taxi · up to 5 seats"],
-            ["taxi-large", "Prepaid taxi · over 5 seats"],
+            ["taxi-small", "Prepaid taxi with up to 5 seats"],
+            ["taxi-large", "Prepaid taxi with more than 5 seats"],
           ],
           "auto",
         )}</select></div>
@@ -241,12 +241,12 @@ function fareReference() {
       ${external(fareSources.auto, "2013 government rates for autos")}<br>
       ${external(fareSources.taxi, "2013 government rates for prepaid taxis")}<br>
       ${external(fareSources.index, "All published Rajasthan fare rates")}
-      <h2>Published provider examples</h2>
+      <h2>Example fares from ride companies</h2>
       <p><strong>₹177 average</strong> for an Uber Auto from Jaipur airport to the city, as published by Uber.</p>
-      ${external(fareSources.autoProvider, "View Uber route figures")}
+      ${external(fareSources.autoProvider, "See Uber’s fares for this route")}
       <p><strong>From ₹649 plus tax</strong> for a PinkCityTours car from the airport or railway station. The company lists ₹1,199 plus tax for a 4-hour, 40 km city trip.</p>
-      ${external(fareSources.taxiProvider, "View the operator’s posted rates")}
-      <p class="small muted">Sources checked 19 November 2026. Ask for the current total, including parking, tolls and waiting.</p>
+      ${external(fareSources.taxiProvider, "See PinkCityTours fares")}
+      <p class="small muted">FairFare checked these prices on 19 November 2026. Before you book, ask the ride company what the trip will cost today, including parking, tolls and waiting time.</p>
     </div>
   </details>`;
 }
@@ -269,7 +269,7 @@ const photos = {
   jantar: {
     author: "Swapnil.Karambelkar",
     source: "Full_view_of_jantar_mantar_,Jaipur.jpg",
-    alt: "The stone instruments at Jantar Mantar in Jaipur",
+    alt: "The stone instruments used to study the sky at Jantar Mantar",
     license: "CC BY-SA 4.0",
     licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
   },
@@ -277,6 +277,7 @@ const photos = {
     author: "Miniondo",
     source: "City_palace,_Jaipur.jpg",
     alt: "City Palace in Jaipur",
+    ticketNote: "The museum ticket includes the courtyards and galleries. Royal tours and tickets that cover several places cost extra. The museum uses its discounted youth ticket for the student prices shown here.",
     license: "CC BY-SA 4.0",
     licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
   },
@@ -284,6 +285,7 @@ const photos = {
     author: "Viraj Mulki",
     source: "Jaigarh_Fort_Jaipur.jpg",
     alt: "Jaigarh Fort in Jaipur",
+    ticketNote: "The entry ticket includes the fort, museum, cannons and Sculpture Park. Ask the ticket counter whether a guide or permission to take photos costs extra.",
     license: "CC0 1.0",
     licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
   },
@@ -291,6 +293,7 @@ const photos = {
     author: "Meena Kadri",
     source: "Central_courtyard,_Jawahar_Kala_Kendra,_Jaipur,_Rajasthan.jpg",
     alt: "Central courtyard at Jawahar Kala Kendra",
+    ticketNote: "You can enter the cultural centre for free. Ask the centre whether the event you want to attend has a separate ticket.",
     license: "CC BY 2.0",
     licenseUrl: "https://creativecommons.org/licenses/by/2.0/",
   },
@@ -302,7 +305,7 @@ const visitGuides = [
     prices: { indian: 100, foreign: 600, student: 50, foreign_student: 300 },
     content: {
       locality: "Badi Chaupar",
-      note: "Look for the latticed windows and jharokhas. These are general admission rates.",
+      note: "The price shown is for entry to Hawa Mahal. Inside, look for the carved window screens and balconies.",
     },
   },
   {
@@ -311,7 +314,7 @@ const visitGuides = [
     prices: { indian: 100, foreign: 600, student: 50, foreign_student: 300 },
     content: {
       locality: "Old Jaipur",
-      note: "Leave time to look closely at the astronomical instruments. Guides may cost extra.",
+      note: "You can see the stone instruments once you enter. Ask the ticket counter what a guided tour costs.",
     },
   },
   {
@@ -320,7 +323,7 @@ const visitGuides = [
     prices: { indian: 200, foreign: 1000, student: 100, foreign_student: 500 },
     content: {
       locality: "Amer",
-      note: "Allow time for the courtyards and palace interiors. Composite tickets are separate.",
+      note: "The price shown is for Amber Palace. If you want to visit several monuments, ask the counter for a ticket that covers them together.",
     },
   },
 ].map((venue) => ({
@@ -330,15 +333,15 @@ const visitGuides = [
   checked_at: "2026-11-22",
 }));
 export function monumentsPage() {
-  return `<div class="visits-page">${heading("Monument tickets")}<p class="ticket-intro">Choose your visitor type to see the entry fee. Swipe or tap the photo to see another place.</p><div class="monuments-toolbar"><label class="inline-label" for="visitor">Who needs a ticket?<select id="visitor">${options(
+  return `<div class="visits-page">${heading("Monument tickets")}<p class="ticket-intro">Choose the option that describes you to see your ticket price. Swipe left or tap the photo to see the next place.</p><div class="monuments-toolbar"><label class="inline-label" for="visitor">Which visitor ticket do you need?<select id="visitor">${options(
     [
       ["indian", "Indian resident"],
-      ["foreign", "International visitor"],
+      ["foreign", "Visitor from outside India"],
       ["student", "Indian student"],
-      ["foreign_student", "International student"],
+      ["foreign_student", "Student from outside India"],
     ],
     "indian",
-  )}</select></label></div><div id="monument-data">${loading("Loading monument ticket prices…")}</div><details class="guide-note">${disclosure("See what to ask before hiring a guide")}<p>Ask to see the guide’s ID. Before you start, agree on the language, length of the tour, places you will visit and total fee. Ask if transport, camera use and evening shows cost extra.</p><details>${disclosure("See what to ask at the ticket counter")}<ul><li>Which ticket should I buy, and what ID do I need?</li><li>Can I buy one ticket for several places?</li><li>Do special exhibits or evening visits cost extra?</li></ul></details></details></div>`;
+  )}</select></label></div><div id="monument-data">${loading("Loading monument ticket prices…")}</div><details class="guide-note">${disclosure("See what to ask before hiring a guide")}<p>Ask the guide to show their ID. Before you start, confirm with the guide which language they will speak, where they will take you, how long the tour will last and what you will pay. Ask the guide if transport, taking photos or evening shows cost extra.</p><details>${disclosure("See what to ask at the ticket counter")}<ul><li>Which ticket should I buy, and what ID do I need?</li><li>Can I buy one ticket for several places?</li><li>Do special exhibits or evening visits cost extra?</li></ul></details></details></div>`;
 }
 
 export async function bindMonuments(root, signal) {
@@ -367,7 +370,7 @@ export async function bindMonuments(root, signal) {
           };
         }),
       ) +
-      `<details class="visit-detail">${disclosure("See visiting details and ticket sources")}<div class="visit-detail-body"></div></details>`;
+      `<details class="visit-detail">${disclosure("See what the ticket covers")}<div class="visit-detail-body"></div></details>`;
     const deck = target.querySelector("[data-deck]");
     const details = target.querySelector(".visit-detail");
     const detailBody = details.querySelector(".visit-detail-body");
@@ -384,19 +387,19 @@ export async function bindMonuments(root, signal) {
               ? `${ticketMoney.format(fee)} entry`
               : "Ask the venue for the entry fee";
         cards[i].querySelector(".availability").textContent =
-          label + (row.verification === "snapshot" ? " (last reported price)" : "");
+          label + (row.verification === "snapshot" ? " (last checked price)" : "");
         cards[i].querySelector(".visit-link").innerHTML = external(
           row.source_url,
           !Number.isFinite(fee) || fee === 0
-            ? "See the venue’s visitor information"
+            ? "Check visiting hours and entry information"
             : "Check the official ticket price",
         );
       });
       const row = rows[current];
       const photo = photos[row.id];
-      detailBody.innerHTML = `<p>${h(row.content.note)}</p>
-        ${cat.includes("student") && row.prices?.[cat] > 0 ? "<p>Carry valid student ID and confirm eligibility.</p>" : ""}
-        ${row.checked_at ? `<p>${row.verification === "official" ? "Official site checked" : row.verification === "published" ? "Rajasthan ticket portal checked" : "Last checked"} ${date(row.checked_at)}.</p>` : ""}
+      detailBody.innerHTML = `<p>${h(photo?.ticketNote || row.content.note)}</p>
+        ${cat.includes("student") && row.prices?.[cat] > 0 ? "<p>Bring your student ID. Ask at the ticket counter if it qualifies you for the student price.</p>" : ""}
+        ${row.checked_at ? `<p>${row.verification === "official" ? "FairFare checked the venue’s website on" : row.verification === "published" ? "FairFare checked Rajasthan’s ticket website on" : "FairFare last checked this ticket price on"} ${date(row.checked_at)}.</p>` : ""}
         ${photo ? `<p>Photo: ${h(photo.author)}. Cropped and resized. ${external("https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(photo.source), "Original photo")} · ${external(photo.licenseUrl, photo.license)}</p>` : ""}`;
     }
     deck.addEventListener("cardchange", (event) => {
@@ -409,10 +412,10 @@ export async function bindMonuments(root, signal) {
     target.querySelectorAll("img").forEach((img) => {
       img.onerror = () => img.remove();
     });
-  } catch (e) {
+  } catch {
     if (signal.aborted) return;
     target.innerHTML =
-      notice(h(e.message), "error") +
+      notice("FairFare couldn’t load ticket prices. Check your internet connection, then try again.", "error") +
       '<button class="button secondary">Try loading ticket prices again</button>';
     target.querySelector("button").onclick = () => bindMonuments(root, signal);
   }

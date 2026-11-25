@@ -465,6 +465,10 @@ try {
   await check(
     "the city selector shows Jaipur and disables every other city",
     async () => {
+      assert.match(
+        await page.eval(() => document.querySelector(".city-trigger").innerText),
+        /Jaipur\s+Change city/,
+      );
       await click(".city-trigger");
       await wait("document.querySelector('#info-dialog').open");
       assert.match(
@@ -498,7 +502,8 @@ try {
       const text = () =>
         page.eval((s) => document.querySelector(s).innerText, front);
       await deckNumber("tips", 1);
-      assert.match(await text(), /Google Maps/);
+      const routeAdvice = /ask the driver, “Is there a reason we’re going this way\? Will it cost more\?”/;
+      assert.match(await text(), routeAdvice);
       await shot("jaipur-flashcards", face);
       await dragCard("tips", -23);
       await wait(
@@ -516,7 +521,7 @@ try {
       await deckNumber("tips", 4);
       await click(face);
       await deckNumber("tips", 5);
-      assert.match(await text(), /authorised bank/);
+      assert.match(await text(), /bank or a licensed money changer/);
       await shot("jaipur-flashcards-money", face, [`${front} .text-link`]);
       await dragCard("tips", 92);
       await deckNumber("tips", 4);
@@ -604,7 +609,7 @@ try {
       );
       assert.match(
         await page.eval(() => document.querySelector(".price-panel").innerText),
-        /demo examples/,
+        /FairFare made up \d+ of these prices for this demo/,
       );
       assert.ok(
         requests.every(
@@ -647,7 +652,7 @@ try {
       await click(".comparable details>summary");
       assert.match(
         await page.eval(() => document.querySelector(".comparable").innerText),
-        /This picture shows an example of the style/,
+        /This picture shows what this style can look like/,
       );
       if (phone) {
         assert.equal(
@@ -680,7 +685,7 @@ try {
       await fill("#quoted-price", 600);
       await click("#quote-form button");
       await wait(
-        "document.querySelector('#quote-context').innerText.includes('quote')",
+        "document.querySelector('#quote-context').innerText.includes('price the seller asks for')",
       );
     },
   );
@@ -709,7 +714,7 @@ try {
         await page.eval(
           () => document.querySelector("#submission-feedback").innerText,
         ),
-        /consent/,
+        /Tick the box to let FairFare keep the photos privately/,
       );
       await fill("#image-consent", true);
       await click("#wizard-next");
@@ -764,7 +769,7 @@ try {
       ]);
       await click("#contributor-identify");
       await wait(
-        "document.querySelector('#contributor-ai').innerText.includes('Suggestions ready')",
+        "document.querySelector('#contributor-ai').innerText.includes('FairFare filled in some details from your photo')",
       );
       await fill("#s-size_cm", 5.6);
       await fill("#s-pack_count", 6);
@@ -883,7 +888,7 @@ try {
         await page.eval(
           () => document.querySelector('label[for="size_cm"]').textContent,
         ),
-        /diameter/,
+        /across the opening/,
       );
       assert.ok(
         await page.eval(
@@ -996,14 +1001,14 @@ try {
         }
         assert.match(
           await page.eval(() => document.querySelector(".fare-choices [aria-current]").innerText),
-          taxi ? /Book in an app/ : /Speak to a driver/,
+          taxi ? /Book in an app/ : /Hire an auto or taxi/,
         );
         if (taxi)
           assert.match(
             await page.eval(
               () => document.querySelector("#ride-advice").innerText,
             ),
-            /international transactions/,
+            /ask your bank whether you can use the card in India/,
           );
         const sw = '[data-ride-mode="1"]';
         await shot(taxi ? "taxis" : "autos", sw, [".ride-check-row"]);
@@ -1019,7 +1024,7 @@ try {
           await page.eval(
             () => document.querySelector("#ride-advice").innerText,
           ),
-          taxi ? /name on the UPI screen/ : /looks faulty/,
+          taxi ? /name on the UPI screen/ : /agree on the full fare with the driver/,
         );
         await wait(
           `document.querySelector('${sw}').getAnimations().every(a => a.playState !== 'running')`,
@@ -1060,14 +1065,14 @@ try {
           await page.eval(
             () => document.querySelector("#ride-answer").innerText,
           ),
-          /more important to check first/,
+          /Here is what to check before the ride/,
         );
         await click('[data-ride-answer="0"]');
         assert.match(
           await page.eval(
             () => document.querySelector("#ride-answer").innerText,
           ),
-          /That is what to check before you ride/,
+          /You picked the better option/,
         );
         await page.screenshot({
           path: join(out, taxi ? "taxis-scenario.jpg" : "autos-scenario.jpg"),
@@ -1078,7 +1083,7 @@ try {
           await page.eval(
             () => document.querySelector(".ride-tips details[open]").innerText,
           ),
-          taxi ? /airport charges/ : /Google Maps/,
+          taxi ? /airport charges/ : /ask the driver,/,
         );
       }
       await click(".fare-reference summary");
@@ -1218,7 +1223,7 @@ try {
       for (const [url, title, body] of [
         ["/story", "Story Behind FairFare", /I went to Jaipur/],
         ["/install", "App Installation Guide", /Add to Home Screen/],
-        ["/privacy", "Privacy Policy", /short contribution receipts/],
+        ["/privacy", "Privacy Policy", /a short record of the reports you sent/],
         ["/about", "About FairFare", /demo travel guide/],
       ]) {
         await click(`#mobile-menu a[href="${url}"]`);

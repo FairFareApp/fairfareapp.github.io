@@ -8,8 +8,8 @@ export function referenceImage(o, cls = "reference-image") {
       o.image_path,
     )
   )
-    return `<div class="image-fallback ${cls}">${icon("image")}<span>No reference image</span></div>`;
-  return `<div class="reference-media ${cls}"><img src="${SUPABASE_URL}/storage/v1/object/public/fairfare-reference-images/${o.image_path}" alt="${h(o.image_alt)}" width="384" height="384" loading="lazy"><span class="image-unavailable" hidden>Image unavailable</span></div>`;
+    return `<div class="image-fallback ${cls}">${icon("image")}<span>There is no picture for this item</span></div>`;
+  return `<div class="reference-media ${cls}"><img src="${SUPABASE_URL}/storage/v1/object/public/fairfare-reference-images/${o.image_path}" alt="${h(o.image_alt)}" width="384" height="384" loading="lazy"><span class="image-unavailable" hidden>FairFare couldn’t load this picture</span></div>`;
 }
 export function bindReferenceImages(root) {
   root.querySelectorAll(".reference-media img").forEach((img) => {
@@ -25,14 +25,15 @@ export function comparable(o) {
   const product = productFor(o.category_id);
   const bangles = o.category_id === "bangles";
   const measure = bangles
-    ? `${o.size_cm} cm inside · ${packLabel(Number(o.attributes?.pack_count))}`
+    ? `${o.size_cm} cm across the opening · ${packLabel(Number(o.attributes?.pack_count))}`
     : `${o.size_cm} cm high`;
   const detail = bangles
     ? o.attributes?.width_style
     : o.attributes?.carving_detail;
   const material =
     o.material === "sandalwood" && o.provenance === "synthetic"
-      ? "Assumed sandalwood"
+      ? "Sandalwood in this example"
       : product?.materials[o.material];
-  return `<article class="comparable"><div class="comparable-overview">${referenceImage(o)}<div><strong>${money(o.price_inr)}</strong><p>${h(measure)} · ${h(product?.finishes[o.finish])}</p><small>${h(material)} · ${h(sellingPlaces[o.segment] || o.segment)}<br>${h(o.ff_markets.locality)}</small></div></div><details>${disclosure("See where this price came from")}<p class="demo-label">${o.provenance === "synthetic" ? "Made-up price for this demo" : o.provenance === "community" ? "Price shared by a visitor" : "Price checked by FairFare"}</p>${o.provenance !== "synthetic" && o.source_note ? `<p>${h(o.source_note)}</p>` : ""}<p>${detail ? `${h(detail)} · ` : ""}${h(o.price_type)} price · ${date(o.observed_at)}</p><ul>${o.reasons.map((x) => `<li>${h(x)}</li>`).join("")}</ul><p class="small muted">This picture shows an example of the style. ${h(o.image_credit)}. ${h(o.image_license)}</p>${o.source_url?.startsWith("https://") ? `<a href="${h(o.source_url)}" target="_blank" rel="noopener noreferrer">Read the source</a>` : ""}<small>Record ${h(o.id.slice(0, 8))}</small></details></article>`;
+  const priceType = { asking: "Seller’s asking price", paid: "Price a buyer paid", observed: "Price on a tag or sign" };
+  return `<article class="comparable"><div class="comparable-overview">${referenceImage(o)}<div><strong>${money(o.price_inr)}</strong><p>${h(measure)} · ${h(product?.finishes[o.finish])}</p><small>${h(material)} · ${h(sellingPlaces[o.segment] || o.segment)}<br>${h(o.ff_markets.locality)}</small></div></div><details>${disclosure("See where this price came from")}<p class="demo-label">${o.provenance === "synthetic" ? "Made-up price for this demo" : o.provenance === "community" ? "Price shared by a visitor" : "Price FairFare found in a source"}</p>${o.provenance !== "synthetic" && o.source_note ? `<p>${h(o.source_note)}</p>` : ""}<p>${detail ? `${h(detail)} · ` : ""}${h(priceType[o.price_type] || "Price recorded")} on ${date(o.observed_at)}</p><ul>${o.reasons.map((x) => `<li>${h(x)}</li>`).join("")}</ul><p class="small muted">This picture shows what this style can look like. ${h(o.image_credit)}. ${h(o.image_license)}</p>${o.source_url?.startsWith("https://") ? `<a href="${h(o.source_url)}" target="_blank" rel="noopener noreferrer">Read the source</a>` : ""}<small>Record ${h(o.id.slice(0, 8))}</small></details></article>`;
 }

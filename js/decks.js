@@ -4,34 +4,34 @@ import { fareSources, routeTip, cardTip, meterTip } from "./travel-advice.js";
 const tips = [
   {
     icon: "map-location-dot",
-    title: "Follow your route on a map",
+    title: "If your driver changes route",
     text: routeTip,
     href: "/fares?type=auto",
     link: "Check auto and local taxi fares",
   },
   {
     icon: "gauge",
-    title: "Check the meter first",
+    title: "Check the meter before the ride starts",
     text: meterTip,
     href: "/fares?type=auto",
-    link: "See how local fares are set",
+    link: "See how auto and taxi fares work",
   },
   {
     icon: "handshake",
-    title: "Ask what the full price covers",
-    text: "Compare the same material and quantity. Check whether the price is fixed before making a polite offer.",
+    title: "Compare prices before bargaining",
+    text: "When you compare prices, check that the items are made of the same material and that you get the same number of pieces. Ask the seller whether you can bargain.",
   },
   {
     icon: "bag-shopping",
-    title: "Keep valuables out of sight",
-    text: "Leave expensive jewellery somewhere secure before visiting crowded markets. Keep your phone and bag close.",
+    title: "Keep your phone and bag close",
+    text: "Before you visit a busy market, leave expensive jewellery in a safe place. Keep your bag closed and your phone where you can see or feel it.",
   },
   {
     icon: "money-bill-transfer",
-    title: "Exchange money at authorised places",
-    text: "Use an authorised bank or money changer. Check the rate and fees and keep the receipt.",
+    title: "Where to exchange cash",
+    text: "Use a bank or a licensed money changer. Before you hand over your money, ask how many rupees you will get after fees. Keep the receipt.",
     href: fareSources.exchange,
-    link: "Reserve Bank guidance",
+    link: "Read the Reserve Bank’s advice",
   },
   {
     icon: "credit-card",
@@ -43,7 +43,7 @@ const tips = [
   {
     icon: "ticket",
     title: "Ask what your entry ticket covers",
-    text: "Confirm your ticket category at the official venue. Guide fees, cameras and special events can be separate.",
+    text: "At the ticket counter, ask which ticket applies to you and which ID you need. Ask whether a guide, taking photos or attending a special event costs extra.",
     href: "/monuments",
     link: "See monument prices",
   },
@@ -52,13 +52,13 @@ const tips = [
 const campaign = [
   [
     "Travel with FairFare",
-    "Check prices on your trip to Jaipur.",
+    "Compare prices for things to buy and places to visit in Jaipur.",
     "fairfare",
   ],
-  ["Compare souvenir prices", "Check what similar wooden elephants and bangles cost.", "price-check"],
-  ["Check your ride fare", "Know what to ask before you get in.", "ride-ready"],
+  ["Compare souvenir prices", "Use a photo or enter the item’s size and design.", "price-check"],
+  ["Check your ride fare", "Check app prices or agree on a fare with your driver.", "ride-ready"],
   ["Check monument tickets", "See the entry fee before you go.", "entry"],
-  ["Share a price you saw", "Help other travellers compare prices.", "pass-it-on"],
+  ["Share a price you saw", "Tell FairFare what you paid or what a seller asked you to pay.", "pass-it-on"],
 ];
 
 export function campaignMarkup() {
@@ -78,7 +78,7 @@ export function campaignMarkup() {
           )
           .join("")}
       </div>
-      <button class="swipe-target" type="button"><span>Show next image</span></button>
+      <button class="swipe-target" type="button"><span>Show next feature</span></button>
     </div>
   </section>`;
 }
@@ -275,7 +275,7 @@ export function deckMarkup() {
 
 export function swipeDeck(kind, title, cards, limited = false) {
   return `<section class="swipe-deck ${kind}-deck" data-deck="${kind}" ${limited ? "data-limited" : ""} aria-label="${h(limited ? title : title + ". Swipe or tap to explore")}">
-    ${limited ? `<p class="deck-instruction">${icon("hand-pointer")} Swipe or tap a card to read the next tip.</p>` : ""}
+    ${limited ? `<p class="deck-instruction">${icon("hand-pointer")} Swipe left or tap the card to read the next tip.</p>` : ""}
     <div class="swipe-stage">
       ${cards
         .map(

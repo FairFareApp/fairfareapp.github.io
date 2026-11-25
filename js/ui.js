@@ -51,14 +51,15 @@ export function attributesForm(a = {}, prefix = "", { detected = false } = {}) {
   const select = (name, list, required = true) =>
     `<select id="${prefix + name}" name="${name}" ${required ? "required" : ""}>${options(list, a[name])}</select>`;
   const category = field(
-    "Product",
+    "Which item are you checking?",
     prefix + "category_id",
     select("category_id", [
       ...Object.entries(products).map(([key, value]) => [key, value.name]),
-      ["unsupported", "Another product"],
+      ["unsupported", "A different item"],
     ]),
   );
-  if (!product) return category;
+  if (!product)
+    return `${category}${notice("FairFare compares wooden elephants and bangles. If your item is one of these, choose it above.")}`;
   const guess = product.finishes[a.finish];
   const visibleFinish = !detected || !guess;
   const finish = field(
@@ -70,7 +71,7 @@ export function attributesForm(a = {}, prefix = "", { detected = false } = {}) {
     ]),
   );
   const material = field(
-    "Material",
+    "What is it made of?",
     prefix + "material",
     select("material", [
       ["unknown", "Not sure"],
@@ -84,14 +85,14 @@ export function attributesForm(a = {}, prefix = "", { detected = false } = {}) {
     ${field(product.sizeLabel, prefix + "size_cm", `<input id="${prefix}size_cm" name="size_cm" type="number" inputmode="decimal" min="${product.min}" max="${product.max}" step="0.1" value="${escapeHTML(a.size_cm || "")}" required aria-describedby="${prefix}size_cm-hint">`, product.sizeHint)}
     ${bangles ? field("How many bangles are sold together?", prefix + "pack_count", select("pack_count", [["", "Choose the number of bangles"], ...packCounts.map((count) => [String(count), packLabel(count)])])) : ""}
     ${field(
-      "Where is it sold?",
+      "What kind of shop or stall sells it?",
       prefix + "segment",
       select("segment", Object.entries(sellingPlaces)),
     )}
     ${visibleFinish ? finish : ""}
   </div>
-  ${detected && guess ? `<p class="small muted inferred-detail">The photo suggests ${escapeHTML(guess.toLowerCase())}. ${materialUnknown ? "The material is unclear." : `Possible material: ${escapeHTML(product.materials[a.material])}.`}</p>` : ""}
-  <details class="attribute-extra">${disclosure(detected ? "Check or change the product details" : "Add material or carving details")}<div class="form-grid">
+  ${detected && guess ? `<p class="small muted inferred-detail">The photo suggests this design: ${escapeHTML(guess.toLowerCase())}. ${materialUnknown ? "FairFare could not tell what it is made of." : `It may be made of ${escapeHTML(product.materials[a.material].toLowerCase())}.`}</p>` : ""}
+  <details class="attribute-extra">${disclosure(detected ? "Check or change the item details" : "Add material details")}<div class="form-grid">
     ${detected ? category : ""}
     ${!visibleFinish ? finish : ""}
     ${material}
@@ -106,7 +107,7 @@ export function attributesForm(a = {}, prefix = "", { detected = false } = {}) {
               ["simple", "Simple carving"],
               ["detailed", "Detailed carving"],
             ]),
-            "Choose only if you can inspect the object.",
+            "Look at the elephant closely. Choose ‘Not sure’ if you cannot tell how detailed the carving is.",
           )
     }
   </div></details>

@@ -35,7 +35,7 @@ export function compareObservations(
     return {
       status: "insufficient",
       matches: [],
-      reason: `Choose the ${product.finishLabel.toLowerCase()} or material to narrow the comparison.`,
+      reason: `Choose how the item is decorated or what it is made of so FairFare can find similar items.`,
     };
   if (unknownMaterial || unknownFinish) {
     const field = unknownMaterial ? "material" : "finish";
@@ -55,7 +55,7 @@ export function compareObservations(
       return {
         status: "insufficient",
         matches: [],
-        reason: "We couldn’t find enough prices for items with these details.",
+        reason: "FairFare couldn’t find enough prices for items with these details. Check the size, material and design you entered.",
       };
     return {
       status: "alternatives",
@@ -139,7 +139,7 @@ export function compareObservations(
       status: "insufficient",
       matches: kept,
       reason:
-        "We found too few similar prices after leaving out unusually high or low prices.",
+        "After leaving out unusually high or low prices, FairFare had fewer than three prices left. It needs at least three to show a range.",
     };
   const p = kept.map((m) => Number(m.price_inr)).sort((x, y) => x - y);
   const synthetic = kept.filter((m) => m.provenance === "synthetic").length;
@@ -152,6 +152,6 @@ export function compareObservations(
     synthetic,
     excluded: matches.length - kept.length,
     method:
-      "We leave out unusually high or low prices, then take the middle half of the remaining prices. We round the lower end down and the upper end up to the nearest ₹10.",
+      "FairFare leaves out unusually high or low prices and sorts the rest from lowest to highest. The range covers the middle half of that list. FairFare rounds the low end down and the high end up to the nearest ₹10.",
   };
 }

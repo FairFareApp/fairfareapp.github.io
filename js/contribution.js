@@ -9,6 +9,7 @@ import {
   attributesForm,
   today,
   money,
+  date,
 } from "./ui.js";
 import { compressImage, discardImage } from "./images.js";
 import { submitObservation } from "./api.js";
@@ -63,6 +64,17 @@ export function createContributionFlow({
     delete drafts.purchase;
     delete drafts.contributor;
   }
+  const priceTypes = {
+    asking: "Price a seller asked for",
+    paid: "Price a buyer paid",
+    observed: "Price on a tag or sign",
+  };
+  const priceSources = {
+    seller_quote: "A seller told me",
+    own_purchase: "I bought it myself",
+    field_observation: "I saw it on a tag or sign",
+    receipt: "I read it on a receipt",
+  };
   const input = (id, name, type, value, extra = "") =>
     `<input id="${id}" name="${name}" type="${type}" value="${h(value || "")}" ${extra}>`;
   function priceFields(d, purchase) {
@@ -74,63 +86,55 @@ export function createContributionFlow({
             "What kind of price was it?",
             "price-type",
             `<select id="price-type" name="price_type">${options(
-              [
-                ["asking", "Seller’s asking price"],
-                ["paid", "Price paid"],
-                ["observed", "Displayed price"],
-              ],
+              Object.entries(priceTypes),
               v.price_type,
             )}</select>`,
           )
-    }${field("Market or area in Jaipur", "locality", input("locality", "locality", "text", v.locality, 'minlength="2" maxlength="120" placeholder="e.g. Bapu Bazaar" list="jaipur-markets" required') + '<datalist id="jaipur-markets"><option value="Bapu Bazaar"><option value="Johari Bazaar"><option value="Nehru Bazaar"></datalist>')}</div><details class="wizard-extra">${disclosure(purchase ? "Change the purchase date" : "Change the date or how you got the price")}<div class="form-grid">${field("Date", "observed", input("observed", "observed_at", "date", v.observed_at, `min="2020-01-01" max="${today()}" required`))}${
+    }${field("Market or area in Jaipur", "locality", input("locality", "locality", "text", v.locality, 'minlength="2" maxlength="120" placeholder="e.g. Bapu Bazaar" list="jaipur-markets" required') + '<datalist id="jaipur-markets"><option value="Bapu Bazaar"><option value="Johari Bazaar"><option value="Nehru Bazaar"></datalist>')}</div><details class="wizard-extra">${disclosure(purchase ? "Check the date you bought it" : "Check the date and how you got the price")}<div class="form-grid">${field(purchase ? "When did you buy it?" : "When did you see or pay this price?", "observed", input("observed", "observed_at", "date", v.observed_at, `min="2020-01-01" max="${today()}" required`))}${
       purchase
         ? ""
         : field(
             "How did you get the price?",
             "source-type",
             `<select id="source-type" name="source_type">${options(
-              [
-                ["seller_quote", "A seller told me"],
-                ["own_purchase", "My own purchase"],
-                ["field_observation", "I saw it on a tag or sign"],
-                ["receipt", "Receipt"],
-              ],
+              Object.entries(priceSources),
               v.source_type,
             )}</select>`,
           )
-    }</div></details>${purchase ? `<details>${disclosure("Check or change the product details")}${attributesForm(v, "p-")}</details>` : ""}`;
+    }</div></details>${purchase ? `<details>${disclosure("Check or change the item details")}${attributesForm(v, "p-")}</details>` : ""}`;
   }
   function evidenceFields(d, purchase) {
     const v = d.values;
-    return `${purchase && state.image ? `<label class="check"><input id="attach-scan" type="checkbox" name="attach_scan" ${v.attach_scan ? "checked" : ""}><span>Attach my scan photo for private review.</span></label>` : ""}<div class="field"><label for="evidence-file">Photo of a receipt or other proof <span class="muted">(optional)</span></label><input id="evidence-file" type="file" accept="image/jpeg,image/png,image/webp"><small>Crop out names, receipt numbers and payment details.</small></div><div id="evidence-preview">${d.evidence ? `<img class="evidence-preview" src="${d.evidence.url}" alt="Your evidence photo"><button class="text-link" type="button" id="remove-evidence">Remove evidence</button>` : ""}</div><div id="evidence-feedback" aria-live="polite"></div><label class="check" id="photo-consent" ${d.product || d.evidence || v.attach_scan ? "" : "hidden"}><input id="image-consent" type="checkbox" name="image_consent" ${v.image_consent ? "checked" : ""}><span>I consent to storing the attached photos privately for review.</span></label><details class="wizard-extra" ${v.notes ? "open" : ""}>${disclosure("Add an optional note")}${field("Notes", "notes", `<textarea id="notes" name="notes" maxlength="2000" rows="3" placeholder="Anything else the reviewer should know?">${h(v.notes)}</textarea>`)}</details>`;
+    return `${purchase && state.image ? `<label class="check"><input id="attach-scan" type="checkbox" name="attach_scan" ${v.attach_scan ? "checked" : ""}><span>Include the photo I used to check the item’s price.</span></label>` : ""}<div class="field"><label for="evidence-file">Photo of a receipt or a price tag <span class="muted">(optional)</span></label><input id="evidence-file" type="file" accept="image/jpeg,image/png,image/webp"><small>Crop out names, faces, receipt numbers and payment details.</small></div><div id="evidence-preview">${d.evidence ? `<img class="evidence-preview" src="${d.evidence.url}" alt="Photo you attached to your report"><button class="text-link" type="button" id="remove-evidence">Remove attached photo</button>` : ""}</div><div id="evidence-feedback" aria-live="polite"></div><label class="check" id="photo-consent" ${d.product || d.evidence || v.attach_scan ? "" : "hidden"}><input id="image-consent" type="checkbox" name="image_consent" ${v.image_consent ? "checked" : ""}><span>I agree that FairFare can keep these photos privately so its reviewers can check my report.</span></label><details class="wizard-extra" ${v.notes ? "open" : ""}>${disclosure("Add an optional note")}${field("Notes", "notes", `<textarea id="notes" name="notes" maxlength="2000" rows="3" placeholder="For example, was this price part of a special offer?">${h(v.notes)}</textarea>`)}</details>`;
   }
   function review(d, purchase) {
     const v = d.values,
+      item = productFor(v.category_id),
       product = purchase ? (v.attach_scan ? state.image : null) : d.product;
-    return `<div class="review-product">${product ? `<img src="${product.url}" width="76" height="76" alt="Product attached for review">` : icon("tag")}<div><strong>${h(productName(v.category_id))}</strong><p>${h(v.size_cm)} cm · ${h(productFor(v.category_id)?.finishes[v.finish] || v.finish)} · ${v.category_id === "bangles" ? h(packLabel(Number(v.pack_count))) + " · " : ""}${h(sellingPlaces[v.segment] || v.segment)}</p></div><button class="text-link" type="button" data-edit="${purchase ? 0 : 1}">Edit</button></div><dl class="review-list"><div><dt>${purchase ? "You paid" : h(v.price_type) + " price"}</dt><dd>${money(v.price_inr)}</dd></div><div><dt>Area or market</dt><dd>${h(v.locality)}, Jaipur</dd></div><div><dt>Photos</dt><dd>${Number(Boolean(product)) + Number(Boolean(d.evidence))} attached</dd></div></dl><details class="wizard-extra review-extra">${disclosure("Check the date and other details")}<dl class="review-list"><div><dt>Date</dt><dd>${h(v.observed_at)}</dd></div><div><dt>Source</dt><dd>${h(v.source_type.replaceAll("_", " "))}</dd></div><div><dt>Material</dt><dd>${h(v.material)}</dd></div>${v.category_id === "wooden_elephant" ? `<div><dt>Carving</dt><dd>${h(v.carving_detail || "unknown")}</dd></div>` : ""}${v.notes ? `<div><dt>Notes</dt><dd>${h(v.notes)}</dd></div>` : ""}</dl><button type="button" class="text-link" data-edit="${purchase ? 0 : 2}">Edit the price and location</button><button type="button" class="text-link" data-edit="${purchase ? 1 : 3}">Edit evidence</button></details><label class="check honest-check"><input id="honest-observation" name="accurate" type="checkbox" required ${v.accurate ? "checked" : ""}><span>I confirm this is accurate and my photos contain no personal details.</span></label><p class="review-note">${icon("clock")}FairFare checks your report before using it in price comparisons.</p><p class="small muted">By submitting, you agree to the <button type="button" class="text-link" data-dialog="terms">contribution terms</button>.</p>`;
+    return `<div class="review-product">${product ? `<img src="${product.url}" width="76" height="76" alt="Product attached for review">` : icon("tag")}<div><strong>${h(productName(v.category_id))}</strong><p>${h(v.size_cm)} cm · ${h(item?.finishes[v.finish] || "Not sure")} · ${v.category_id === "bangles" ? h(packLabel(Number(v.pack_count))) + " · " : ""}${h(sellingPlaces[v.segment] || v.segment)}</p></div><button class="text-link" type="button" data-edit="${purchase ? 0 : 1}">Edit item details</button></div><dl class="review-list"><div><dt>${purchase ? "You paid" : h(priceTypes[v.price_type])}</dt><dd>${money(v.price_inr)}</dd></div><div><dt>Area or market</dt><dd>${h(v.locality)}, Jaipur</dd></div><div><dt>Photos</dt><dd>${Number(Boolean(product)) + Number(Boolean(d.evidence))} attached</dd></div></dl><details class="wizard-extra review-extra">${disclosure("Check the date and other details")}<dl class="review-list"><div><dt>Date</dt><dd>${h(date(v.observed_at))}</dd></div><div><dt>How you got the price</dt><dd>${h(priceSources[purchase ? "own_purchase" : v.source_type])}</dd></div><div><dt>What it is made of</dt><dd>${h(item?.materials[v.material] || "Not sure")}</dd></div>${v.category_id === "wooden_elephant" ? `<div><dt>Carving</dt><dd>${h(v.carving_detail === "simple" ? "Simple carving" : v.carving_detail === "detailed" ? "Detailed carving" : "Not sure")}</dd></div>` : ""}${v.notes ? `<div><dt>Notes</dt><dd>${h(v.notes)}</dd></div>` : ""}</dl><button type="button" class="text-link" data-edit="${purchase ? 0 : 2}">Edit the price and location</button><button type="button" class="text-link" data-edit="${purchase ? 1 : 3}">Change the photos or notes</button></details><label class="check honest-check"><input id="honest-observation" name="accurate" type="checkbox" required ${v.accurate ? "checked" : ""}><span>The information I entered is correct and my photos contain no personal details.</span></label><p class="review-note">${icon("clock")}FairFare checks your report before using it in price comparisons.</p><p class="small muted">By sending this report, you agree to the <button type="button" class="text-link" data-dialog="terms">contribution terms</button>.</p>`;
   }
   function page(purchase) {
     const d = draft(purchase),
       steps = purchase
-        ? ["Price", "Evidence", "Review"]
-        : ["Photo", "Details", "Price", "Evidence", "Review"],
+        ? ["Price", "Photos and notes", "Review"]
+        : ["Photo", "Details", "Price", "Photos and notes", "Review"],
       step = steps[d.step];
     const titles = {
       Photo: "Add a photo of the item",
       Details: "Describe the item",
       Price: purchase ? "What did you pay?" : "Enter the price you saw",
-      Evidence: "Add proof if you have it",
+      "Photos and notes": "Add any photos or notes",
       Review: "Check your price report",
     };
     let content = "";
     if (step === "Photo")
-      content = `<div class="wizard-photo">${d.product ? `<img class="product-preview" src="${d.product.url}" alt="Your contribution product photo">` : `<button type="button" id="contributor-camera" class="capture-tile"><span class="viewfinder">${icon("camera")}</span><strong>Take a photo</strong></button>`}</div><div class="photo-actions">${d.product ? `<button type="button" class="button secondary" id="contributor-camera">${icon("camera")}Take another photo</button>` : ""}<button type="button" class="button secondary" id="contributor-gallery">${icon("image")}${d.product ? "Choose a different photo" : "Choose a photo"}</button></div><input id="contributor-photo" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" tabindex="-1"><input id="contributor-file" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1"><div id="photo-feedback" aria-live="polite"></div>`;
+      content = `<div class="wizard-photo">${d.product ? `<img class="product-preview" src="${d.product.url}" alt="Photo of the item you are reporting">` : `<button type="button" id="contributor-camera" class="capture-tile"><span class="viewfinder">${icon("camera")}</span><strong>Take a photo</strong></button>`}</div><div class="photo-actions">${d.product ? `<button type="button" class="button secondary" id="contributor-camera">${icon("camera")}Take another photo</button>` : ""}<button type="button" class="button secondary" id="contributor-gallery">${icon("image")}${d.product ? "Choose a different photo" : "Choose a photo"}</button></div><input id="contributor-photo" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" tabindex="-1"><input id="contributor-file" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1"><div id="photo-feedback" aria-live="polite"></div>`;
     if (step === "Details")
-      content = `${attributesForm(d.values, "s-", { detected: d.detected })}<button class="text-link" type="button" id="contributor-identify">${icon("magnifying-glass")}Suggest details from photo${devMock ? " (mock)" : ""}</button><div id="contributor-ai" aria-live="polite"></div>`;
+      content = `${attributesForm(d.values, "s-", { detected: d.detected })}<button class="text-link" type="button" id="contributor-identify">${icon("magnifying-glass")}Ask FairFare to check the photo${devMock ? " (mock)" : ""}</button><div id="contributor-ai" aria-live="polite"></div>`;
     if (step === "Price") content = priceFields(d, purchase);
-    if (step === "Evidence") content = evidenceFields(d, purchase);
+    if (step === "Photos and notes") content = evidenceFields(d, purchase);
     if (step === "Review") content = review(d, purchase);
-    return `<div class="wizard-layout"><a class="back-link" href="${purchase ? "/compare" : "/contribute"}">${icon("arrow-left")}${purchase ? "Back to your comparison" : "Back to sharing prices"}</a><div class="wizard-progress"><span>Step ${d.step + 1} of ${steps.length} · ${step}</span><progress value="${d.step + 1}" max="${steps.length}" aria-label="Observation progress"></progress></div><div class="page-heading"><h1>${titles[step]}</h1></div>${devMock ? notice("Development mock · nothing will be stored.") : ""}<form id="submission-form" class="wizard-card panel" novalidate><div id="submission-feedback" tabindex="-1" aria-live="polite"></div>${content}<div class="wizard-actions task-actions" ${step === "Photo" && !d.product ? "hidden" : ""}>${d.step ? '<button class="button secondary" type="button" id="wizard-back">Back</button>' : ""}<button class="button primary" type="submit" id="wizard-next">${step === "Review" ? "Submit for review" : step === "Evidence" ? "Review your report" : "Continue"}${step === "Review" ? "" : icon("chevron-right")}</button></div></form></div>`;
+    return `<div class="wizard-layout"><a class="back-link" href="${purchase ? "/compare" : "/contribute"}">${icon("arrow-left")}${purchase ? "Back to your comparison" : "Back to the Share page"}</a><div class="wizard-progress"><span>Step ${d.step + 1} of ${steps.length} · ${step}</span><progress value="${d.step + 1}" max="${steps.length}" aria-label="Price report progress"></progress></div><div class="page-heading"><h1>${titles[step]}</h1></div>${devMock ? notice("This is a test. FairFare won’t save this report.") : ""}<form id="submission-form" class="wizard-card panel" novalidate><div id="submission-feedback" tabindex="-1" aria-live="polite"></div>${content}<div class="wizard-actions task-actions" ${step === "Photo" && !d.product ? "hidden" : ""}>${d.step ? '<button class="button secondary" type="button" id="wizard-back">Back</button>' : ""}<button class="button primary" type="submit" id="wizard-next">${step === "Review" ? "Submit for review" : step === "Photos and notes" ? "Review your report" : "Continue"}${step === "Review" ? "" : icon("chevron-right")}</button></div></form></div>`;
   }
   function bind(purchase, signal) {
     const d = draft(purchase),
@@ -197,7 +201,7 @@ export function createContributionFlow({
       const target = document.querySelector(
         kind === "product" ? "#photo-feedback" : "#evidence-feedback",
       );
-      target.innerHTML = loading("Preparing photo…");
+      target.innerHTML = loading("Getting your photo ready…");
       document.querySelector("#wizard-next").disabled = true;
       try {
         const image = await compressImage(file);
@@ -251,7 +255,7 @@ export function createContributionFlow({
           };
           render();
           document.querySelector("#contributor-ai").innerHTML = notice(
-            "Suggestions ready. Check the visible details and enter the measurement yourself.",
+            "FairFare filled in some details from your photo. Check what it filled in and measure the item yourself.",
           );
         } catch (e) {
           if (!signal.aborted) {
@@ -288,7 +292,7 @@ export function createContributionFlow({
       save();
       feedback.innerHTML = "";
       if (pending) {
-        showError("Please wait for your photo to finish preparing.");
+        showError("Wait for FairFare to finish preparing your photo, then try again.");
         return;
       }
       if (!purchase && step === 0 && !d.product) {
@@ -318,7 +322,7 @@ export function createContributionFlow({
         !d.values.image_consent
       ) {
         showError(
-          "Please consent to private photo storage, or remove the attachments.",
+          "Tick the box to let FairFare keep the photos privately for review. You can also remove any optional photos you don’t want to share.",
           "image-consent",
         );
         return;
@@ -373,7 +377,7 @@ export function createContributionFlow({
       submit.setAttribute("aria-busy", "true");
       submit.disabled = true;
       submit.innerHTML = `${icon("paper-plane")} Sending…`;
-      feedback.innerHTML = loading("Sending for review…");
+      feedback.innerHTML = loading("Sending your price report…");
       try {
         const result = devMock
           ? { id: "mock-observation-not-saved", status: "pending" }
@@ -389,7 +393,11 @@ export function createContributionFlow({
         navigate("/submitted");
       } catch (e) {
         if (!signal.aborted) {
-          showError(e.message);
+          showError(
+            e.status === 429
+              ? "FairFare is receiving too many reports. Wait a moment, then choose Submit for review again."
+              : "FairFare couldn’t confirm that it received your report. Your details are still here. Check your internet connection and try sending it again.",
+          );
           submit.removeAttribute("aria-busy");
           submit.disabled = false;
           submit.textContent = "Submit for review";

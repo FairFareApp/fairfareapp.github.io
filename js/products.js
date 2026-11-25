@@ -2,44 +2,44 @@ export const products = {
   wooden_elephant: {
     name: "Wooden elephant",
     sizeLabel: "Height (cm)",
-    sizeHint: "Measure from the base to the highest point.",
+    sizeHint: "Measure from the bottom of the elephant to its highest point.",
     min: 2,
     max: 30,
     materials: {
       wood: "Wood (type unknown)",
-      sandalwood: "Sandalwood (if verified)",
+      sandalwood: "Sandalwood (only if confirmed)",
     },
     finishes: {
       plain: "Plain carved wood",
       painted: "Painted",
-      inlay: "Inlaid",
+      inlay: "Decorated with pieces set into the wood",
       openwork: "Carved openings with an elephant inside",
     },
-    finishLabel: "Finish",
-    tip: "Check the carving and condition before you make an offer.",
+    finishLabel: "Decoration",
+    tip: "Look for cracks or broken parts and check how finely the elephant is carved before you make an offer.",
   },
   bangles: {
     name: "Bangles",
-    sizeLabel: "Inner diameter (cm)",
+    sizeLabel: "Width across the opening (cm)",
     sizeHint:
-      "Measure straight across the opening, from inner edge to inner edge.",
+      "Measure straight across the widest part of the opening, from one inside edge to the other.",
     min: 4.5,
     max: 7.5,
-    materials: { lac: "Lac (lakh)", glass: "Glass", metal: "Fashion metal" },
+    materials: { lac: "Lac (lakh)", glass: "Glass", metal: "Metal used in costume jewellery" },
     finishes: {
       plain: "Plain",
       patterned: "Patterned",
       stonework: "Set with stones",
     },
     finishLabel: "Design",
-    tip: "Check the fit and count the bangles included in the price.",
+    tip: "Try on a bangle if the seller lets you. Ask the seller how many bangles are included in the price.",
   },
 };
 export const packCounts = [1, 2, 4, 6, 12];
 export const sellingPlaces = {
   shop: "Local craft shop",
   street: "Street or market stall",
-  boutique: "Boutique or gallery",
+  boutique: "Specialty shop or gallery",
 };
 export const productFor = (category) =>
   Object.hasOwn(products, category) ? products[category] : null;

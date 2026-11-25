@@ -322,16 +322,39 @@ summary {
 .city-trigger {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-height: 44px;
-  padding-inline: 10px;
+  padding: 4px 10px;
+  border: 1px solid var(--accent-ink);
   border-radius: 8px;
-  background: var(--surface-green);
-  color: var(--sage-ink);
-  font-size: 0.875rem;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
   white-space: nowrap;
 }
-.city-trigger:hover strong {
+.city-trigger > i {
+  color: var(--accent-ink);
+  font-size: 1rem;
+}
+.city-trigger strong,
+.city-trigger small {
+  display: block;
+  line-height: 1.25;
+}
+.city-trigger strong {
+  font-size: 0.875rem;
+}
+.city-trigger small {
+  color: var(--accent-ink);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+.city-trigger:hover,
+.city-trigger:active {
+  background: var(--lac);
+}
+.city-trigger:hover small,
+.city-trigger:focus-visible small {
   text-decoration: underline;
 }
 .city-list {

@@ -28,8 +28,9 @@ export async function request(path, { method = "GET", body, signal } = {}) {
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(
-      data.error || "Could not complete this request. Please try again.",
+    throw Object.assign(
+      new Error(data.error || "FairFare couldn’t complete this request. Try again."),
+      { status: response.status },
     );
   return data;
 }

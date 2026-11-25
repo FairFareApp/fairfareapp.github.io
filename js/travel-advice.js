@@ -2,28 +2,28 @@ const bargaining = {
   street: {
     low: 10,
     high: 20,
-    tip: "Ask two stalls about the same item. Make one polite counteroffer for the whole purchase.",
+    tip: "Ask two sellers what they charge for the same item. If you want to bargain, tell the seller what you would pay for everything you plan to buy.",
   },
   shop: {
     low: 5,
     high: 10,
-    tip: "Ask if the tag is fixed. If buying several pieces, ask for a total that includes any extras.",
+    tip: "Ask the shopkeeper whether you can bargain over the price on the tag. If you are buying several items, ask what they will all cost together.",
   },
   boutique: {
     low: 0,
     high: 5,
-    tip: "Respect fixed prices. Ask about bundle offers or what the price includes.",
+    tip: "If the shopkeeper says the price is fixed, ask what is included or whether there is a discount for buying several items.",
   },
 };
 export const bargainingFor = (setting) =>
   Object.hasOwn(bargaining, setting) ? bargaining[setting] : null;
 
 export const routeTip =
-  "Keep Google Maps or another route app open. Ask about a longer detour before it adds time or cost.";
+  "Follow the trip on Google Maps or another map app. If your driver takes a different road, you can ask the driver, “Is there a reason we’re going this way? Will it cost more?”";
 export const meterTip =
-  "Meters aren’t always used or reliable. If the meter is off, missing or looks faulty, agree a total before leaving.";
+  "Ask the driver to turn on the meter before you leave. If there is no working meter, agree on the full fare with the driver before the ride starts.";
 export const cardTip =
-  "Visiting from abroad? Check with your card issuer that international transactions in India are enabled.";
+  "If your card is from another country, ask your bank whether you can use the card in India.";
 
 export const fareSources = {
   auto: "https://transport.rajasthan.gov.in/content/dam/transport/transport-dept/pdf/Fares/O_15.07.2013.pdf",
