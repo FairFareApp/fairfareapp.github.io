@@ -5,6 +5,7 @@ export const products = {
     sizeHint: "Measure from the bottom of the elephant to its highest point.",
     min: 2,
     max: 30,
+    sizes: [2, 4, 6, 8, 10, 13, 16, 20, 25, 30],
     materials: {
       wood: "Wood (type unknown)",
       sandalwood: "Sandalwood (only if confirmed)",
@@ -25,6 +26,7 @@ export const products = {
       "Measure straight across the widest part of the opening, from one inside edge to the other.",
     min: 4.5,
     max: 7.5,
+    sizes: [4.5, 5, 5.5, 6, 6.5, 7, 7.5],
     materials: { lac: "Lac (lakh)", glass: "Glass", metal: "Metal used in costume jewellery" },
     finishes: {
       plain: "Plain",

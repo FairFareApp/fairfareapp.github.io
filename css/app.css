@@ -3364,6 +3364,75 @@ summary {
 .price-range {
   color: var(--lac-ink);
 }
+.quote-panel {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.quote-panel h2 {
+  margin: 0 0 7px;
+  font-size: 1.125rem;
+}
+.quote-panel label {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+.quote-panel .input-action {
+  gap: 8px;
+  margin-top: 4px;
+}
+.quote-panel .input-action input {
+  min-width: 0;
+}
+.quote-context {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.quote-context:not(:empty) {
+  margin-top: 10px;
+}
+.artisan-offer {
+  margin-top: 10px;
+  padding: 12px 14px 6px;
+  border-radius: 10px;
+  background: var(--surface-green);
+}
+.artisan-offer h3,
+.artisan-offer p {
+  margin: 0 0 5px;
+  font-size: 0.875rem;
+}
+.artisan-offer h3 {
+  color: var(--sage-ink);
+}
+.artisan-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+.artisan-price strong {
+  color: var(--sage-ink);
+  font-size: 1.375rem;
+}
+.artisan-offer .artisan-demo-note {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+#artisan-location-status:empty {
+  margin: 0;
+}
+.artisan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 14px;
+}
+.artisan-actions .text-link {
+  min-height: 44px;
+  font-size: 0.8125rem;
+}
 .bargaining-card {
   background: var(--turmeric);
   color: var(--ink);

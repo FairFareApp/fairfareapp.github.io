@@ -594,6 +594,18 @@ try {
       await click(".attribute-extra > summary");
       await fill("#material", "wood");
       await click(".attribute-extra > summary");
+      assert.deepEqual(
+        await page.eval(() => {
+          const size = document.querySelector("#size_cm");
+          return [
+            size.tagName,
+            size.value,
+            size.validity.valueMissing,
+            size.options.length,
+          ];
+        }),
+        ["SELECT", "", true, 11],
+      );
       await fill('[name="size_cm"]', 10);
       await click('#attributes-form button[type="submit"]');
       await wait("location.pathname==='/compare'");
@@ -622,11 +634,11 @@ try {
         ),
         /Local craft shop[\s\S]*5–10% below the price the seller asks for/,
       );
-      await shot("result", "#report-purchase");
+      await shot("result", "#report-purchase", ["#quoted-price", "#quote-form button"]);
     },
   );
   await check(
-    "comparable images, details and price quote disclosure work",
+    "comparable images, details and the demo artisan comparison work",
     async () => {
       await click(".result-disclosures>details:first-child>summary");
       await wait(
@@ -681,12 +693,20 @@ try {
         path: join(out, "comparables.jpg"),
         quality: 88,
       });
-      await click(".result-disclosures>details:last-child>summary");
       await fill("#quoted-price", 600);
       await click("#quote-form button");
-      await wait(
-        "document.querySelector('#quote-context').innerText.includes('price the seller asks for')",
+      await wait("!document.querySelector('#artisan-offer').hidden");
+      assert.match(
+        await page.eval(() => document.querySelector("#artisan-saving").textContent),
+        /₹.+ less/,
       );
+      assert.match(
+        await page.eval(() => document.querySelector("#artisan-distance").textContent),
+        /from Jaipur Junction in a straight line/,
+      );
+      await fill("#quoted-price", 1);
+      await click("#quote-form button");
+      assert.ok(await page.eval(() => document.querySelector("#artisan-offer").hidden));
     },
   );
   await check(
@@ -695,6 +715,10 @@ try {
       await click("#report-purchase");
       await wait("location.pathname==='/report'");
       await shot("purchase-price", "#wizard-next", ["#price", "#locality"]);
+      assert.equal(
+        await page.eval(() => document.querySelector("#p-size_cm").value),
+        "10",
+      );
       await fill("#price", 400);
       await fill("#locality", "Bapu Bazaar");
       await click("#wizard-next");
@@ -771,7 +795,7 @@ try {
       await wait(
         "document.querySelector('#contributor-ai').innerText.includes('FairFare filled in some details from your photo')",
       );
-      await fill("#s-size_cm", 5.6);
+      await fill("#s-size_cm", 5.5);
       await fill("#s-pack_count", 6);
       await click(".attribute-extra > summary");
       await fill("#s-finish", "stonework");
@@ -842,6 +866,7 @@ try {
       await shot("submitted", ".confirmation .primary");
       assert.equal(submissionBodies.at(-1).category_id, "bangles");
       assert.equal(submissionBodies.at(-1).pack_count, 6);
+      assert.equal(submissionBodies.at(-1).size_cm, 5.5);
     },
   );
   await check(
@@ -902,7 +927,13 @@ try {
         "#pack_count",
         "#segment",
       ]);
-      await fill("#size_cm", 5.6);
+      assert.deepEqual(
+        await page.eval(() =>
+          Array.from(document.querySelector("#size_cm").options, (option) => option.value),
+        ),
+        ["", "4.5", "5", "5.5", "6", "6.5", "7", "7.5"],
+      );
+      await fill("#size_cm", 5.5);
       await fill("#pack_count", 6);
       await click('#attributes-form button[type="submit"]');
       await wait("location.pathname==='/compare'");
@@ -910,6 +941,12 @@ try {
       await shot("bangle-material-ranges", '[data-range-choice="lac"]');
       await click('[data-range-choice="lac"]');
       await shot("bangle-result", "#report-purchase");
+      await fill("#quoted-price", 600);
+      await click("#quote-form button");
+      assert.match(
+        await page.eval(() => document.querySelector("#artisan-example-item").textContent),
+        /6 bangles/,
+      );
       await click(".result-disclosures>details:first-child>summary");
       await wait(
         "[...document.querySelectorAll('.reference-image img')].some(i=>i.complete&&i.naturalWidth>0&&i.src.includes('bangles/lac-patterned'))",
@@ -919,6 +956,10 @@ try {
       assert.equal(
         await page.eval(() => document.querySelector("#pack_count").value),
         "6",
+      );
+      assert.equal(
+        await page.eval(() => document.querySelector("#size_cm").value),
+        "5.5",
       );
       await fill("#pack_count", 2);
       await click('#attributes-form button[type="submit"]');

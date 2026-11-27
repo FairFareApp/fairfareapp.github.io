@@ -60,6 +60,19 @@ export function attributesForm(a = {}, prefix = "", { detected = false } = {}) {
   );
   if (!product)
     return `${category}${notice("FairFare compares wooden elephants and bangles. If your item is one of these, choose it above.")}`;
+  const savedSize = Number(a.size_cm);
+  let sizes = product.sizes;
+  if (
+    savedSize >= product.min &&
+    savedSize <= product.max &&
+    !sizes.includes(savedSize)
+  )
+    sizes = [...sizes, savedSize].sort((left, right) => left - right);
+  const sizeChoices = [
+    ["", "Choose the closest size"],
+    ...sizes.map((size) => [String(size), `${size} cm`]),
+  ];
+  const sizeId = prefix + "size_cm";
   const guess = product.finishes[a.finish];
   const visibleFinish = !detected || !guess;
   const finish = field(
@@ -82,7 +95,7 @@ export function attributesForm(a = {}, prefix = "", { detected = false } = {}) {
   const materialUnknown = !product.materials[a.material];
   return `<div class="form-grid essential-attributes">
     ${detected ? "" : category}
-    ${field(product.sizeLabel, prefix + "size_cm", `<input id="${prefix}size_cm" name="size_cm" type="number" inputmode="decimal" min="${product.min}" max="${product.max}" step="0.1" value="${escapeHTML(a.size_cm || "")}" required aria-describedby="${prefix}size_cm-hint">`, product.sizeHint)}
+    ${field(product.sizeLabel, sizeId, `<select id="${sizeId}" name="size_cm" required aria-describedby="${sizeId}-hint">${options(sizeChoices, savedSize)}</select>`, product.sizeHint)}
     ${bangles ? field("How many bangles are sold together?", prefix + "pack_count", select("pack_count", [["", "Choose the number of bangles"], ...packCounts.map((count) => [String(count), packLabel(count)])])) : ""}
     ${field(
       "What kind of shop or stall sells it?",

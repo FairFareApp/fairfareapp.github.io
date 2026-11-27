@@ -12,6 +12,7 @@ import {
 import { compressImage, discardImage } from "./images.js";
 import { identify, getObservations } from "./api.js";
 import { compareObservations } from "./matching.js";
+import { sellerQuoteMarkup, bindSellerQuote } from "./quote.js";
 import {
   faresPage,
   bindFares,
@@ -220,11 +221,11 @@ function comparison() {
       ? `
     <div class="range-options">
       <h2>${r.field === "material" ? "Price ranges by material" : `Price ranges by design`}</h2>
-      <p class="small muted">These are example prices${bangles ? ` for ${h(unit)}` : ""}. Ask the seller to confirm the ${r.field === "material" ? "material" : "design"}, then choose the option that matches your item.</p>
+      <p class="small muted">These are example prices${bangles ? ` for ${h(unit)}` : ""}. Ask the seller to confirm the ${r.field === "material" ? "material" : "design"}, then choose the option that matches your item to compare the seller’s price.</p>
       ${r.alternatives.map(({ label, value, result }) => `<div class="range-option"><div><strong>${h(label)}</strong><span>${money(result.low)}–${money(result.high)}</span><small>${result.matches.length} prices compared${result.synthetic ? `. FairFare made up ${result.synthetic} of these prices for this demo.` : "."}</small></div><button type="button" class="button secondary" data-range-choice="${h(value)}" aria-label="Use ${h(label)}">Use these details</button></div>`).join("")}
     </div>`
       : "";
-  return `<div class="result-layout"><div class="page-heading"><a class="back-link" data-up data-scan href="${state.scanReturn || "/"}">${icon("arrow-left")}Edit item details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${h(productName(a.category_id))}</h1><p>${a.size_cm ? `${h(a.size_cm)} cm${bangles ? " inside" : " high"}` : ""}${unit ? ` · ${h(unit)}` : ""}${finish ? ` · ${h(finish)}` : ""} · ${h(sellingPlaces[a.segment] || a.segment)}</p></div></div></div><section class="price-panel panel${r.status === "ready" ? " price-found" : ""}">${r.status === "ready" ? `<p class="eyebrow">${icon("tag")} ${r.synthetic ? "Example price range" : "Price range for similar items"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${unit ? `${h(unit)} · ` : ""}${r.matches.length} prices compared${r.synthetic ? `. FairFare made up ${r.synthetic} of these prices for this demo.` : "."}</p>` : alternativePanel || `<div class="empty-result">${icon("scale-balanced")}<h2>We couldn’t find enough similar prices</h2><p>${h(r.reason)}</p><a href="${state.scanReturn || "/"}" data-up data-scan class="button secondary">Review details</a></div>`}</section>${["ready", "alternatives"].includes(r.status) ? bargainingMarkup(a.segment, product?.tip) : ""}${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button primary full" id="report-purchase">Share the price you paid</button></div>` : ""}<div class="result-disclosures"><details>${disclosure(`See the similar prices we found`)}<p class="small muted">The photos and illustrations show what these kinds of items look like. The items that the prices came from may look different.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "FairFare found no prices for items with these details."}</div></details><details>${disclosure("See how we matched your item")}<dl class="attribute-list"><div><dt>Material</dt><dd>${h(product?.materials[a.material] || "Unconfirmed")}</dd></div>${bangles ? `<div><dt>Quantity</dt><dd>${h(unit)}</dd></div>` : `<div><dt>Carving</dt><dd>${h(a.carving_detail === "unknown" || !a.carving_detail ? "Not sure" : a.carving_detail === "simple" ? "Simple carving" : "Detailed carving")}</dd></div>`}<div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>We compare the same type of item, material, design and kind of shop or stall. ${bangles ? "We look for the same number of bangles and allow a difference of up to 0.3 cm across the opening." : "We compare elephants close to your item’s height. We allow a difference of 2 cm, or 20% of the height if that is more than 2 cm. If you chose a carving style, we only use prices for that style."} We use prices from the past year. Ask the seller to confirm what the item is made of.</p></details><details>${disclosure("See where the prices come from")}<p>${h(r.method || "We need at least three prices for similar items to show a range. We show a separate range for each possible material or design.")}</p><p>${r.excluded ? `We left out ${r.excluded} unusually high or low prices. ` : ""}Each price shows whether a seller asked for that amount, a tag displayed it or a buyer paid it.</p><p>${r.synthetic ? "Some prices are made up for this demo. " : ""}Before you decide what to pay, check the item for damage and ask the seller what it is made of and where it was made.</p><a href="/about" class="text-link">About FairFare</a></details>${r.status === "ready" ? `<details>${disclosure("Compare the price a seller asks for")}<form id="quote-form"><label for="quoted-price">Price the seller asks for (₹)</label><div class="input-action"><input type="number" id="quoted-price" name="quote" min="1" max="100000" step="0.01" required inputmode="decimal"><button class="button secondary">Compare this price</button></div><div id="quote-context" aria-live="polite"></div></form></details>` : ""}</div></div>`;
+  return `<div class="result-layout"><div class="page-heading"><a class="back-link" data-up data-scan href="${state.scanReturn || "/"}">${icon("arrow-left")}Edit item details</a><div class="result-product">${state.image ? `<img src="${state.image.url}" alt="Your scanned product" width="68" height="68">` : icon("tag")}<div><h1>${h(productName(a.category_id))}</h1><p>${a.size_cm ? `${h(a.size_cm)} cm${bangles ? " inside" : " high"}` : ""}${unit ? ` · ${h(unit)}` : ""}${finish ? ` · ${h(finish)}` : ""} · ${h(sellingPlaces[a.segment] || a.segment)}</p></div></div></div><section class="price-panel panel${r.status === "ready" ? " price-found" : ""}">${r.status === "ready" ? `<p class="eyebrow">${icon("tag")} ${r.synthetic ? "Example price range" : "Price range for similar items"}</p><p class="price-range">${money(r.low)}<span>–</span>${money(r.high)}</p><p class="range-caption">${unit ? `${h(unit)} · ` : ""}${r.matches.length} prices compared${r.synthetic ? `. FairFare made up ${r.synthetic} of these prices for this demo.` : "."}</p>` : alternativePanel || `<div class="empty-result">${icon("scale-balanced")}<h2>We couldn’t find enough similar prices</h2><p>${h(r.reason)}</p><a href="${state.scanReturn || "/"}" data-up data-scan class="button secondary">Review details</a></div>`}</section>${r.status === "ready" ? sellerQuoteMarkup() : ""}${["ready", "alternatives"].includes(r.status) ? bargainingMarkup(a.segment, product?.tip) : ""}${r.status === "ready" ? `<div class="task-actions result-actions"><button class="button secondary full" id="report-purchase">Share the price you paid</button></div>` : ""}<div class="result-disclosures"><details>${disclosure(`See the similar prices we found`)}<p class="small muted">The photos and illustrations show what these kinds of items look like. The items that the prices came from may look different.</p><div class="comparables-grid">${r.matches.map(comparable).join("") || "FairFare found no prices for items with these details."}</div></details><details>${disclosure("See how we matched your item")}<dl class="attribute-list"><div><dt>Material</dt><dd>${h(product?.materials[a.material] || "Unconfirmed")}</dd></div>${bangles ? `<div><dt>Quantity</dt><dd>${h(unit)}</dd></div>` : `<div><dt>Carving</dt><dd>${h(a.carving_detail === "unknown" || !a.carving_detail ? "Not sure" : a.carving_detail === "simple" ? "Simple carving" : "Detailed carving")}</dd></div>`}<div><dt>Location</dt><dd>Jaipur</dd></div></dl><p>We compare the same type of item, material, design and kind of shop or stall. ${bangles ? "We look for the same number of bangles and allow a difference of up to 0.3 cm across the opening." : "We compare elephants close to your item’s height. We allow a difference of 2 cm, or 20% of the height if that is more than 2 cm. If you chose a carving style, we only use prices for that style."} We use prices from the past year. Ask the seller to confirm what the item is made of.</p></details><details>${disclosure("See where the prices come from")}<p>${h(r.method || "We need at least three prices for similar items to show a range. We show a separate range for each possible material or design.")}</p><p>${r.excluded ? `We left out ${r.excluded} unusually high or low prices. ` : ""}Each price shows whether a seller asked for that amount, a tag displayed it or a buyer paid it.</p><p>${r.synthetic ? "Some prices are made up for this demo. " : ""}Before you decide what to pay, check the item for damage and ask the seller what it is made of and where it was made.</p><a href="/about" class="text-link">About FairFare</a></details></div></div>`;
 }
 function bargainingMarkup(setting, productTip) {
   const advice = bargainingFor(setting);
@@ -360,7 +361,7 @@ function render() {
   bindReferenceImages(app);
   if (path === "/" || path === "/scan") bindScan(signal);
   if (path === "/install") bindInstall();
-  if (path === "/compare") bindComparison();
+  if (path === "/compare") bindComparison(signal);
   if (path === "/fares") bindFares(app, rideKind);
   if (path === "/monuments") bindMonuments(app, signal);
   if (path === "/contribute/new" || (path === "/report" && state.result))
@@ -638,7 +639,7 @@ function resetScan() {
     attributes: defaults(),
   });
 }
-function bindComparison() {
+function bindComparison(signal) {
   for (const button of document.querySelectorAll("[data-range-choice]")) {
     button.onclick = () => {
       const { field, alternatives } = state.result;
@@ -657,16 +658,7 @@ function bindComparison() {
       flow.startPurchase();
       navigate("/report");
     };
-  const form = document.querySelector("#quote-form");
-  if (form)
-    form.onsubmit = (e) => {
-      e.preventDefault();
-      const q = Number(new FormData(form).get("quote")),
-        r = state.result;
-      document.querySelector("#quote-context").innerHTML = notice(
-        `The price the seller asks for is ${q < r.low ? "below" : q > r.high ? "above" : "within"} the ${r.synthetic ? "example price" : "comparison"} range. Check the item and ask the seller what the price includes before you pay.`,
-      );
-    };
+  bindSellerQuote(app, state.result, state.attributes, signal);
 }
 document.addEventListener("click", (e) => {
   const a = e.target.closest("a");
