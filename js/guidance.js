@@ -121,8 +121,10 @@ export function faresPage(kind) {
           <p class="ride-intro">${r.intro}</p>
           <section class="ride-mode" aria-labelledby="ride-mode-title">
             <h3 id="ride-mode-title">${r.group}</h3>
-            <div class="ride-switch" role="group" aria-labelledby="ride-mode-title">${r.modes.map(([label], i) => `<button type="button" data-ride-mode="${i}" aria-controls="ride-advice" aria-pressed="${i === 0}">${label}</button>`).join("")}</div>
-            <div id="ride-advice" class="ride-advice" aria-live="polite"></div>
+            ${kind === "taxi"
+              ? r.modes.map(([label, title, text]) => `<details class="ride-payment">${disclosure(h(label))}<div class="ride-advice"><h4>${h(title)}</h4><p>${h(text)}</p></div></details>`).join("")
+              : `<div class="ride-switch" role="group" aria-labelledby="ride-mode-title">${r.modes.map(([label], i) => `<button type="button" data-ride-mode="${i}" aria-controls="ride-advice" aria-pressed="${i === 0}">${label}</button>`).join("")}</div>
+                <div id="ride-advice" class="ride-advice" aria-live="polite"></div>`}
           </section>
         </div>
         <div class="ride-guide-body">
@@ -151,20 +153,6 @@ const rideProgress = { taxi: new Set(), auto: new Set() };
 
 function bindRide(root, kind) {
   const r = rides[kind];
-  const modes = [...root.querySelectorAll("[data-ride-mode]")];
-  const advice = root.querySelector("#ride-advice");
-  function choose(index) {
-    const [, title, text] = r.modes[index];
-    advice.innerHTML = `<h4>${h(title)}</h4><p>${h(text)}</p>`;
-    modes.forEach((button, i) =>
-      button.setAttribute("aria-pressed", String(i === index)),
-    );
-  }
-  modes.forEach((button, i) => {
-    button.onclick = () => choose(i);
-  });
-  choose(0);
-
   const checks = [...root.querySelectorAll("[data-ride-check]")];
   const progress = root.querySelector("#ride-progress");
   const bar = root.querySelector(".ride-check progress");
@@ -216,6 +204,20 @@ function bindRide(root, kind) {
 export function bindFares(root, kind) {
   bindRide(root, kind);
   if (kind !== "auto") return;
+  const modes = [...root.querySelectorAll("[data-ride-mode]")];
+  const advice = root.querySelector("#ride-advice");
+  function choose(index) {
+    const [, title, text] = rides.auto.modes[index];
+    advice.innerHTML = `<h4>${h(title)}</h4><p>${h(text)}</p>`;
+    modes.forEach((button, i) =>
+      button.setAttribute("aria-pressed", String(i === index)),
+    );
+  }
+  modes.forEach((button, i) => {
+    button.onclick = () => choose(i);
+  });
+  choose(0);
+
   const vehicle = root.querySelector("#fare-vehicle");
   const distance = root.querySelector("#fare-distance");
   const estimate = root.querySelector("#fare-estimate");

@@ -3040,6 +3040,22 @@ summary {
   color: var(--muted);
   font-size: 0.875rem;
 }
+.ride-payment {
+  margin-top: 6px;
+  padding: 0;
+  border: 1px solid var(--ride-guide-line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.ride-payment > summary {
+  padding: 6px 12px;
+  border-radius: inherit;
+}
+.ride-payment[open] > summary {
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 10px 10px 0 0;
+}
 .ride-check {
   padding: 14px 16px;
   margin: 0;
