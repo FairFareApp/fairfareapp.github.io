@@ -647,7 +647,11 @@ try {
         await page.eval(
           () => document.querySelector(".bargaining-card").innerText,
         ),
-        /Local craft shop[\s\S]*5–10% below the price the seller asks for/,
+        /Bargain-o-meter[\s\S]*Local craft shop[\s\S]*5–10%\s+below the seller’s price for your first offer/,
+      );
+      assert.equal(
+        await page.eval(() => document.querySelector(".bargain-needle").getAttribute("transform")),
+        "rotate(-22.5 88 78)",
       );
       await shot("result", "#quote-form button", [
         "#quoted-price",

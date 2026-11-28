@@ -3450,14 +3450,7 @@ summary {
   margin-bottom: 18px;
 }
 .bargaining-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-.bargaining-head > i {
-  color: var(--turmeric-ink);
-  font-size: 20px;
+  margin-bottom: 10px;
 }
 .bargaining-head h2 {
   margin: 0;
@@ -3466,6 +3459,57 @@ summary {
 .bargaining-head small {
   color: var(--turmeric-ink);
   font-size: 12px;
+}
+.bargain-reading {
+  display: grid;
+  grid-template-columns: minmax(0, min(46%, 156px)) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(10px, 3vw, 20px);
+  margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 86%, var(--turmeric));
+}
+.bargain-dial {
+  display: block;
+  width: 100%;
+  fill: var(--muted);
+  font-size: 17px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.bargain-track,
+.bargain-band {
+  fill: none;
+  stroke-width: 13;
+}
+.bargain-track {
+  stroke: var(--line);
+  stroke-linecap: round;
+}
+.bargain-band {
+  stroke: var(--turmeric-ink);
+}
+.bargain-ticks {
+  fill: none;
+  stroke: var(--control-line);
+  stroke-width: 2;
+}
+.bargain-needle,
+.bargain-hub {
+  fill: var(--ink);
+}
+.bargain-reading p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.bargain-reading strong {
+  display: block;
+  color: var(--turmeric-ink);
+  font-size: clamp(20px, 5vw, 30px);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
 }
 .bargaining-card > p {
   margin-bottom: 4px;

@@ -233,9 +233,24 @@ function bargainingMarkup(setting, productTip) {
     advice.low === 0
       ? `Up to ${advice.high}%`
       : `${advice.low}–${advice.high}%`;
+  const scaleMax = 20;
+  const span = advice.high - advice.low;
+  const midpoint = (advice.low + advice.high) / 2;
+  const needleAngle = (midpoint / scaleMax) * 180 - 90;
   return `<section class="bargaining-card" aria-labelledby="bargaining-heading">
-    <div class="bargaining-head">${icon("handshake")}<div><h2 id="bargaining-heading">Bargaining in Jaipur</h2><small>${h(sellingPlaces[setting])}</small></div></div>
-    <p><strong>${offer} below the price the seller asks for</strong> ${advice.low === 0 ? "if the seller is open to offers." : "as your first offer."}</p>
+    <header class="bargaining-head"><h2 id="bargaining-heading">Bargain-o-meter</h2><small>${h(sellingPlaces[setting])}</small></header>
+    <div class="bargain-reading">
+      <svg class="bargain-dial" viewBox="0 0 176 104" aria-hidden="true" focusable="false">
+        <path class="bargain-track" d="M20 78a68 68 0 0 1 136 0" />
+        <path class="bargain-band" d="M20 78a68 68 0 0 1 136 0" pathLength="${scaleMax}" stroke-dasharray="${span} ${scaleMax - span}" stroke-dashoffset="${-advice.low}" />
+        <g class="bargain-ticks">${[-90, -45, 0, 45, 90].map((angle) => `<path d="M88 22v5" transform="rotate(${angle} 88 78)" />`).join("")}</g>
+        <path class="bargain-needle" d="M84 78l4-46 4 46z" transform="rotate(${needleAngle} 88 78)" />
+        <circle class="bargain-hub" cx="88" cy="78" r="5" />
+        <text x="20" y="102" text-anchor="middle">0%</text>
+        <text x="156" y="102" text-anchor="middle">${scaleMax}%</text>
+      </svg>
+      <p><strong>${offer}</strong> below the seller’s price ${advice.low === 0 ? "if they are open to offers." : "for your first offer."}</p>
+    </div>
     <p class="bargaining-note">The seller can accept your offer or suggest a different price.</p>
     <p class="bargaining-tip">${h(advice.tip)}</p>
     <details>${disclosure("See how to decide what to offer")}${productTip ? `<p>${h(productTip)}</p>` : ""}<p>Decide how much you are willing to pay. If you cannot agree on a price, you can leave without buying.</p></details>
