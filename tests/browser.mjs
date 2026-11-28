@@ -398,19 +398,19 @@ try {
     },
   );
   await check(
-    "Home groups photo and tip tools below a carousel with working slide dots",
+    "Home shows the carousel, outlined photo tools and a separate travel tips card",
     async () => {
       await deckNumber("intro", 1);
       await shot("home", "#take-photo", ["#choose-photo", ".city-trigger"]);
       assert.ok(
         await page.eval(() => {
           const tools = document.querySelector(".home-tools");
-          const scan = tools.querySelector("#scan").getBoundingClientRect();
-          const tips = tools.querySelector(".ready-launch").getBoundingClientRect();
+          const tips = document.querySelector(".ready-launch");
           return (
-            scan.bottom <= tips.top &&
             document.querySelector("#main section").classList.contains("campaign") &&
-            tools.nextElementSibling.classList.contains("home-intro") &&
+            tools.nextElementSibling === tips &&
+            tips === tools.parentElement.lastElementChild &&
+            tools.getBoundingClientRect().bottom <= tips.getBoundingClientRect().top &&
             getComputedStyle(tools).borderTopWidth === "1px" &&
             document.querySelectorAll(".bottom-nav a").length === 4 &&
             !document.querySelector('.bottom-nav a[href="/scan"]')
@@ -471,7 +471,7 @@ try {
       );
       await click(".campaign .swipe-target");
       await deckNumber("intro", 4);
-      await click('.intro-links a[href="/fares"]');
+      await click(`${phone ? ".bottom-nav" : ".desktop-nav"} a[href="/fares"]`);
       await wait("location.pathname === '/fares'");
       await page.eval(() => history.back());
       await deckNumber("intro", 1);

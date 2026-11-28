@@ -2737,45 +2737,9 @@ summary {
   text-align: left;
 }
 .home-tools {
-  display: grid;
-  gap: 14px;
   padding: clamp(12px, 3vw, 20px);
   border: 1px solid var(--line);
   border-radius: 20px;
-}
-.home-intro {
-  padding: 18px 18px 8px;
-  border-radius: 24px 8px 24px 24px;
-  background: var(--leaf);
-  color: var(--leaf-ink);
-}
-.home-intro h2 {
-  margin: 0 0 7px;
-  font-size: clamp(1.5rem, 4.2vw, 2rem);
-  line-height: 1.14;
-  text-wrap: balance;
-}
-.home-intro p {
-  max-width: 52ch;
-  margin: 0;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-}
-.intro-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 20px;
-  margin-top: 3px;
-}
-.intro-links a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  color: inherit;
-  font-size: 0.875rem;
-  font-weight: 800;
-  text-underline-offset: 3px;
 }
 .home-scan {
   min-width: 0;
