@@ -398,21 +398,20 @@ try {
     },
   );
   await check(
-    "Home explains FairFare before the photo tools and resets the carousel on return",
+    "Home groups photo and tip tools below a carousel with working slide dots",
     async () => {
       await deckNumber("intro", 1);
       await shot("home", "#take-photo", ["#choose-photo", ".city-trigger"]);
       assert.ok(
         await page.eval(() => {
-          const scan = document.querySelector("#scan").getBoundingClientRect();
-          const tips = document
-            .querySelector(".ready-launch")
-            .getBoundingClientRect();
+          const tools = document.querySelector(".home-tools");
+          const scan = tools.querySelector("#scan").getBoundingClientRect();
+          const tips = tools.querySelector(".ready-launch").getBoundingClientRect();
           return (
             scan.bottom <= tips.top &&
-            document
-              .querySelector("#main section")
-              .classList.contains("home-intro") &&
+            document.querySelector("#main section").classList.contains("campaign") &&
+            tools.nextElementSibling.classList.contains("home-intro") &&
+            getComputedStyle(tools).borderTopWidth === "1px" &&
             document.querySelectorAll(".bottom-nav a").length === 4 &&
             !document.querySelector('.bottom-nav a[href="/scan"]')
           );
@@ -432,11 +431,12 @@ try {
             photo.height >= 80 &&
             gallery.top >= photo.bottom &&
             document.querySelector(".ready-launch").getBoundingClientRect()
-              .height >= 136 &&
-            document.querySelectorAll(".campaign-slide").length === 7 &&
-            document
-              .querySelector(".campaign-slide:not([inert]) h2")
-              .textContent.includes("FairFare") &&
+              .height >= 78 &&
+            document.querySelectorAll(".campaign-slide:not([inert])").length === 1 &&
+            document.querySelectorAll(".campaign-dots button").length === 4 &&
+            document.querySelector(".campaign-dots [aria-current=true]").matches(":first-child") &&
+            document.querySelector(".campaign-slide:not([inert]) img").currentSrc.includes("souvenir-prices") &&
+            !document.querySelector(".campaign .swipe-target").textContent.trim() &&
             !document.querySelector('#main a[href="/privacy"]') &&
             Boolean(document.querySelector('footer a[href="/privacy"]'))
           );
@@ -446,16 +446,31 @@ try {
         document.querySelector(".campaign").scrollIntoView({ block: "center" }),
       );
       await deckNumber("intro", 2);
-      for (const index of [3, 4, 5, 1]) {
+      for (const index of [3, 4, 1]) {
         await dragCard("intro", -92);
         await deckNumber("intro", index);
       }
       await dragCard("intro", 92);
-      await deckNumber("intro", 5);
+      await deckNumber("intro", 4);
       await dragCard("intro", 0);
       await deckNumber("intro", 1);
+      await click(".campaign-dots button:nth-child(3)");
+      await deckNumber("intro", 3);
+      await wait(`getComputedStyle(document.querySelector(".campaign-dots [aria-current=true]"), "::before").width === "24px"`);
+      assert.deepEqual(
+        await page.eval(() => {
+          const active = document.querySelector(".campaign-dots [aria-current=true]");
+          const dot = document.querySelector(".campaign-dots [aria-current=false]");
+          return [
+            active.matches(":nth-child(3)"),
+            getComputedStyle(active, "::before").width,
+            getComputedStyle(dot, "::before").width,
+          ];
+        }),
+        [true, "24px", "8px"],
+      );
       await click(".campaign .swipe-target");
-      await deckNumber("intro", 2);
+      await deckNumber("intro", 4);
       await click('.intro-links a[href="/fares"]');
       await wait("location.pathname === '/fares'");
       await page.eval(() => history.back());
@@ -634,7 +649,10 @@ try {
         ),
         /Local craft shop[\s\S]*5–10% below the price the seller asks for/,
       );
-      await shot("result", "#report-purchase", ["#quoted-price", "#quote-form button"]);
+      await shot("result", "#quote-form button", [
+        "#quoted-price",
+        ...(phone ? ["#report-purchase"] : []),
+      ]);
     },
   );
   await check(
@@ -940,7 +958,7 @@ try {
       await wait("document.querySelectorAll('.range-option').length===3");
       await shot("bangle-material-ranges", '[data-range-choice="lac"]');
       await click('[data-range-choice="lac"]');
-      await shot("bangle-result", "#report-purchase");
+      await shot("bangle-result", phone ? "#report-purchase" : "#quote-form button");
       await fill("#quoted-price", 600);
       await click("#quote-form button");
       assert.match(
@@ -1378,8 +1396,12 @@ try {
         return urls;
       });
       assert.ok(cache.some((u) => u.endsWith("/js/contribution.js")));
-      assert.ok(cache.some((u) => u.endsWith("/assets/monuments/hawa.webp")));
-      assert.ok(cache.some((u) => u.endsWith("/assets/brand/fairfare.webp")));
+      for (const image of [
+        "/assets/monuments/hawa.webp",
+        "/assets/brand/souvenir-prices.webp",
+        "/assets/brand/jaipur-auto.webp",
+        "/assets/brand/share-a-price.webp",
+      ]) assert.ok(cache.some((u) => u.endsWith(image)), `Missing offline slide ${image}`);
       assert.ok(
         cache.every(
           (u) =>
@@ -1395,6 +1417,8 @@ try {
         downloadThroughput: 0,
         uploadThroughput: 0,
       });
+      await page.goto(base, { settleMs: 200 });
+      await wait("document.querySelector('.campaign-slide:not([inert]) img')?.naturalWidth > 0");
       await page.goto(base + "/scan", { settleMs: 200 });
       await wait("document.querySelector('#take-photo')");
       await shot("offline-scan");

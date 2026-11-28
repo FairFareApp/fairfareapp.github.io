@@ -50,35 +50,47 @@ const tips = [
 ];
 
 const campaign = [
-  [
-    "Travel with FairFare",
-    "Compare prices for things to buy and places to visit in Jaipur.",
-    "fairfare",
-  ],
-  ["Compare souvenir prices", "Use a photo or enter the item’s size and design.", "price-check"],
-  ["Check your ride fare", "Check app prices or agree on a fare with your driver.", "ride-ready"],
-  ["Check monument tickets", "See the entry fee before you go.", "entry"],
-  ["Share a price you saw", "Tell FairFare what you paid or what a seller asked you to pay.", "pass-it-on"],
+  {
+    title: "Compare souvenir prices",
+    caption: "See an example price range before you buy.",
+    image: "brand/souvenir-prices.webp",
+    alt: "A carved wooden elephant next to red lacquer bangles",
+  },
+  {
+    title: "Check ride fares",
+    caption: "See what to check when you hire an auto or book a taxi.",
+    image: "brand/jaipur-auto.webp",
+    alt: "A green and yellow auto-rickshaw beside pink shopfronts",
+  },
+  {
+    title: "Check monument tickets",
+    caption: "Look up entry fees for Hawa Mahal and other places in Jaipur.",
+    image: "monuments/hawa.webp",
+    alt: "The pink stone façade of Hawa Mahal in Jaipur",
+  },
+  {
+    title: "Share a price you paid",
+    caption: "Report what you paid so other visitors can compare.",
+    image: "brand/share-a-price.webp",
+    alt: "A hand holds a receipt next to newly bought bangles",
+  },
 ];
 
 export function campaignMarkup() {
-  const last = campaign.at(-1);
-  return `<section class="campaign" data-campaign aria-label="Explore FairFare">
+  return `<section class="campaign" data-campaign aria-label="Explore FairFare" aria-roledescription="carousel">
     <div class="campaign-viewport">
       <div class="campaign-track">
-        ${[last, ...campaign, campaign[0]]
-          .map(
-            (
-              [title, caption, image],
-              slot,
-            ) => `<article class="campaign-slide" ${slot === 1 ? "" : "inert"}>
-          <img src="/assets/brand/${image}.webp" width="1100" height="620" alt="" ${slot === 1 ? 'fetchpriority="high"' : 'decoding="async"'}>
-          <div class="campaign-copy"><h2>${h(title)}</h2><p>${h(caption)}</p></div>
-        </article>`,
-          )
+        ${[campaign.at(-1), ...campaign, campaign[0]]
+          .map(({ title, caption, image, alt }, slot) => `<article class="campaign-slide" ${slot === 1 ? "" : "inert"}>
+            <img src="/assets/${image}" alt="${h(alt)}" ${slot === 1 ? 'fetchpriority="high"' : 'decoding="async"'}>
+            <div class="campaign-copy"><h2>${h(title)}</h2><p>${h(caption)}</p></div>
+          </article>`)
           .join("")}
       </div>
-      <button class="swipe-target" type="button"><span>Show next feature</span></button>
+      <button class="swipe-target" type="button" aria-label="Show the next slide"></button>
+    </div>
+    <div class="campaign-dots" role="group" aria-label="Choose a slide">
+      ${campaign.map(({ title }, index) => `<button type="button" aria-label="Slide ${index + 1} of ${campaign.length}: ${h(title)}" aria-current="${index === 0}"></button>`).join("")}
     </div>
   </section>`;
 }
@@ -164,8 +176,9 @@ async function animate(element, frames, duration) {
 export function bindCampaign(root, signal) {
   const viewport = root.querySelector(".campaign-viewport");
   const track = root.querySelector(".campaign-track");
-  const target = root.querySelector("button");
+  const target = root.querySelector(".swipe-target");
   const slides = [...track.children];
+  const dots = [...root.querySelectorAll(".campaign-dots button")];
   let index = 0;
   let busy = false;
   let held = false;
@@ -180,6 +193,7 @@ export function bindCampaign(root, signal) {
     slides.forEach((slide, i) => {
       slide.inert = i !== index + 1;
     });
+    dots.forEach((dot, i) => dot.setAttribute("aria-current", String(i === index)));
   }
   async function move(step, manual = true) {
     if (busy || held) return;
@@ -217,6 +231,14 @@ export function bindCampaign(root, signal) {
       void move(step);
     },
     tap: () => void move(1),
+  });
+  dots.forEach((dot, destination) => {
+    dot.onclick = () => {
+      if (destination === index) return;
+      const step = destination - index;
+      const last = campaign.length - 1;
+      void move(step === last ? -1 : step === -last ? 1 : step);
+    };
   });
   root.onkeydown = (event) => {
     if (!horizontal.includes(event.key)) return;

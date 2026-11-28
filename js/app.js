@@ -121,14 +121,20 @@ function shell(content, path) {
 }
 function home() {
   return `<div class="home-start">
+    <h1 class="sr-only">Check prices in Jaipur with FairFare</h1>
+    ${campaignMarkup()}
+    <section class="home-tools" aria-label="Souvenir price check and Jaipur travel tips">
+      ${scan(true)}
+      <button type="button" class="ready-launch ${state.travelReady ? "is-ready" : ""}" data-dialog="ready" aria-haspopup="dialog">
+        <span class="ready-copy">${readyCopy()}</span>
+        ${icon("map-location-dot")}
+      </button>
+    </section>
     <section class="home-intro" aria-labelledby="home-title">
-      <h1 id="home-title">Check prices before you pay</h1>
+      <h2 id="home-title">Check prices before you pay</h2>
       <p>Check what you might pay for a souvenir, a ride or a monument ticket in Jaipur. You can also share a price you saw.</p>
       <div class="intro-links"><a href="/fares">${icon("taxi")} Check ride fares</a><a href="/monuments">${icon("ticket")} Check entry fees</a></div>
     </section>
-    ${scan(true)}
-    ${campaignMarkup()}
-    <button type="button" class="ready-launch ${state.travelReady ? "is-ready" : ""}" data-dialog="ready" aria-haspopup="dialog"><span class="ready-copy">${readyCopy()}</span><img src="/assets/monuments/hawa.webp" alt="" width="720" height="420" loading="lazy"></button>
   </div>`;
 }
 function readyCopy() {
