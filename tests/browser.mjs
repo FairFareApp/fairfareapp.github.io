@@ -1048,9 +1048,8 @@ try {
   );
 
   await check(
-    "one ride page offers both ride types, checklists, scenarios and fare references",
+    "ride choices connect to their advice, checklists, and fare references",
     async () => {
-      let activeFill;
       await page.goto(base + "/taxis");
       await wait("location.pathname === '/fares' && !location.search");
       for (const taxi of [true, false]) {
@@ -1061,6 +1060,25 @@ try {
         assert.match(
           await page.eval(() => document.querySelector(".fare-choices [aria-current]").innerText),
           taxi ? /Book in an app/ : /Hire an auto or taxi/,
+        );
+        assert.deepEqual(
+          await page.eval(() => {
+            const tab = document.querySelector(".fare-choices [aria-current]");
+            const guide = document.getElementById(tab.getAttribute("aria-controls"));
+            const lead = guide.querySelector(".ride-guide-lead");
+            return {
+              title: guide.querySelector("h2").textContent,
+              connected: Math.abs(tab.getBoundingClientRect().bottom - lead.getBoundingClientRect().top) <= 1,
+              sameSurface: getComputedStyle(tab).backgroundColor === getComputedStyle(lead).backgroundColor,
+              checklistInGuide: guide.contains(document.querySelector(".ride-check")),
+            };
+          }),
+          {
+            title: taxi ? "Rides booked in an app" : "Rides hired in person",
+            connected: true,
+            sameSurface: true,
+            checklistInGuide: true,
+          },
         );
         if (taxi)
           assert.match(
@@ -1088,12 +1106,16 @@ try {
         await wait(
           `document.querySelector('${sw}').getAnimations().every(a => a.playState !== 'running')`,
         );
-        const fill = await page.eval(
-          (s) => getComputedStyle(document.querySelector(s)).backgroundColor,
-          sw,
+        assert.ok(
+          await page.eval((selector) => {
+            const selected = document.querySelector(selector);
+            const advice = document.getElementById(selected.getAttribute("aria-controls"));
+            return (
+              selected.getBoundingClientRect().bottom === advice.getBoundingClientRect().top &&
+              getComputedStyle(selected).backgroundColor === getComputedStyle(advice).backgroundColor
+            );
+          }, sw),
         );
-        if (taxi) activeFill = fill;
-        else assert.equal(fill, activeFill);
         await click('[data-ride-check="0"]');
         assert.deepEqual(
           await page.eval(() => {

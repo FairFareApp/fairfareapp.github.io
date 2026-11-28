@@ -22,6 +22,7 @@ const rides = {
   taxi: {
     title: "Book in an app",
     description: "Use Uber or Ola",
+    guideTitle: "Rides booked in an app",
     tone: "indigo",
     intro: "Check the app’s price for your pickup and drop-off points before you book. The price can change depending on the route and time.",
     group: "How will you pay?",
@@ -66,6 +67,7 @@ const rides = {
   auto: {
     title: "Hire an auto or taxi",
     description: "Speak to the driver directly",
+    guideTitle: "Rides hired in person",
     tone: "turmeric",
     intro: "If you are taking an auto-rickshaw or local taxi without an app, agree on a total with the driver or ask the driver to use the meter before the ride starts.",
     group: "How will the driver set the fare?",
@@ -105,30 +107,43 @@ const rides = {
 export function faresPage(kind) {
   const r = rides[kind];
   return `<div class="ride-page tone-${r.tone}">
-    <header class="ride-hero"><h1>Ride fares</h1><p>Choose how you’ll get your ride to see what to check before you pay.</p>
-      <nav class="fare-choices" aria-label="How to get a ride">${Object.entries(rides).map(([key, ride]) => `<a href="${key === "auto" ? "/fares?type=auto" : "/fares"}" ${key === kind ? 'aria-current="page"' : ""}><strong>${ride.title}</strong><span>${ride.description}</span></a>`).join("")}</nav>
+    <header class="ride-hero">
+      <h1>Ride fares</h1>
+      <p>Choose how you’ll get your ride.</p>
     </header>
-    <section class="ride-mode" aria-labelledby="ride-mode-title">
-      <p class="ride-intro">${r.intro}</p>
-      <h2 id="ride-mode-title">${r.group}</h2>
-      <div class="ride-switch" role="group" aria-label="${r.group}">${r.modes.map(([label], i) => `<button type="button" data-ride-mode="${i}" aria-pressed="${i === 0}">${label}</button>`).join("")}</div>
-      <div id="ride-advice" class="ride-advice" aria-live="polite"></div>
-    </section>
-    <section class="ride-check panel" aria-labelledby="ride-check-title">
-      <div class="ride-check-head"><h2 id="ride-check-title">Before you get in</h2><output id="ride-progress" aria-live="polite"></output></div>
-      <progress max="${r.checks.length}" value="0" aria-label="Ride checks completed"></progress>
-      <div class="ride-meter" aria-hidden="true"><span></span></div>
-      <div class="ride-checks">${r.checks.map((label, i) => `<label class="ride-check-row"><input type="checkbox" data-ride-check="${i}"><span>${label}</span></label>`).join("")}</div>
-      <div class="ride-reset"><button type="button" class="text-link" id="ride-reset" hidden>Reset checks</button></div>
-    </section>
-    ${kind === "auto" ? fareReference() : `<div class="ride-providers">${external("https://www.uber.com/in/en/ride/", "Open Uber")}${external("https://www.olacabs.com/", "Open Ola")}<p class="small muted">Check the current fare and book on Uber or Ola.</p></div>`}
-    <section class="ride-quiz tone-lac" aria-labelledby="ride-quiz-title">
-      <h2 id="ride-quiz-title">${icon("comment-dots")} What would you do on this ride?</h2>
-      <p>${r.question}</p>
-      <div>${r.answers.map((answer, i) => `<button type="button" data-ride-answer="${i}" aria-pressed="false">${answer}</button>`).join("")}</div>
-      <p id="ride-answer" aria-live="polite" hidden></p>
-    </section>
-    <section class="ride-tips" aria-labelledby="ride-tips-title"><h2 id="ride-tips-title">More tips for your ride</h2>${r.tips.map(([title, body]) => `<details>${disclosure(h(title))}<p>${h(body)}</p></details>`).join("")}</section>
+    <div>
+      <nav class="fare-choices" aria-label="How to get a ride">
+        ${Object.entries(rides).map(([key, ride]) => `<a href="${key === "auto" ? "/fares?type=auto" : "/fares"}" aria-controls="ride-guide" ${key === kind ? 'aria-current="page"' : ""}><strong>${ride.title}</strong><span>${ride.description}</span></a>`).join("")}
+      </nav>
+      <section class="ride-guide" id="ride-guide" aria-labelledby="ride-guide-title">
+        <div class="ride-guide-lead">
+          <h2 id="ride-guide-title">${r.guideTitle}</h2>
+          <p class="ride-intro">${r.intro}</p>
+          <section class="ride-mode" aria-labelledby="ride-mode-title">
+            <h3 id="ride-mode-title">${r.group}</h3>
+            <div class="ride-switch" role="group" aria-labelledby="ride-mode-title">${r.modes.map(([label], i) => `<button type="button" data-ride-mode="${i}" aria-controls="ride-advice" aria-pressed="${i === 0}">${label}</button>`).join("")}</div>
+            <div id="ride-advice" class="ride-advice" aria-live="polite"></div>
+          </section>
+        </div>
+        <div class="ride-guide-body">
+          <section class="ride-check panel" aria-labelledby="ride-check-title">
+            <div class="ride-check-head"><h3 id="ride-check-title">Before you get in</h3><output id="ride-progress" aria-live="polite"></output></div>
+            <progress max="${r.checks.length}" value="0" aria-label="Ride checks completed"></progress>
+            <div class="ride-meter" aria-hidden="true"><span></span></div>
+            <div class="ride-checks">${r.checks.map((label, i) => `<label class="ride-check-row"><input type="checkbox" data-ride-check="${i}"><span>${label}</span></label>`).join("")}</div>
+            <div class="ride-reset"><button type="button" class="text-link" id="ride-reset" hidden>Reset checks</button></div>
+          </section>
+          ${kind === "auto" ? fareReference() : `<div class="ride-providers">${external("https://www.uber.com/in/en/ride/", "Open Uber")}${external("https://www.olacabs.com/", "Open Ola")}<p class="small muted">Check the current fare and book on Uber or Ola.</p></div>`}
+          <section class="ride-quiz tone-lac" aria-labelledby="ride-quiz-title">
+            <h3 id="ride-quiz-title">${icon("comment-dots")} What would you do on this ride?</h3>
+            <p>${r.question}</p>
+            <div>${r.answers.map((answer, i) => `<button type="button" data-ride-answer="${i}" aria-pressed="false">${answer}</button>`).join("")}</div>
+            <p id="ride-answer" aria-live="polite" hidden></p>
+          </section>
+          <section class="ride-tips" aria-labelledby="ride-tips-title"><h3 id="ride-tips-title">More tips for your ride</h3>${r.tips.map(([title, body]) => `<details>${disclosure(h(title))}<p>${h(body)}</p></details>`).join("")}</section>
+        </div>
+      </section>
+    </div>
   </div>`;
 }
 
@@ -140,7 +155,7 @@ function bindRide(root, kind) {
   const advice = root.querySelector("#ride-advice");
   function choose(index) {
     const [, title, text] = r.modes[index];
-    advice.innerHTML = `<h2>${h(title)}</h2><p>${h(text)}</p>`;
+    advice.innerHTML = `<h4>${h(title)}</h4><p>${h(text)}</p>`;
     modes.forEach((button, i) =>
       button.setAttribute("aria-pressed", String(i === index)),
     );
@@ -224,7 +239,7 @@ function fareReference() {
   return `<details class="fare-reference">
     ${disclosure('<strong>Calculate a fare using 2013 rates</strong><small>Use these old rates for comparison. Ask the driver for today’s fare.</small>')}
     <div class="fare-reference-body">
-      <h2>Enter your trip distance</h2>
+      <h3>Enter your trip distance</h3>
       <p class="small muted" id="fare-date-hint">This calculator uses the rates Rajasthan published in 2013.</p>
       <div class="form-grid">
         <div class="field"><label for="fare-vehicle">Vehicle</label><select id="fare-vehicle">${options(
@@ -241,7 +256,7 @@ function fareReference() {
       ${external(fareSources.auto, "2013 government rates for autos")}<br>
       ${external(fareSources.taxi, "2013 government rates for prepaid taxis")}<br>
       ${external(fareSources.index, "All published Rajasthan fare rates")}
-      <h2>Example fares from ride companies</h2>
+      <h3>Example fares from ride companies</h3>
       <p><strong>₹177 average</strong> for an Uber Auto from Jaipur airport to the city, as published by Uber.</p>
       ${external(fareSources.autoProvider, "See Uber’s fares for this route")}
       <p><strong>From ₹649 plus tax</strong> for a PinkCityTours car from the airport or railway station. The company lists ₹1,199 plus tax for a 4-hour, 40 km city trip.</p>
