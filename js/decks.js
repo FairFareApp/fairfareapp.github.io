@@ -51,14 +51,14 @@ const tips = [
 
 const campaign = [
   {
-    title: "See what similar souvenirs might cost",
-    caption: "Compare example prices for wooden elephants and bangles before you buy.",
+    title: "Compare souvenir prices",
+    caption: "See what other shoppers might pay for similar souvenirs.",
     image: "brand/souvenir-prices.webp",
     alt: "A carved wooden elephant next to red lacquer bangles",
   },
   {
-    title: "Know what to check before you ride",
-    caption: "Check the fare, route and payment method before you hire a local auto or book a taxi.",
+    title: "Check ride fares",
+    caption: "Know what to check before you hire a local auto or book a taxi.",
     image: "brand/jaipur-auto.webp",
     alt: "A green and yellow auto-rickshaw beside pink shopfronts",
   },

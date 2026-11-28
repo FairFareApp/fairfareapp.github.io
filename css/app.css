@@ -325,9 +325,6 @@ summary {
   gap: 8px;
   min-height: 44px;
   padding: 4px 10px;
-  border: 1px solid var(--accent-ink);
-  border-radius: 8px;
-  background: var(--surface);
   color: var(--ink);
   text-align: left;
   white-space: nowrap;
@@ -348,14 +345,12 @@ summary {
   color: var(--accent-ink);
   font-size: 0.8125rem;
   font-weight: 800;
-}
-.city-trigger:hover,
-.city-trigger:active {
-  background: var(--lac);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .city-trigger:hover small,
 .city-trigger:focus-visible small {
-  text-decoration: underline;
+  text-decoration-thickness: 2px;
 }
 .city-list {
   display: grid;
