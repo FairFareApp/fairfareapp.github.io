@@ -1208,22 +1208,28 @@ try {
           (s) => document.querySelector(s + " .availability").textContent,
           front,
         );
+      const ticket = (value) => `#visitor label:has(input[value="${value}"])`;
+      const chooseTicket = (value) => click(ticket(value));
       const checkTiers = async (amounts) => {
         const categories = ["indian", "foreign", "student", "foreign_student"];
         for (const [i, value] of categories.entries()) {
-          await fill("#visitor", value);
+          await chooseTicket(value);
           assert.equal(
             await fee(),
             `₹${amounts[i].toLocaleString("en-IN")} entry`,
           );
         }
-        await fill("#visitor", "indian");
+        await chooseTicket("indian");
       };
       assert.match(await fee(), /₹400 entry/);
       await wait(
         "[...document.querySelectorAll('.visits-deck img')].every(i=>i.naturalWidth>0)",
       );
-      await shot("monuments", `${front} .text-link`, ["#visitor"]);
+      await shot("monuments", `${front} .text-link`, [ticket("foreign"), ticket("foreign_student")]);
+      assert.deepEqual(
+        await page.eval(() => [...document.querySelectorAll("#visitor label")].map((label) => label.textContent.trim())),
+        ["Indian resident", "Foreigner", "Indian student", "Foreign student"],
+      );
       assert.deepEqual(
         await page.eval(() => {
           const stack = [
@@ -1267,12 +1273,12 @@ try {
       await deckNumber("visits", 6);
       await dragCard("visits", -92);
       await deckNumber("visits", 1);
-      await fill("#visitor", "foreign_student");
+      await chooseTicket("foreign_student");
       assert.match(await fee(), /₹600 entry/);
       await dragCard("visits", -92);
       await deckNumber("visits", 2);
       assert.equal(
-        await page.eval(() => document.querySelector("#visitor").value),
+        await page.eval(() => document.querySelector("#visitor :checked").value),
         "foreign_student",
       );
       await dragCard("visits", 92);

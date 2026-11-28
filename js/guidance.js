@@ -348,20 +348,23 @@ const visitGuides = [
   checked_at: "2026-11-22",
 }));
 export function monumentsPage() {
-  return `<div class="visits-page">${heading("Monument tickets")}<p class="ticket-intro">Choose the option that describes you to see your ticket price. Swipe left or tap the photo to see the next place.</p><div class="monuments-toolbar"><label class="inline-label" for="visitor">Which visitor ticket do you need?<select id="visitor">${options(
-    [
-      ["indian", "Indian resident"],
-      ["foreign", "Visitor from outside India"],
-      ["student", "Indian student"],
-      ["foreign_student", "Student from outside India"],
-    ],
-    "indian",
-  )}</select></label></div><div id="monument-data">${loading("Loading monument ticket prices…")}</div><details class="guide-note">${disclosure("See what to ask before hiring a guide")}<p>Ask the guide to show their ID. Before you start, confirm with the guide which language they will speak, where they will take you, how long the tour will last and what you will pay. Ask the guide if transport, taking photos or evening shows cost extra.</p><details>${disclosure("See what to ask at the ticket counter")}<ul><li>Which ticket should I buy, and what ID do I need?</li><li>Can I buy one ticket for several places?</li><li>Do special exhibits or evening visits cost extra?</li></ul></details></details></div>`;
+  const ticketTypes = [
+    ["indian", "Indian resident"],
+    ["foreign", "Foreigner"],
+    ["student", "Indian student"],
+    ["foreign_student", "Foreign student"],
+  ];
+  return `<div class="visits-page">${heading("Monument tickets")}<p class="ticket-intro">Choose the option that describes you to see your ticket price. Swipe left or tap the photo to see the next place.</p>
+    <fieldset id="visitor" class="ticket-types">
+      <legend>Ticket type</legend>
+      ${ticketTypes.map(([value, label]) => `<label><input type="radio" name="visitor" value="${value}"${value === "indian" ? " checked" : ""}>${label}</label>`).join("")}
+    </fieldset>
+    <div id="monument-data">${loading("Loading monument ticket prices…")}</div><details class="guide-note">${disclosure("See what to ask before hiring a guide")}<p>Ask the guide to show their ID. Before you start, confirm with the guide which language they will speak, where they will take you, how long the tour will last and what you will pay. Ask the guide if transport, taking photos or evening shows cost extra.</p><details>${disclosure("See what to ask at the ticket counter")}<ul><li>Which ticket should I buy, and what ID do I need?</li><li>Can I buy one ticket for several places?</li><li>Do special exhibits or evening visits cost extra?</li></ul></details></details></div>`;
 }
 
 export async function bindMonuments(root, signal) {
   const target = root.querySelector("#monument-data");
-  const select = root.querySelector("#visitor");
+  const visitor = root.querySelector("#visitor");
   try {
     const live = await getTicketPrices(signal);
     if (signal.aborted) return;
@@ -392,7 +395,7 @@ export async function bindMonuments(root, signal) {
     const cards = [...deck.querySelectorAll(".swipe-card")];
     let current = 0;
     function update() {
-      const cat = select.value;
+      const cat = visitor.querySelector(":checked").value;
       rows.forEach((row, i) => {
         const fee = row.prices?.[cat];
         const label =
@@ -422,7 +425,7 @@ export async function bindMonuments(root, signal) {
       current = event.detail;
       update();
     });
-    select.onchange = update;
+    visitor.onchange = update;
     bindDeck(deck);
     target.querySelectorAll("img").forEach((img) => {
       img.onerror = () => img.remove();

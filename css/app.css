@@ -1547,18 +1547,6 @@ progress::-moz-progress-bar {
 .section-heading h2 {
   margin: 0;
 }
-.inline-label {
-  font-size: 12px;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.inline-label select {
-  width: auto;
-  min-width: 155px;
-  font-size: 13px;
-}
 .availability {
   font-size: 18px;
   font-weight: 700;
@@ -1606,18 +1594,6 @@ progress::-moz-progress-bar {
 }
 .monument-card details p {
   font-size: 12px;
-}
-.monuments-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 18px;
-  margin-bottom: 24px;
-}
-.monuments-toolbar > p {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 0;
 }
 .guide-note {
   margin-top: 28px;
@@ -1997,19 +1973,6 @@ progress::-moz-progress-bar {
   }
   .monument-card-body {
     padding: 20px;
-  }
-  .monuments-toolbar {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .inline-label {
-    width: 100%;
-    justify-content: space-between;
-  }
-  .inline-label select {
-    flex: 1;
-    max-width: 210px;
   }
   .empty-page {
     margin: 40px auto;
@@ -2436,9 +2399,6 @@ summary {
   }
   .work-grid .checklist .check {
     padding-block: 8px;
-  }
-  .monuments-toolbar {
-    margin-bottom: 14px;
   }
   .monument-grid {
     gap: 10px;
@@ -3222,6 +3182,53 @@ summary {
 .visits-page {
   max-width: 620px;
   margin-inline: auto;
+}
+.ticket-types {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-inline-size: 0;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+}
+.ticket-types legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 750;
+}
+.ticket-types label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.ticket-types label:has(:checked) {
+  border-color: var(--lac-ink);
+  background: var(--lac);
+  color: var(--lac-ink);
+}
+.ticket-types input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--lac-ink);
+}
+@media (min-width: 640px) {
+  .ticket-types {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 .visits-deck .swipe-stage {
   padding-top: 60px;
