@@ -3040,16 +3040,27 @@ summary {
   color: var(--muted);
   font-size: 0.875rem;
 }
-.ride-payment {
-  margin-top: 6px;
+.ride-mode .ride-payment {
+  margin-top: 8px;
   padding: 0;
-  border: 1px solid var(--ride-guide-line);
-  border-radius: 10px;
+  border: 2px solid color-mix(in srgb, var(--card-ink) 58%, var(--card-face));
+  border-radius: 12px;
   background: var(--surface);
 }
 .ride-payment > summary {
-  padding: 6px 12px;
-  border-radius: inherit;
+  min-height: 54px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 58%, var(--card-face));
+  color: var(--card-ink);
+  font-size: 0.9375rem;
+  font-weight: 800;
+}
+.ride-payment .disclosure-action {
+  min-width: 56px;
+  background: var(--card-ink);
+  color: var(--card-face);
+  text-align: center;
 }
 .ride-payment[open] > summary {
   margin-bottom: 0;

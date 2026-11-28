@@ -1091,6 +1091,15 @@ try {
           const driver = ".ride-payment:last-of-type > summary";
           const summary = (selector) => page.eval((s) => document.querySelector(s).innerText, selector);
           await shot("taxis", inApp, [driver, ".ride-check-row"]);
+          assert.ok(await page.eval(() => {
+            const summaries = [...document.querySelectorAll(".ride-payment > summary")];
+            const [inApp, driver] = summaries.map((control) => control.getBoundingClientRect());
+            return inApp.bottom < driver.top && inApp.width === driver.width &&
+              Math.min(inApp.height, driver.height) >= 54 && summaries.every((control) => {
+                const box = getComputedStyle(control.parentElement);
+                return box.borderTopWidth === "2px" && box.borderBottomWidth === "2px";
+              });
+          }), "Payment advice should appear as two full-width rows");
           assert.match(await summary(inApp), /Pay in the app\s+Show/);
           assert.match(await summary(driver), /Pay the driver\s+Show/);
           await click(inApp);
