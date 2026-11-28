@@ -1086,62 +1086,37 @@ try {
             contentMatchesTab: true,
           },
         );
-        if (taxi) {
-          const inApp = ".ride-payment:first-of-type > summary";
-          const driver = ".ride-payment:last-of-type > summary";
-          const summary = (selector) => page.eval((s) => document.querySelector(s).innerText, selector);
-          await shot("taxis", inApp, [driver, ".ride-check-row"]);
-          assert.ok(await page.eval(() => {
-            const summaries = [...document.querySelectorAll(".ride-payment > summary")];
-            const [inApp, driver] = summaries.map((control) => control.getBoundingClientRect());
-            return inApp.bottom < driver.top && inApp.width === driver.width &&
-              Math.min(inApp.height, driver.height) >= 54 && summaries.every((control) => {
-                const box = getComputedStyle(control.parentElement);
-                return box.borderTopWidth === "2px" && box.borderBottomWidth === "2px";
-              });
-          }), "Payment advice should appear as two full-width rows");
-          assert.match(await summary(inApp), /Pay in the app\s+Show/);
-          assert.match(await summary(driver), /Pay the driver\s+Show/);
-          await click(inApp);
-          assert.match(await summary(inApp), /Pay in the app\s+Hide/);
-          assert.match(
-            await page.eval(
-              () => document.querySelector(".ride-payment[open] .ride-advice").innerText,
-            ),
-            /ask your bank whether you can use the card in India/,
-          );
-          await click(driver);
-          assert.match(
-            await page.eval(() => document.querySelector(".ride-payment:last-of-type[open] .ride-advice").innerText),
-            /name on the UPI screen/,
-          );
-          await page.eval((selector) => document.querySelector(selector).focus(), driver);
-          await key("Enter", 13);
-          assert.match(await summary(driver), /Pay the driver\s+Show/);
-          assert.match(await summary(inApp), /Pay in the app\s+Hide/);
-        } else {
-          const sw = '[data-ride-mode="1"]';
-          await shot("autos", sw, [".ride-check-row"]);
-          await click(sw);
-          assert.equal(
-            await page.eval((s) => document.querySelector(s).getAttribute("aria-pressed"), sw),
-            "true",
-          );
-          assert.match(
-            await page.eval(() => document.querySelector("#ride-advice").innerText),
-            /agree on the full fare with the driver/,
-          );
-          assert.ok(
-            await page.eval((selector) => {
-              const selected = document.querySelector(selector);
-              const advice = document.getElementById(selected.getAttribute("aria-controls"));
-              return (
-                selected.getBoundingClientRect().bottom === advice.getBoundingClientRect().top &&
-                getComputedStyle(selected).backgroundColor === getComputedStyle(advice).backgroundColor
-              );
-            }, sw),
-          );
-        }
+        const first = ".ride-payment:first-of-type > summary";
+        const second = ".ride-payment:last-of-type > summary";
+        const labels = taxi ? ["Pay in the app", "Pay the driver"] : ["Agree on a price", "Use the meter"];
+        const summary = (selector) => page.eval((s) => document.querySelector(s).innerText.replace(/\s+/g, " "), selector);
+        await shot(taxi ? "taxis" : "autos", first, [second, ".ride-check-row"]);
+        assert.ok(await page.eval(() => {
+          const summaries = [...document.querySelectorAll(".ride-payment > summary")];
+          const [first, second] = summaries.map((control) => control.getBoundingClientRect());
+          return first.bottom < second.top && first.width === second.width &&
+            Math.min(first.height, second.height) >= 54 && summaries.every((control) => {
+              const box = getComputedStyle(control.parentElement);
+              return box.borderTopWidth === "2px" && box.borderBottomWidth === "2px";
+            });
+        }), "Payment advice should appear as two full-width rows");
+        assert.equal(await summary(first), `${labels[0]} Show`);
+        assert.equal(await summary(second), `${labels[1]} Show`);
+        await click(first);
+        assert.match(
+          await page.eval(() => document.querySelector(".ride-payment:first-of-type[open] .ride-advice").innerText),
+          taxi ? /ask your bank whether you can use the card in India/ : /one price for everyone in your group/,
+        );
+        await click(second);
+        assert.match(
+          await page.eval(() => document.querySelector(".ride-payment:last-of-type[open] .ride-advice").innerText),
+          taxi ? /name on the UPI screen/ : /turn on the meter before you leave/,
+        );
+        await page.eval((selector) => document.querySelector(selector).focus(), second);
+        await key("Enter", 13);
+        assert.equal(await summary(second), `${labels[1]} Show`);
+        assert.equal(await summary(first), `${labels[0]} Hide`);
+        await click(first);
         await click('[data-ride-check="0"]');
         assert.deepEqual(
           await page.eval(() => {

@@ -3002,30 +3002,8 @@ summary {
 .ticket-intro {
   margin: -6px 0 16px;
 }
-.ride-switch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-}
-.ride-switch button {
-  min-height: 44px;
-  border-top: 2px solid transparent;
-  border-radius: 9px 9px 0 0;
-  padding: 4px 5px;
-  background: var(--surface-soft);
-  color: var(--ink);
-  font-size: 0.8125rem;
-  font-weight: 800;
-}
-.ride-switch button[aria-pressed="true"] {
-  border-top-color: var(--card-ink);
-  background: var(--surface);
-  color: var(--card-ink);
-}
 .ride-advice {
   padding: 10px 12px;
-  border-radius: 0 0 10px 10px;
-  background: var(--surface);
   color: var(--ink);
 }
 .ride-mode h3,
