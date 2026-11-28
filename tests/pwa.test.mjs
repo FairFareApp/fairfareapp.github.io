@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import vm from "node:vm";
 import { readFile } from "node:fs/promises";
 const source = await readFile(new URL("../sw.js", import.meta.url), "utf8");
-function harness() {
+function harness(fetch = async () => {
+  throw new Error("Offline");
+}) {
   const events = {},
     responded = [];
   const context = {
@@ -18,9 +20,7 @@ function harness() {
       match: async (path) => ({ cached: path }),
       open: async () => ({ put: async () => {} }),
     },
-    fetch: async () => {
-      throw new Error("Offline");
-    },
+    fetch,
   };
   vm.runInNewContext(source, context);
   return { events, responded };
@@ -49,6 +49,24 @@ test("offline navigation restores app shell and never caches API data", async ()
     respondWith: (r) => responded.push(r),
   });
   assert.equal((await responded[0]).cached, "/index.html");
+});
+test("service worker revalidates app assets and still loads them offline", async () => {
+  const request = {
+    url: "https://fairfareapp.github.io/css/app.css",
+    method: "GET",
+    mode: "cors",
+  };
+  let cacheMode;
+  const online = harness(async (_request, options) => {
+    cacheMode = options.cache;
+    return { ok: true, clone: () => ({}) };
+  });
+  online.events.fetch({ request, respondWith: (r) => online.responded.push(r) });
+  assert.equal((await online.responded[0]).ok, true);
+  assert.equal(cacheMode, "no-cache");
+  const { events, responded } = harness();
+  events.fetch({ request, respondWith: (r) => responded.push(r) });
+  assert.equal((await responded[0]).cached, "/css/app.css");
 });
 test("404 fallback preserves unknown paths, query strings and fragments", async () => {
   const code = await readFile(
