@@ -3016,7 +3016,7 @@ summary {
 .ride-guide {
   border: 1px solid var(--ride-guide-line);
   border-radius: 0 0 16px 16px;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--card-face) 48%, var(--surface));
 }
 .ride-guide-lead {
   padding: 12px clamp(12px, 3vw, 18px) 14px;
@@ -3083,6 +3083,8 @@ summary {
 .ride-check {
   padding: 14px 16px;
   margin: 0;
+  border-color: var(--ride-guide-line);
+  background: var(--card-face);
 }
 .ride-check-head {
   display: flex;
@@ -3174,14 +3176,11 @@ summary {
   flex-basis: 100%;
   margin: 0;
 }
-.ride-page .fare-reference {
-  margin: 0;
-}
 .ride-quiz {
   padding: 16px;
   border-radius: 24px 8px 24px 24px;
-  background: var(--lac);
-  color: var(--lac-ink);
+  background: var(--card-face);
+  color: var(--card-ink);
 }
 .ride-quiz p {
   margin-bottom: 10px;
@@ -3194,17 +3193,17 @@ summary {
   margin-top: 8px;
   padding: 7px 10px;
   width: 100%;
-  border: 1px solid var(--lac-ink);
+  border: 1px solid var(--card-ink);
   border-radius: 10px;
-  color: var(--lac-ink);
+  color: var(--card-ink);
   font-size: 14px;
   transition:
     background var(--duration),
     color var(--duration);
 }
 .ride-quiz button[aria-pressed="true"] {
-  background: var(--lac-ink);
-  color: var(--lac);
+  background: var(--card-ink);
+  color: var(--card-face);
 }
 #ride-answer {
   margin: 12px 0 0;
@@ -3212,7 +3211,7 @@ summary {
 }
 .ride-tips details {
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--card-face);
   margin-top: 8px;
   padding: 0 12px;
 }
@@ -3512,16 +3511,16 @@ summary {
   font-size: 14px;
 }
 .fare-reference {
-  background: var(--indigo);
-  color: var(--indigo-ink);
+  background: var(--card-face);
+  color: var(--card-ink);
   border-radius: 12px;
   padding: 5px 16px;
-  margin: 0 0 16px;
 }
 .fare-reference summary small {
   display: block;
   color: var(--muted);
   font-size: 12px;
+  font-weight: 500;
 }
 .fare-reference-body {
   padding-bottom: 10px;

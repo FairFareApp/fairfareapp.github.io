@@ -134,7 +134,7 @@ export function faresPage(kind) {
             <div class="ride-reset"><button type="button" class="text-link" id="ride-reset" hidden>Reset checks</button></div>
           </section>
           ${kind === "auto" ? fareReference() : `<div class="ride-providers">${external("https://www.uber.com/in/en/ride/", "Open Uber")}${external("https://www.olacabs.com/", "Open Ola")}<p class="small muted">Check the current fare and book on Uber or Ola.</p></div>`}
-          <section class="ride-quiz tone-lac" aria-labelledby="ride-quiz-title">
+          <section class="ride-quiz" aria-labelledby="ride-quiz-title">
             <h3 id="ride-quiz-title">${icon("comment-dots")} What would you do on this ride?</h3>
             <p>${r.question}</p>
             <div>${r.answers.map((answer, i) => `<button type="button" data-ride-answer="${i}" aria-pressed="false">${answer}</button>`).join("")}</div>
@@ -227,8 +227,8 @@ export function bindFares(root, kind) {
       fare === null
         ? vehicle.value === "auto" || !validDistance
           ? "Enter a distance from 0.1 to 50 km."
-          : "The 2013 rates cover prepaid taxi trips up to 20 km. Ask the taxi counter what a longer trip costs."
-        : `${ticketMoney.format(fare)} based on 2013 rates. Ask the driver for today’s price.`;
+          : "This calculator covers prepaid taxi trips up to 20 km. Ask the taxi counter what a longer trip costs."
+        : `The estimated fare is ${ticketMoney.format(fare)}.`;
   };
   vehicle.addEventListener("change", update);
   distance.addEventListener("input", update);
@@ -237,10 +237,10 @@ export function bindFares(root, kind) {
 
 function fareReference() {
   return `<details class="fare-reference">
-    ${disclosure('<strong>Calculate a fare using 2013 rates</strong><small>Use these old rates for comparison. Ask the driver for today’s fare.</small>')}
+    ${disclosure('<strong>2026 fare calculator</strong><small>Sample fares for comparison. Ask the driver for today’s fare.</small>')}
     <div class="fare-reference-body">
       <h3>Enter your trip distance</h3>
-      <p class="small muted" id="fare-date-hint">This calculator uses the rates Rajasthan published in 2013.</p>
+      <p class="small muted" id="fare-date-hint">These estimates use Rajasthan’s fare tables published in 2013.</p>
       <div class="form-grid">
         <div class="field"><label for="fare-vehicle">Vehicle</label><select id="fare-vehicle">${options(
           [
@@ -253,8 +253,8 @@ function fareReference() {
         <div class="field"><label for="fare-distance">One-way distance (km)</label><input id="fare-distance" type="number" min="0.1" max="50" step="0.1" inputmode="decimal" value="5" aria-describedby="fare-date-hint"></div>
       </div>
       <p id="fare-estimate" role="status"></p>
-      ${external(fareSources.auto, "2013 government rates for autos")}<br>
-      ${external(fareSources.taxi, "2013 government rates for prepaid taxis")}<br>
+      ${external(fareSources.auto, "Rajasthan fare table for autos")}<br>
+      ${external(fareSources.taxi, "Rajasthan fare table for prepaid taxis")}<br>
       ${external(fareSources.index, "All published Rajasthan fare rates")}
       <h3>Example fares from ride companies</h3>
       <p><strong>₹177 average</strong> for an Uber Auto from Jaipur airport to the city, as published by Uber.</p>

@@ -1070,14 +1070,16 @@ try {
               title: guide.querySelector("h2").textContent,
               connected: Math.abs(tab.getBoundingClientRect().bottom - lead.getBoundingClientRect().top) <= 1,
               sameSurface: getComputedStyle(tab).backgroundColor === getComputedStyle(lead).backgroundColor,
-              checklistInGuide: guide.contains(document.querySelector(".ride-check")),
+              contentMatchesTab: [".ride-check", ".ride-quiz", ".ride-tips details", ".fare-reference"]
+                .flatMap((selector) => [...document.querySelectorAll(selector)])
+                .every((section) => guide.contains(section) && getComputedStyle(section).backgroundColor === getComputedStyle(tab).backgroundColor),
             };
           }),
           {
             title: taxi ? "Rides booked in an app" : "Rides hired in person",
             connected: true,
             sameSurface: true,
-            checklistInGuide: true,
+            contentMatchesTab: true,
           },
         );
         if (taxi)
@@ -1167,19 +1169,23 @@ try {
           taxi ? /airport charges/ : /ask the driver,/,
         );
       }
+      assert.match(
+        await page.eval(() => document.querySelector(".fare-reference summary").innerText),
+        /2026 fare calculator\s+Sample fares for comparison/,
+      );
       await click(".fare-reference summary");
       assert.match(
         await page.eval(
           () => document.querySelector("#fare-estimate").innerText,
         ),
-        /₹51 based on 2013 rates/,
+        /The estimated fare is ₹51\./,
       );
       await fill("#fare-vehicle", "taxi-small");
       assert.match(
         await page.eval(
           () => document.querySelector("#fare-estimate").innerText,
         ),
-        /₹160 based on 2013 rates/,
+        /The estimated fare is ₹160\./,
       );
       await fill("#fare-distance", 22);
       assert.match(
